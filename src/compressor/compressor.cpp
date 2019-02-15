@@ -1,6 +1,7 @@
 #include <atomic>
-#include <direct.h>
+#include <chrono>
 #include <deque>
+#include <direct.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <functional>
 #include <future>
+#include "lz4.h"
 
 
 /** Retrieve the working directory for this executable file. */
@@ -74,6 +76,7 @@ int main()
 	input = toupper(input);
 	if (input == 'Y') {	
 		// Calculate final file size
+		auto start = std::chrono::system_clock::now();
 		size_t archiveSize(0), px(0);
 		for each (const auto & entry in directoryArray) {
 			std::string path = entry.path().string();
@@ -102,7 +105,7 @@ int main()
 		for each (const auto & file in files) {
 			// Increment the pointer address by the offset provided
 			constexpr auto INCR_PTR = [](void *const ptr, const size_t & offset) {
-				void * pointer = (void*)(reinterpret_cast<unsigned char*>(ptr) + unsigned(offset));
+				void * pointer = (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
 				return pointer;
 			};
 			std::cout << "..." << file.trunc_path << std::endl;
@@ -137,18 +140,38 @@ int main()
 		// Wait for threaded operations to complete
 		while (filesRead != files.size())
 			continue;
-		threads.clear();
+
+		char * compressedBuffer = new char[archiveSize];
+		auto result = LZ4_compress_default(
+			filebuffer, 
+			compressedBuffer, 
+			int(archiveSize), 
+			int(archiveSize)
+		);
 
 		// Write entire buffer to disk
-		std::ofstream megafile(megaPath, std::ios::binary | std::ios::out);
-		if (megafile.is_open())
-			megafile.write(filebuffer, archiveSize);
-		megafile.close();
+		if (result > 0) {
+			std::ofstream megafile(megaPath, std::ios::binary | std::ios::out);
+			if (megafile.is_open()) {
+				// First, write the full uncompressed file size
+				megafile.write(reinterpret_cast<char*>(&archiveSize), size_t(sizeof(size_t)));
+				megafile.write(compressedBuffer, result);
+			}
+			megafile.close();
 
-		std::cout
-			<< "Compression into \"" << megaPath << "\" complete.\n"
-			<< filesRead << "/" << files.size() << " files.\n"
-			<< "Wrote " << archiveSize << " bytes.\n";
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			std::cout
+				<< "Compression into \"" << megaPath << "\" complete.\n"
+				<< "Files read: " << filesRead << "/" << files.size() << "\n"
+				<< "Bytes read: " << archiveSize << " (compressed to " << result << " bytes) \n"
+				<< "Elapsed time: " << elapsed_seconds.count() << "\n";
+		}
+
+		// Clean up
+		threads.clear();
+		delete[] filebuffer;
+		delete[] compressedBuffer;
 	}
 	system("pause");
 	exit(1);

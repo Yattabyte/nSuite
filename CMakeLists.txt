@@ -3,9 +3,16 @@ cmake_minimum_required(VERSION 3.0)
 project(FreeStaller)
 
 # Get dependency directory locations from the user
+set (LZ4_DIR "" CACHE PATH "LZ4 root directory")
 set (CORE_DIR "${PROJECT_SOURCE_DIR}/src")
 set (PROJECT_BIN ${CMAKE_SOURCE_DIR})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
+# Include directories of dependencies for entire project
+include_directories ( 	${LZ4_DIR}/lib/ )
+
+link_libraries 	(					debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
+									optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	)
 					
 # add all sub-projects and plugins here
 add_subdirectory( "src/compressor" )
