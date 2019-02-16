@@ -1,41 +1,17 @@
 #include <atomic>
 #include <chrono>
-#include <deque>
-#include <direct.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <shared_mutex>
 #include <string>
-#include <thread>
-#include <memory>
-#include <functional>
-#include <future>
+#include "common.h"
 #include "lz4.h"
 
-
-/** Retrieve the working directory for this executable file. */
-static std::string get_current_dir() 
-{
-	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1l] = char('/0');
-	return std::string(cCurrentPath);
-}
-
-/** Return info for all files within this working directory. */
-static std::vector<std::filesystem::directory_entry> get_file_paths()
-{
-	std::vector<std::filesystem::directory_entry> paths;
-	for (const auto & entry : std::filesystem::recursive_directory_iterator(get_current_dir())) 
-		if (entry.is_regular_file())
-			paths.push_back(entry);	
-	return paths;
-}
 
 int main()
 {
 	// Variables
+	Threader threader;
 	const auto megaPath = get_current_dir() + "\\archive.dat";
 	const auto absolute_path_length = get_current_dir().size();
 	const auto directoryArray = get_file_paths();
@@ -46,30 +22,6 @@ int main()
 	std::vector<FileData> files(directoryArray.size());
 
 	// Threading logic
-	std::shared_mutex jobMutex;
-	std::deque<std::function<void()>> jobs;
-	std::vector<std::thread> threads;
-	for (size_t x = 0; x < std::thread::hardware_concurrency(); ++x) {
-		std::thread thread([&jobMutex, &jobs]() {
-			while (true) {
-				// Check if there is a job to do
-				std::unique_lock<std::shared_mutex> writeGuard(jobMutex);
-				if (jobs.size()) {
-					// Get the first job, remove it from the list
-					auto job = jobs.front();
-					jobs.pop_front();
-					// Unlock
-					writeGuard.unlock();
-					writeGuard.release();
-					// Do Job
-					job();
-				}
-			}
-		});
-		thread.detach();
-		threads.emplace_back(std::move(thread));
-	}
-
 	std::cout << "Compress the current directory? (Y/N)" << std::endl;
 	char input('N');
 	std::cin >> input;
@@ -110,8 +62,7 @@ int main()
 			};
 			std::cout << "..." << file.trunc_path << std::endl;
 
-			std::unique_lock<std::shared_mutex> writeGuard(jobMutex);
-			jobs.push_back([&INCR_PTR, file, pointer, &filesRead]() {				
+			threader.addJob([&INCR_PTR, file, pointer, &filesRead]() {				
 				// Write the size in bytes, of the file path string, into the buffer
 				void * ptr = pointer;
 				auto pathSize = file.trunc_path.size();
@@ -141,6 +92,7 @@ int main()
 		while (filesRead != files.size())
 			continue;
 
+		// Compress the buffer
 		char * compressedBuffer = new char[archiveSize];
 		auto result = LZ4_compress_default(
 			filebuffer, 
@@ -149,7 +101,7 @@ int main()
 			int(archiveSize)
 		);
 
-		// Write entire buffer to disk
+		// Write the entire compressed buffer to disk
 		if (result > 0) {
 			std::ofstream megafile(megaPath, std::ios::binary | std::ios::out);
 			if (megafile.is_open()) {
@@ -159,7 +111,7 @@ int main()
 			}
 			megafile.close();
 
-			auto end = std::chrono::system_clock::now();
+			const auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::cout
 				<< "Compression into \"" << megaPath << "\" complete.\n"
@@ -169,7 +121,6 @@ int main()
 		}
 
 		// Clean up
-		threads.clear();
 		delete[] filebuffer;
 		delete[] compressedBuffer;
 	}
