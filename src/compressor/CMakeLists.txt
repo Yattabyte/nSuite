@@ -13,7 +13,11 @@ endforeach()
 ############
 set (Module compressor)
 # Create a library using those source files	
-add_executable			(${Module} 	${ROOT} ${CORE_DIR}/common.h)	
+add_executable			(${Module} 	${ROOT} 
+									${CORE_DIR}/Common.h
+									${CORE_DIR}/Threader.h 
+									${CORE_DIR}/Archive.h 
+									${CORE_DIR}/Archive.cpp	)	
 # Set working directory to the project directory
 set_target_properties 	(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 												LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include "common.h"
+#include "Threader.h"
 #include "lz4.h"
 
 
@@ -35,7 +36,7 @@ int main()
 			if (path == megaPath ||
 				(path.find("compressor.exe") != std::string::npos) ||
 				(path.find("decompressor.exe") != std::string::npos))
-				continue; // Ignore the mega file we're creating
+				continue;
 			path = path.substr(absolute_path_length, path.size() - absolute_path_length);
 			size_t pathSize = path.size();
 			
@@ -63,22 +64,22 @@ int main()
 			std::cout << "..." << file.trunc_path << std::endl;
 
 			threader.addJob([&INCR_PTR, file, pointer, &filesRead]() {				
-				// Write the size in bytes, of the file path string, into the buffer
+				// Write the total number of characters in the path string, into the archive
 				void * ptr = pointer;
 				auto pathSize = file.trunc_path.size();
 				memcpy(ptr, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
 				ptr = INCR_PTR(ptr, size_t(sizeof(size_t)));
 
-				// Write the file path string into the buffer
+				// Write the file path string, into the archive
 				memcpy(ptr, file.trunc_path.data(), pathSize);
 				ptr = INCR_PTR(ptr, pathSize);
 
-				// Write the size in bytes of the file, into the buffer
+				// Write the file size in bytes, into the archive
 				auto fileSize = file.size;
 				memcpy(ptr, reinterpret_cast<char*>(&fileSize), size_t(sizeof(size_t)));
 				ptr = INCR_PTR(ptr, size_t(sizeof(size_t)));
 
-				// Copy file to mega file
+				// Write the file into the archive
 				std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
 				fileOnDisk.read(reinterpret_cast<char*>(ptr), fileSize);
 				fileOnDisk.close();
@@ -112,7 +113,7 @@ int main()
 			megafile.close();
 
 			const auto end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed_seconds = end - start;
+			const std::chrono::duration<double> elapsed_seconds = end - start;
 			std::cout
 				<< "Compression into \"" << megaPath << "\" complete.\n"
 				<< "Files read: " << filesRead << "/" << files.size() << "\n"
