@@ -16,10 +16,10 @@ link_libraries 	(					debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
 									optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	)
 					
 # add all sub-projects and plugins here
-add_subdirectory( "src/compressor" )
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT compressor)
-add_subdirectory( "src/decompressor" )
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT decompressor)
+add_subdirectory( "src/installer" )
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT installer)
+add_subdirectory( "src/installerMaker" )
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT installerMaker)
  
 # Enable folder structure
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)

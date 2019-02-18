@@ -41,7 +41,12 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 	size_t archiveSize(0), px(0);
 	for each (const auto & entry in directoryArray) {
 		std::string path = entry.path().string();
-		if ((path.find("compressor.exe") != std::string::npos) || (path.find("decompressor.exe") != std::string::npos))
+		// Blacklist
+		if (
+			(path.find("installer.exe") != std::string::npos) 
+			|| 
+			(path.find("installerMaker.exe") != std::string::npos)
+			)
 			continue;
 		path = path.substr(absolute_path_length, path.size() - absolute_path_length);
 		size_t pathSize = path.size();
@@ -104,13 +109,13 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 	if (result) {
 		// Write installer to disk
 		Resource installer(IDR_INSTALLER, "INSTALLER");
-		std::ofstream file(directory + "\\decompressor.exe", std::ios::binary | std::ios::out);
+		std::ofstream file(directory + "\\installer.exe", std::ios::binary | std::ios::out);
 		if (file.is_open())
 			file.write(reinterpret_cast<char*>(installer.getPtr()), installer.getSize());
 		file.close();
 
 		// Update installer's resource
-		auto handle = BeginUpdateResource("decompressor.exe", true);
+		auto handle = BeginUpdateResource("installer.exe", true);
 		auto updateResult = UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
 		EndUpdateResource(handle, FALSE);
 	}

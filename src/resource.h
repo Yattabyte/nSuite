@@ -1,11 +1,11 @@
 #include "Windows.h"
 #include <string>
 
-// Used by compressor.rc
-#define IDR_INSTALLER                     101
+// Used by installer.rc
+#define IDR_ARCHIVE                       101
 
-// Used by decompressor.rc
-#define IDR_ARCHIVE                       102
+// Used by installerMaker.rc
+#define IDR_INSTALLER                     102
 
 // Next default values for new objects
 // 

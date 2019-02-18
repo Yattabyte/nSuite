@@ -24,6 +24,7 @@ int main()
 	std::cin >> input;
 	input = toupper(input);
 	if (input == 'Y') {
+		std::cout << "...working..." << std::endl;
 		// Package to an output file
 		const auto start = std::chrono::system_clock::now();
 		size_t fileCount(0), byteCount(0);
