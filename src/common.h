@@ -21,3 +21,9 @@ static std::vector<std::filesystem::directory_entry> get_file_paths()
 			paths.push_back(entry);
 	return paths;
 }
+
+/** Increment a pointer's address by the offset provided */
+static void * INCR_PTR(void *const ptr, const size_t & offset) {
+	void * pointer = (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
+	return pointer;
+};

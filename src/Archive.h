@@ -1,30 +1,35 @@
 #include <string>
+#include <memory>
 #include "Windows.h"
+
 
 
 class Archive {
 public:
 	// Public Constructor
 	~Archive();
-	Archive(int resource_id, const std::string &resource_class);
+	Archive(int resource_id, const std::string & resource_class);
 
 
 	// Public Methods
-	/** Return the compressed size of the archive file. */
-	size_t getCompressedSize() const;
-	/** Return the uncompressed size of the content within the archive file. */
-	size_t getUncompressedSize() const;
-	/***/
-	bool uncompressArchive(void ** ptr);
+	/** Pack the archive directory into installer, overwriting its contents. */
+	static bool pack(size_t & fileCount, size_t & byteCount);
+	/** Unpack the installer's contents, overwriting the archive directory. */
+	bool unpack(size_t & fileCount, size_t & byteCount);
 
 
 	// Public Attributes
-	size_t m_compressedSize = 0, m_uncompressedSize = 0;
+	size_t m_size = 0, m_decompressedSize = 0;
 	void * m_ptr = nullptr, * m_decompressedPtr = nullptr;
 
 
 private:
+	// Private Methods
+	/** Decompress the archive .*/
+	bool decompressArchive();
+
+
 	// Private Attributes
-	HRSRC hResource = nullptr;
-	HGLOBAL hMemory = nullptr;
+	HRSRC m_hResource = nullptr;
+	HGLOBAL m_hMemory = nullptr;
 };
