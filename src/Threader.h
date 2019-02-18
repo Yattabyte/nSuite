@@ -6,6 +6,7 @@
 #include <vector>
 
 
+/** Utility class for running multiple tasks across multiple threads. */
 class Threader {
 public:
 	// Public (de)constructors

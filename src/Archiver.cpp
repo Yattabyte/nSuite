@@ -1,49 +1,36 @@
-#include "Archive.h"
-#include "common.h"
+#include "Archiver.h"
+#include "Resource.h"
 #include "Threader.h"
 #include "lz4.h"
 #include <atomic>
 #include <fstream>
-#include "Windows.h"
+#include <filesystem>
+#include <vector>
 
 
-Archive::~Archive()
+/** Return info for all files within this working directory. */
+static std::vector<std::filesystem::directory_entry> get_file_paths(const std::string & directory)
 {
-	UnlockResource(m_hMemory);
-	FreeResource(m_hMemory);
-
-	if (m_decompressedPtr)
-		delete[] m_decompressedPtr;
+	std::vector<std::filesystem::directory_entry> paths;
+	for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+		if (entry.is_regular_file())
+			paths.push_back(entry);
+	return paths;
 }
 
-Archive::Archive(int resource_id, const std::string & resource_class) 
+/** Increment a pointer's address by the offset provided. */
+static void * INCR_PTR(void *const ptr, const size_t & offset) 
 {
-	m_hResource = FindResourceA(nullptr, MAKEINTRESOURCEA(resource_id), resource_class.c_str());
-	m_hMemory = LoadResource(nullptr, m_hResource);
-	m_ptr = LockResource(m_hMemory);
-	m_size = SizeofResource(nullptr, m_hResource);
-}
+	void * pointer = (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
+	return pointer;
+};
 
-bool Archive::decompressArchive()
-{
-	m_decompressedSize = *reinterpret_cast<size_t*>(m_ptr);
-	m_decompressedPtr = new char[m_decompressedSize];
-	auto result = LZ4_decompress_safe(
-		reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(m_ptr) + size_t(sizeof(size_t))),
-		reinterpret_cast<char*>(m_decompressedPtr),
-		int(m_size - size_t(sizeof(size_t))),
-		int(m_decompressedSize)
-	);
-
-	return (result > 0);
-}
-
-bool Archive::pack(size_t & fileCount, size_t & byteCount)
+bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Variables
 	Threader threader;
-	const auto absolute_path_length = get_current_dir().size();
-	const auto directoryArray = get_file_paths();
+	const auto absolute_path_length = directory.size();
+	const auto directoryArray = get_file_paths(directory);
 	struct FileData {
 		std::string fullpath, trunc_path;
 		size_t size, unitSize;
@@ -51,7 +38,6 @@ bool Archive::pack(size_t & fileCount, size_t & byteCount)
 	std::vector<FileData> files(directoryArray.size());
 
 	// Calculate final file size
-	auto start = std::chrono::system_clock::now();
 	size_t archiveSize(0), px(0);
 	for each (const auto & entry in directoryArray) {
 		std::string path = entry.path().string();
@@ -106,59 +92,59 @@ bool Archive::pack(size_t & fileCount, size_t & byteCount)
 	while (filesRead != files.size())
 		continue;
 
-	// Allocate enough room for the compressed buffer
-	char * compressedBuffer = new char[archiveSize + size_t(sizeof(size_t))];
-	// First chunk of data = the total uncompressed size
-	*reinterpret_cast<size_t*>(compressedBuffer) = archiveSize;
-	// Increment pointer so that the compression works on the remaining part of the buffer
-	compressedBuffer = reinterpret_cast<char*>(compressedBuffer) + size_t(sizeof(size_t));
-	// Compress the buffer
-	auto result = LZ4_compress_default(
-		filebuffer,
-		compressedBuffer,
-		int(archiveSize),
-		int(archiveSize)
-	);
-	// Decrement pointer
-	compressedBuffer = reinterpret_cast<char*>(compressedBuffer) - size_t(sizeof(size_t));
+	// Compress the archive
+	char * compressedBuffer(nullptr);
+	size_t compressedSize(0);
+	const bool result = Archiver::compressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize);	
 
 	// Update variables
 	fileCount = filesRead;
-	byteCount = result + size_t(sizeof(size_t));
+	byteCount = compressedSize + size_t(sizeof(size_t));
 
-	// Update the installer executable file
-	bool returnResult = result > 0;
-	if (returnResult) {
-		auto handle = BeginUpdateResourceA("decompressor.exe", true);
-		auto updateResult = UpdateResourceA(handle, "ARCHIVE", MAKEINTRESOURCEA(101), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, byteCount);
+	if (result) {
+		// Write installer to disk
+		Resource installer(IDR_INSTALLER, "INSTALLER");
+		std::ofstream file(directory + "\\decompressor.exe", std::ios::binary | std::ios::out);
+		if (file.is_open())
+			file.write(reinterpret_cast<char*>(installer.getPtr()), installer.getSize());
+		file.close();
+
+		// Update installer's resource
+		auto handle = BeginUpdateResource("decompressor.exe", true);
+		auto updateResult = UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
 		EndUpdateResource(handle, FALSE);
 	}
 
 	// Clean up
 	delete[] filebuffer;
 	delete[] compressedBuffer;
-	return returnResult;
+	return result;
 }
 
-bool Archive::unpack(size_t & fileCount, size_t & byteCount)
+bool Archiver::unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
+	// Decompress the archive
 	Threader threader;
-	if (!decompressArchive())
+	Resource archive(IDR_ARCHIVE, "ARCHIVE");
+	char * decompressedBuffer(nullptr);
+	size_t decompressedSize(0);
+	const bool result = Archiver::decompressArchive(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
+	if (!result)
 		return false;
 
 	// Read the archive
 	fileCount = 0;
 	byteCount = 0;
 	std::atomic_size_t filesFinished(0);
-	void * readingPtr = m_decompressedPtr;
-	while (byteCount < m_decompressedSize) {
+	void * readingPtr = decompressedBuffer;
+	while (byteCount < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
 		readingPtr = INCR_PTR(readingPtr, size_t(sizeof(size_t)));
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
-		const auto path = get_current_dir() + std::string(path_array, pathSize);
+		const auto path = directory + std::string(path_array, pathSize);
 		readingPtr = INCR_PTR(readingPtr, pathSize);
 
 		// Read the file size in bytes, from the archive 
@@ -187,4 +173,43 @@ bool Archive::unpack(size_t & fileCount, size_t & byteCount)
 
 	// Success
 	return true;	
+}
+
+bool Archiver::compressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+{
+	// Allocate enough room for the compressed buffer
+	*destinationBuffer = new char[sourceSize + size_t(sizeof(size_t))];
+
+	// First chunk of data = the total uncompressed size
+	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
+
+	// Increment pointer so that the compression works on the remaining part of the buffer
+	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) + size_t(sizeof(size_t));
+
+	// Compress the buffer
+	auto result = LZ4_compress_default(
+		sourceBuffer,
+		*destinationBuffer,
+		int(sourceSize),
+		int(sourceSize)
+	);
+
+	// Decrement pointer
+	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) - size_t(sizeof(size_t));
+	destinationSize = size_t(result);
+	return (result > 0);
+}
+
+bool Archiver::decompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+{
+	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
+	*destinationBuffer = new char[destinationSize];
+	auto result = LZ4_decompress_safe(
+		reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(sourceBuffer) + size_t(sizeof(size_t))),
+		reinterpret_cast<char*>(*destinationBuffer),
+		int(sourceSize - size_t(sizeof(size_t))),
+		int(destinationSize)
+	);
+
+	return (result > 0);
 }

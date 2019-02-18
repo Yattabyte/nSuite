@@ -14,10 +14,10 @@ endforeach()
 set (Module decompressor)
 # Create a library using those source files	
 add_executable			(${Module} 	${ROOT} 
-									${CORE_DIR}/Common.h
+									${CORE_DIR}/Resource.h
 									${CORE_DIR}/Threader.h 
-									${CORE_DIR}/Archive.h 
-									${CORE_DIR}/Archive.cpp	)	
+									${CORE_DIR}/Archiver.h 
+									${CORE_DIR}/Archiver.cpp	)	
 # Set working directory to the project directory
 set_target_properties 	(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 												LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -25,7 +25,6 @@ set_target_properties 	(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT
 												PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
 target_compile_Definitions (${Module}	PRIVATE		$<$<CONFIG:DEBUG>:DEBUG>)
 set_target_properties(${Module} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app")
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Test)
 
 if (MSVC_VERSION GREATER_EQUAL "1900")
     include(CheckCXXCompilerFlag)
