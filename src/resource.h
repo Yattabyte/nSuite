@@ -3,12 +3,10 @@
 
 // Used by installer.rc
 #define IDR_ARCHIVE                       101
-
 // Used by installerMaker.rc
 #define IDR_INSTALLER                     102
 
 // Next default values for new objects
-// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        103
@@ -20,22 +18,32 @@
 
 
 /** Utility class encapsulating resource files embedded in a application. */
-class Resource{
+class Resource {
 public:
+	// Public (de)constructors
+	/** Destroys this resource object, unlocking it for future use. */
 	~Resource() {
 		UnlockResource(m_hMemory);
 		FreeResource(m_hMemory);
 	}
+	/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
 	Resource(const int & resourceID, const std::string & resourceClass) {
 		m_hResource = FindResource(nullptr, MAKEINTRESOURCE(resourceID), resourceClass.c_str());
 		m_hMemory = LoadResource(nullptr, m_hResource);
 		m_ptr = LockResource(m_hMemory);
 		m_size = SizeofResource(nullptr, m_hResource);
 	}
-	void * getPtr() const {
+
+
+	// Public Methods
+	/** Retrieve a pointer to this resources' data.
+	@return		a pointer to the beginning of this resources' data. */
+	inline void * getPtr() const {
 		return m_ptr;
 	}
-	size_t getSize() const {
+	/** Retrieve the size of this resource in bytes.
+	@return		the size of this resources' data in bytes. */
+	inline size_t getSize() const {
 		return m_size;
 	}
 

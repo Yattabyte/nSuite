@@ -6,10 +6,11 @@
 #include <vector>
 
 
-/** Utility class for running multiple tasks across multiple threads. */
+/** Utility class for executing tasks across multiple threads. */
 class Threader {
 public:
 	// Public (de)constructors
+	/** Destroys this threader object, shutting down all threads it owns. */
 	~Threader() {
 		m_alive = false;
 		for (size_t x = 0; x < std::thread::hardware_concurrency(); ++x) {
@@ -19,6 +20,7 @@ public:
 		m_threads.clear();
 		m_jobs.clear();
 	}
+	/** Creates a threader object and generates as many worker threads as the system allows. */
 	Threader() {
 		for (size_t x = 0; x < std::thread::hardware_concurrency(); ++x) {
 			std::thread thread([&]() {
@@ -43,6 +45,9 @@ public:
 	}
 
 
+	// Public Methods
+	/** Adds a job/task/function to the queue.
+	@param	func	the task to be executed on a separate thread. A function with void return type and no arguments. */
 	void addJob(const std::function<void()> && func) {
 		std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
 		m_jobs.emplace_back(func);
@@ -50,8 +55,9 @@ public:
 
 
 private:
+	// Private Attributes
 	std::shared_mutex m_mutex;
 	std::atomic_bool m_alive = true;
-	std::deque<std::function<void()>> m_jobs;
 	std::vector<std::thread> m_threads;
+	std::deque<std::function<void()>> m_jobs;
 };

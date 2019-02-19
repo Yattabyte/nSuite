@@ -8,24 +8,28 @@
 #include <vector>
 
 
-/** Return info for all files within this working directory. */
+/** Return file-info for all files within the directory specified.
+@param	directory	the directory to retrieve file-info from.
+@return				a vector of file information, including file names, sizes, meta-data, etc. */
 static std::vector<std::filesystem::directory_entry> get_file_paths(const std::string & directory)
 {
 	std::vector<std::filesystem::directory_entry> paths;
 	for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
 		if (entry.is_regular_file())
-			paths.push_back(entry);
+			paths.emplace_back(entry);
 	return paths;
 }
 
-/** Increment a pointer's address by the offset provided. */
+/** Increment a pointer's address by the offset provided.
+@param	ptr			the pointer to increment by the offset amount.
+@param	offset		the offset amount to apply to the pointer's address.
+@return				the modified pointer address. */
 static void * INCR_PTR(void *const ptr, const size_t & offset) 
 {
-	void * pointer = (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
-	return pointer;
+	return (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
 };
 
-bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
+bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Variables
 	Threader threader;
@@ -85,7 +89,7 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 
 			// Write the file into the archive
 			std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
-			fileOnDisk.read(reinterpret_cast<char*>(ptr), fileSize);
+			fileOnDisk.read(reinterpret_cast<char*>(ptr), (std::streamsize)fileSize);
 			fileOnDisk.close();
 			filesRead++;
 		});
@@ -100,7 +104,7 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 	// Compress the archive
 	char * compressedBuffer(nullptr);
 	size_t compressedSize(0);
-	const bool result = Archiver::compressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize);	
+	bool result = Archiver::CompressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize);	
 
 	// Update variables
 	fileCount = filesRead;
@@ -111,12 +115,12 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 		Resource installer(IDR_INSTALLER, "INSTALLER");
 		std::ofstream file(directory + "\\installer.exe", std::ios::binary | std::ios::out);
 		if (file.is_open())
-			file.write(reinterpret_cast<char*>(installer.getPtr()), installer.getSize());
+			file.write(reinterpret_cast<char*>(installer.getPtr()), (std::streamsize)installer.getSize());
 		file.close();
 
 		// Update installer's resource
 		auto handle = BeginUpdateResource("installer.exe", true);
-		auto updateResult = UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
+		result = (bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
 		EndUpdateResource(handle, FALSE);
 	}
 
@@ -126,14 +130,14 @@ bool Archiver::pack(const std::string & directory, size_t & fileCount, size_t & 
 	return result;
 }
 
-bool Archiver::unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)
+bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Decompress the archive
 	Threader threader;
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0);
-	const bool result = Archiver::decompressArchive(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
+	const bool result = Archiver::DecompressArchive(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
 	if (!result)
 		return false;
 
@@ -162,7 +166,7 @@ bool Archiver::unpack(const std::string & directory, size_t & fileCount, size_t 
 			std::filesystem::create_directories(std::filesystem::path(path).parent_path());
 			std::ofstream file(path, std::ios::binary | std::ios::out);
 			if (file.is_open())
-				file.write(reinterpret_cast<char*>(ptrCopy), fileSize);
+				file.write(reinterpret_cast<char*>(ptrCopy), (std::streamsize)fileSize);
 			file.close();
 			filesFinished++;
 		});
@@ -180,7 +184,7 @@ bool Archiver::unpack(const std::string & directory, size_t & fileCount, size_t 
 	return true;	
 }
 
-bool Archiver::compressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool Archiver::CompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
 	// Allocate enough room for the compressed buffer
 	*destinationBuffer = new char[sourceSize + size_t(sizeof(size_t))];
@@ -205,7 +209,7 @@ bool Archiver::compressArchive(char * sourceBuffer, const size_t & sourceSize, c
 	return (result > 0);
 }
 
-bool Archiver::decompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool Archiver::DecompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
 	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
 	*destinationBuffer = new char[destinationSize];

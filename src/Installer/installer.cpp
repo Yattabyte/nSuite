@@ -5,12 +5,13 @@
 #include <string>
 
 
-/** Get the current directory for this executable. */
+/** Get the current directory for this executable. 
+@return		the running directory for this application. */
 static std::string get_current_dir()
 {
 	char cCurrentPath[FILENAME_MAX];
 	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1l] = char('/0');
+		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
 	return std::string(cCurrentPath);
 }
 
@@ -22,13 +23,13 @@ int main()
 	std::cout << "Install to the current directory: \"" + directory + "\"\nInput (Y/N): ";
 	char input('N');
 	std::cin >> input;
-	input = toupper(input);
+	input = (char)toupper((int)input);
 	if (input == 'Y') {
 		std::cout << "...working..." << std::endl;
 		// Unpackage using the resource file
 		const auto start = std::chrono::system_clock::now();
 		size_t fileCount(0), byteCount(0);
-		if (Archiver::unpack(directory, fileCount, byteCount)) {
+		if (Archiver::Unpack(directory, fileCount, byteCount)) {
 			// Success, report results
 			const auto end = std::chrono::system_clock::now();
 			const std::chrono::duration<double> elapsed_seconds = end - start;
