@@ -27,11 +27,11 @@ public:
 		FreeResource(m_hMemory);
 	}
 	/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
-	Resource(const int & resourceID, const std::string & resourceClass) {
-		m_hResource = FindResource(nullptr, MAKEINTRESOURCE(resourceID), resourceClass.c_str());
-		m_hMemory = LoadResource(nullptr, m_hResource);
+	Resource(const int & resourceID, const std::string & resourceClass, const HMODULE & moduleHandle = nullptr) {
+		m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass.c_str());
+		m_hMemory = LoadResource(moduleHandle, m_hResource);
 		m_ptr = LockResource(m_hMemory);
-		m_size = SizeofResource(nullptr, m_hResource);
+		m_size = SizeofResource(moduleHandle, m_hResource);
 	}
 
 

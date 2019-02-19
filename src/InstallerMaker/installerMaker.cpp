@@ -5,29 +5,24 @@
 #include <string>
 
 
-/** Get the current directory for this executable.
-@return		the running directory for this application. */
-static std::string get_current_dir()
-{
-	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
-	return std::string(cCurrentPath);
-}
-
 /** Entry point. */
 int main()
 {
+	// Get the running directory
+	char cCurrentPath[FILENAME_MAX];
+	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
+		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
+	const auto directory = std::string(cCurrentPath);
+
 	// Check if user is ready to compress
-	const auto directory = get_current_dir();
 	std::cout << "Compress the current directory: \"" + directory + "\"\nInput (Y/N): ";
 	char input('N');
 	std::cin >> input;
 	input = (char)toupper((int)input);
 	if (input == 'Y') {
-		std::cout << "...working..." << std::endl;
 		// Package to an output file
 		const auto start = std::chrono::system_clock::now();
+		std::cout << "...working..." << std::endl;
 		size_t fileCount(0), byteCount(0);
 		if (Archiver::Pack(directory, fileCount, byteCount)) {
 			// Success, report results
@@ -35,8 +30,8 @@ int main()
 			const std::chrono::duration<double> elapsed_seconds = end - start;
 			std::cout
 				<< "Compression into \"" << directory << "\" complete.\n"
-				<< "Files read: " << fileCount << "\n"
-				<< "Bytes read: " << byteCount << "\n"
+				<< "Files packaged: " << fileCount << "\n"
+				<< "Bytes packaged: " << byteCount << "\n"
 				<< "Elapsed time: " << elapsed_seconds.count() << "\n";
 		}		
 	}
