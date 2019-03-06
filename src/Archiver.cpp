@@ -32,6 +32,8 @@ static void * INCR_PTR(void *const ptr, const size_t & offset)
 bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Variables
+	fileCount = 0;
+	byteCount = 0;
 	Threader threader;
 	const auto absolute_path_length = directory.size();
 	const auto directoryArray = get_file_paths(directory);
@@ -113,13 +115,12 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 	// Compress the archive
 	char * compressedBuffer(nullptr);
 	size_t compressedSize(0);
-	bool result = Archiver::CompressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize);	
+	bool returnResult = false;
+	if (Archiver::CompressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
+		// Update variables
+		fileCount = filesRead;
+		byteCount = compressedSize + size_t(sizeof(size_t));
 
-	// Update variables
-	fileCount = filesRead;
-	byteCount = compressedSize + size_t(sizeof(size_t));
-
-	if (result) {
 		// Write installer to disk
 		Resource installer(IDR_INSTALLER, "INSTALLER");
 		std::ofstream file(directory + "\\installer.exe", std::ios::binary | std::ios::out);
@@ -129,14 +130,14 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 
 		// Update installer's resource
 		auto handle = BeginUpdateResource("installer.exe", true);
-		result = (bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
+		returnResult = (bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
 		EndUpdateResource(handle, FALSE);
 	}
 
 	// Clean up
 	delete[] filebuffer;
 	delete[] compressedBuffer;
-	return result;
+	return returnResult;
 }
 
 bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)

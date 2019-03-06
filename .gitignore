@@ -36,7 +36,11 @@ x64/
 x32/
 Documentation/
 .vs/
-src/reVision.dir/
+src/installer/installer.dir/
+src/installerMaker/installerMaker.dir/
+src/patcher/patcher.dir/
+src/patchMaker/patchMaker.dir/
+app/
 
 # Other
 CMakeCache.txt
@@ -58,14 +62,12 @@ CMakeCache.txt
 *.VC.db-shm
 *.db-shm
 *.log
+*.aps
 *.ipch
 Doxyfile.out
 app/nsight_profiler.cfg
 CMakeDoxyfile.tpl.bak
 CMakeDoxyfile.in
-*.shader
 PredictedInputCache_Debug_x64.dat
 PredictedInputCache_Release_x64.dat
-src/installer/installer.dir/
-src/installerMaker/installerMaker.dir/
-*.aps
+*.obj
