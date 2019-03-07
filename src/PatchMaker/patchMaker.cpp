@@ -16,35 +16,42 @@
 @param	index1		the starting index for buffer1, updated with next best match index.
 @param	index2		the starting index for buffer2, updated with next best match index.
 @return				true if a match can be found, false otherwise. */
-static bool find_next_best_match(const char * const buffer1, const char * const buffer2, const size_t & size1, const size_t & size2, size_t & index1, size_t & index2)
+static bool find_next_best_match(const char * const buffer1, const char * const buffer2, const size_t & size1, const size_t & size2, size_t & index1, size_t & index2, size_t & matchLength)
 {
+	const auto start = std::chrono::system_clock::now();
+	struct MatchInfo {
+		size_t length = 0ull, start1 = 0ull, start2 = 0ull;
+	};
+	MatchInfo bestMatch;
 	const auto start2 = index2;
-	while (index1 < size1) {
-		if (index2 >= size2) {
-			// Reached end of buffer2, increment buffer1 index and try again
-			index1++;
-			if (index1 < size1)
-				index2 = start2;
-			continue;
-		}
+	while (index1 < size1 && index2 < size2) {
+		bool matchFound = false;
+		// Check if values match
 		if (buffer1[index1] == buffer2[index2]) {
-			// these 2 values match, but lets see if the next set matches
-			if ((index1 + 1) < size1 && (index2 + 1) < size2)
-				// we can still index further, so lets see if the next set matches
-				if (buffer1[index1 + 1] == buffer2[index2 + 1])
-					// confirmed that [index1] == [index2] and [index1+1] == [index2+1]
-					return true;
-				else {
-					index2++;
-					continue;
-				}
-
-			// we can't index any further, so this match is the best we can get
-			return true;
+			// Check how long this series of matches continues for
+			size_t offset = 1ull;
+			for (; ((index1 + offset) < size1) && ((index2 + offset) < size2); ++offset)
+				if (buffer1[index1 + offset] != buffer2[index2 + offset])
+					break;			
+			if (offset > bestMatch.length)
+				bestMatch = MatchInfo{ offset, index1, index2 };
+			matchFound = true;			
 		}
-		index2++;
+		else
+			index2++;
+		if (matchFound || index2 >= size2) {
+			// Increment buffer1, restart buffer2
+			index1++;
+			index2 = start2;
+		}		
 	}
-	return false;
+	index1 = bestMatch.start1;
+	index2 = bestMatch.start2;
+	matchLength += bestMatch.length;
+	const auto end = std::chrono::system_clock::now();
+	const std::chrono::duration<double> elapsed_seconds = end - start;
+	const auto DURATION = elapsed_seconds.count();
+	return bool(bestMatch.length > 0ull);
 }
 
 /** Increment a pointer's address by the offset provided.
@@ -90,8 +97,8 @@ int main()
 		// Check if the data in both buffers is different
 		if (buffer_old[index1] != buffer_new[index2]) {
 			// Find the next best point where these 2 buffers match
-			auto index1_Next = index1, index2_Next = index2;
-			find_next_best_match(buffer_old, buffer_new, size_old, size_new, index1_Next, index2_Next);
+			auto index1_Next = index1, index2_Next = index2, matchLength = size_t(0ull); 
+			find_next_best_match(buffer_old, buffer_new, size_old, size_new, index1_Next, index2_Next, matchLength);
 
 			// Between this and that index, buffer_old data is deleted and buffer_new data is inserted
 			if (index2_Next > index2) {
@@ -101,13 +108,19 @@ int main()
 				for (size_t a = index2, dataIndex = 0; a < index2_Next; ++a, ++dataIndex)
 					instruction.newData[dataIndex] = buffer_new[a];
 				instructions.push_back(instruction);
-				index2 = index2_Next;
+
+				// While finding the next best match, we've determined the next range of 'keep' instructions
+				// Create it's instruction now and skip ahead by that amount, avoiding redundant comparisons
+				instructions.emplace_back(Instruction{ index1_Next, index1_Next + matchLength, index2_Next });
+				index2 = index2_Next + matchLength;
+				index1 = index1_Next + matchLength;
+				continue;
 			}
-			index1 = index1_Next;
 		}
 
 		// Both buffers match at index1 and index2
-		if (index1 + 1 < size_old) {
+		if (index1 + 1 < size_old) 
+		{
 			// Merge all subsequent 'keep' instructions together
 			if (instructions.size() && instructions.back().endKeep > 0ull) 
 				instructions.back().endKeep = index1 + 1;
