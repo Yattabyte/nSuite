@@ -32,8 +32,8 @@ static void * INCR_PTR(void *const ptr, const size_t & offset)
 bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Variables
-	fileCount = 0;
-	byteCount = 0;
+	fileCount = 0ull;
+	byteCount = 0ull;
 	Threader threader;
 	const auto absolute_path_length = directory.size();
 	const auto directoryArray = get_file_paths(directory);
@@ -75,7 +75,7 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 
 	// Modify buffer
 	void * pointer = filebuffer;
-	std::atomic_size_t filesRead(0);
+	std::atomic_size_t filesRead(0ull);
 	for each (const auto & file in files) {
 		threader.addJob([file, pointer, &filesRead]() {
 			// Write the total number of characters in the path string, into the archive
@@ -114,12 +114,12 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 
 	// Compress the archive
 	char * compressedBuffer(nullptr);
-	size_t compressedSize(0);
+	size_t compressedSize(0ull);
 	bool returnResult = false;
-	if (Archiver::CompressArchive(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
+	if (Archiver::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
 		// Update variables
 		fileCount = filesRead;
-		byteCount = compressedSize + size_t(sizeof(size_t));
+		byteCount = compressedSize;
 
 		// Write installer to disk
 		Resource installer(IDR_INSTALLER, "INSTALLER");
@@ -143,19 +143,19 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {
 	// Decompress the archive
-	fileCount = 0;
-	byteCount = 0;
+	fileCount = 0ull;
+	byteCount = 0ull;
 	Threader threader;
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	char * decompressedBuffer(nullptr);
-	size_t decompressedSize(0);
-	const bool result = Archiver::DecompressArchive(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
+	size_t decompressedSize(0ull);
+	const bool result = Archiver::DecompressBuffer(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
 	if (!result)
 		return false;
 
 	// Read the archive
-	size_t jobsStarted(0), bytesRead(0);
-	std::atomic_size_t jobsFinished(0), filesWritten(0), bytesWritten(0);
+	size_t jobsStarted(0ull), bytesRead(0ull);
+	std::atomic_size_t jobsFinished(0ull), filesWritten(0ull), bytesWritten(0ull);
 	void * readingPtr = decompressedBuffer;
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
@@ -206,10 +206,10 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 	return true;	
 }
 
-bool Archiver::CompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool Archiver::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
 	// Allocate enough room for the compressed buffer
-	*destinationBuffer = new char[sourceSize + size_t(sizeof(size_t))];
+	*destinationBuffer = new char[sourceSize + sizeof(size_t)];
 
 	// First chunk of data = the total uncompressed size
 	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
@@ -227,11 +227,11 @@ bool Archiver::CompressArchive(char * sourceBuffer, const size_t & sourceSize, c
 
 	// Decrement pointer
 	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) - size_t(sizeof(size_t));
-	destinationSize = size_t(result);
+	destinationSize = size_t(result) + sizeof(size_t);
 	return (result > 0);
 }
 
-bool Archiver::DecompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool Archiver::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
 	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
 	*destinationBuffer = new char[destinationSize];

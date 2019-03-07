@@ -23,7 +23,7 @@ int main()
 		// Package to an output file
 		const auto start = std::chrono::system_clock::now();
 		std::cout << "...working..." << std::endl;
-		size_t fileCount(0), byteCount(0);
+		size_t fileCount(0ull), byteCount(0ull);
 		if (Archiver::Pack(directory, fileCount, byteCount)) {
 			// Success, report results
 			const auto end = std::chrono::system_clock::now();
@@ -32,7 +32,7 @@ int main()
 				<< "Compression into \"" << directory << "\" complete.\n"
 				<< "Files packaged: " << fileCount << "\n"
 				<< "Bytes packaged: " << byteCount << "\n"
-				<< "Elapsed time: " << elapsed_seconds.count() << "\n";
+				<< "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
 		}		
 	}
 

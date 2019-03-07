@@ -1,3 +1,5 @@
+#include "Archiver.h"
+#include <chrono>
 #include <direct.h>
 #include <fstream>
 #include <filesystem>
@@ -6,6 +8,14 @@
 #include <vector>
 
 
+/** Attempts to find the next best matching point between 2 buffers, starting and the indices provided.
+@param	buffer1		the first buffer.
+@param	buffer2		the second buffer.
+@param	size1		the size of the first buffer.
+@param	size2		the size of the second buffer.
+@param	index1		the starting index for buffer1, updated with next best match index.
+@param	index2		the starting index for buffer2, updated with next best match index.
+@return				true if a match can be found, false otherwise. */
 static bool find_next_best_match(const char * const buffer1, const char * const buffer2, const size_t & size1, const size_t & size2, size_t & index1, size_t & index2)
 {
 	const auto start2 = index2;
@@ -37,6 +47,15 @@ static bool find_next_best_match(const char * const buffer1, const char * const 
 	return false;
 }
 
+/** Increment a pointer's address by the offset provided.
+@param	ptr			the pointer to increment by the offset amount.
+@param	offset		the offset amount to apply to the pointer's address.
+@return				the modified pointer address. */
+static void * INCR_PTR(void *const ptr, const size_t & offset)
+{
+	return (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
+};
+
 /** Entry point. */
 int main()
 {
@@ -46,81 +65,129 @@ int main()
 		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
 	const auto directory = std::string(cCurrentPath);
 
-	// Write the file into the archive
-	const auto path1 = directory + "\\old.exe", path2 = directory + "\\new.exe";
-	const auto size1 = std::filesystem::file_size(path1), size2 = std::filesystem::file_size(path2);
-	std::ifstream file1(path1, std::ios::binary | std::ios::beg), file2(path2, std::ios::binary | std::ios::beg);
-	char * buffer1 = new char[size1], * buffer2 = new char[size2];
-	if (file1.is_open() && file2.is_open()) {
-		file1.read(buffer1, (std::streamsize)size1);
-		file2.read(buffer2, (std::streamsize)size2);
-		file1.close();
-		file2.close();
+	// Get the proper path names, and read the source files into their appropriate buffers.
+	const auto start = std::chrono::system_clock::now();
+	const auto path_old = directory + "\\old.exe", path_new = directory + "\\new.exe", path_patch = directory + "\\file.patch";
+	const auto size_old = std::filesystem::file_size(path_old), size_new = std::filesystem::file_size(path_new);
+	std::ifstream file_old(path_old, std::ios::binary | std::ios::beg), file_new(path_new, std::ios::binary | std::ios::beg);
+	char * buffer_old = new char[size_old], * buffer_new = new char[size_new];
+	if (file_old.is_open() && file_new.is_open()) {
+		file_old.read(buffer_old, std::streamsize(size_old));
+		file_new.read(buffer_new, std::streamsize(size_new));
+		file_old.close();
+		file_new.close();
 	}
-
-	size_t index1 = 0, index2 = 0;
+	
 	struct Instruction {
-		size_t beginKeep = 0, endKeep = 0;	// range to keep
-		size_t beginNew = 0;				// spot to insert
-		std::vector<char> newData;			// data to insert
+		size_t beginKeep = 0ull, endKeep = 0ull;	// range to keep
+		size_t beginNew = 0ull;						// spot to insert
+		std::vector<char> newData;					// data to insert
 	};
 	std::vector<Instruction> instructions;
+	size_t index1(0ull), index2(0ull);
+	// Keep processing data in both buffers, as long as there is data left in both of them
+	while (index1 < size_old && index2 < size_new) {
+		// Check if the data in both buffers is different
+		if (buffer_old[index1] != buffer_new[index2]) {
+			// Find the next best point where these 2 buffers match
+			auto index1_Next = index1, index2_Next = index2;
+			find_next_best_match(buffer_old, buffer_new, size_old, size_new, index1_Next, index2_Next);
 
-	// Continue algorithm as long as both buffers have data left
-	while (index1 < size1 && index2 < size2) {
-		// Check if bits at the current index is different between the 2 buffers
-		if (buffer1[index1] != buffer2[index2]) {
-			size_t index1_Next = index1, index2_Next = index2;
-			find_next_best_match(buffer1, buffer2, size1, size2, index1_Next, index2_Next);
-			// Everything between index1 and index1_Next has been deleted in buffer1
-			// Here, we only care about what was added
-			// Everything between index2 and index2_Next has been inserted in buffer2
+			// Between this and that index, buffer_old data is deleted and buffer_new data is inserted
 			if (index2_Next > index2) {
 				Instruction instruction;
 				instruction.beginNew = index2;
 				instruction.newData.resize(index2_Next - index2);
 				for (size_t a = index2, dataIndex = 0; a < index2_Next; ++a, ++dataIndex)
-					instruction.newData[dataIndex] = buffer2[a];
+					instruction.newData[dataIndex] = buffer_new[a];
 				instructions.push_back(instruction);
 				index2 = index2_Next;
 			}
 			index1 = index1_Next;
 		}
+
 		// Both buffers match at index1 and index2
-		if (index1+1 < size1 )
-			instructions.emplace_back(Instruction{ index1, index1 + 1, index2 });
+		if (index1 + 1 < size_old) {
+			// Merge all subsequent 'keep' instructions together
+			if (instructions.size() && instructions.back().endKeep > 0ull) 
+				instructions.back().endKeep = index1 + 1;
+			else
+				instructions.emplace_back(Instruction{ index1, index1 + 1, index2 });
+		}
 		index1++;
 		index2++;
 	}
-	// One of the 2 buffers has reached its end
-	// If there is data left from buffer 2, append it as the final instruction
-	if (index2 < size2) {
+
+	// If we haven't finished reading from buffer_new, append whatever data is left-over
+	if (index2 < size_new) {
 		Instruction instruction;
 		instruction.beginNew = index2;
-		instruction.newData.resize(size2 - index2);
-		for (size_t a = index2, dataIndex = 0; a < size2; ++a, ++dataIndex)
-			instruction.newData[dataIndex] = buffer2[a];		
+		instruction.newData.resize(size_new - index2);
+		for (size_t a = index2, dataIndex = 0; a < size_new; ++a, ++dataIndex)
+			instruction.newData[dataIndex] = buffer_new[a];		
 		instructions.push_back(instruction);
 	}
 
-	delete[] buffer1;
-	delete[] buffer2;
+	// Finished with these source buffers
+	delete[] buffer_old;
+	delete[] buffer_new;
 
-	const auto outPath = directory + "\\file.patch";
-	if (!std::filesystem::exists(outPath))
-		std::filesystem::create_directories(std::filesystem::path(outPath).parent_path());
-	std::ofstream file(outPath, std::ios::binary | std::ios::out);
-	if (file.is_open()) {		
-		for (auto instruction : instructions) {
-			file.write(reinterpret_cast<char*>(&instruction.beginKeep), (std::streamsize)(sizeof(size_t)));
-			file.write(reinterpret_cast<char*>(&instruction.endKeep), (std::streamsize)(sizeof(size_t)));
-			file.write(reinterpret_cast<char*>(&instruction.beginNew), (std::streamsize)(sizeof(size_t)));
-			size_t length = instruction.newData.size();
-			file.write(reinterpret_cast<char*>(&length), (std::streamsize)(sizeof(size_t)));
-			file.write(instruction.newData.data(), (std::streamsize)(instruction.newData.size()));
-		}
+	// Create buffer for the patch file, writing all instruction data into it
+	size_t size_patch(0ull);
+	for each (const auto & instruction in instructions)
+		size_patch += size_t((sizeof(size_t) * 4ull) + (sizeof(char) * instruction.newData.size()));
+	size_patch += sizeof(size_t);// size increased b/c first bytes == source file size
+	char * buffer_patch = new char[size_patch];
+	void * writingPtr = buffer_patch;
+	// Write-out source file size
+	memcpy(writingPtr, reinterpret_cast<char*>(&const_cast<size_t&>(size_new)), sizeof(size_t));
+	writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+	// Write-out instructions
+	for (auto instruction : instructions) {		
+		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginKeep), sizeof(size_t));
+		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+
+		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.endKeep), sizeof(size_t));
+		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+
+		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginNew), sizeof(size_t));
+		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+
+		auto length = instruction.newData.size();
+		memcpy(writingPtr, reinterpret_cast<char*>(&length), sizeof(size_t));
+		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+
+		memcpy(writingPtr, instruction.newData.data(), length);
+		writingPtr = INCR_PTR(writingPtr, length);
 	}
-	file.close();
+
+	// Attempt to compress the buffer
+	char * buffer_patch_compressed(nullptr);
+	size_t size_patch_compressed(0ull);
+	if (!Archiver::CompressBuffer(buffer_patch, size_patch, &buffer_patch_compressed, size_patch_compressed))
+		std::cout << "Failed creating compressed patch file.\n";
+	else {
+		// Compression successfull, delete uncompressed buffer
+		delete[] buffer_patch;
+
+		// Write-out compressed buffer to disk
+		std::filesystem::create_directories(std::filesystem::path(path_patch).parent_path());
+		std::ofstream file(path_patch, std::ios::binary | std::ios::out);
+		if (file.is_open()) {
+			file.write(buffer_patch_compressed, std::streamsize(size_patch_compressed));
+			file.close();
+		}
+		delete[] buffer_patch_compressed;
+
+		// Output results
+		const auto end = std::chrono::system_clock::now();
+		const std::chrono::duration<double> elapsed_seconds = end - start;
+		std::cout
+			<< "Successfully created patch file.\n"
+			<< "Patch instructions: " << instructions.size() << "\n"
+			<< "Patch size: " << size_patch << " bytes, compressed to " << size_patch_compressed << " bytes\n"
+			<< "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
+	}
 
 	// Exit
 	system("pause");

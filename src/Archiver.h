@@ -18,21 +18,18 @@ public:
 	@return				true if unpacking success, false otherwise. */
 	static bool Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount);
 
-
-private:
-	// Private Methods
 	/** Compresses a source buffer into an equal or smaller sized destination buffer. 
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size in bytes of the source buffer.
 	@param	destinationBuffer	pointer to the destination buffer, which will hold compressed contents.
 	@param	destinationSize		reference updated with the size in bytes of the compressed destinationBuffer. 
 	@return						true if compression success, false otherwise. */
-	static bool CompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
+	static bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
 	/** Decompressess a source buffer into an equal or larger sized destination buffer.
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size in bytes of the source buffer.
 	@param	destinationBuffer	pointer to the destination buffer, which will hold decompressed contents.
 	@param	destinationSize		reference updated with the size in bytes of the decompressed destinationBuffer.
 	@return						true if decompression success, false otherwise. */
-	static bool DecompressArchive(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
+	static bool DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
 };

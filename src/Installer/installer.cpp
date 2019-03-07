@@ -23,7 +23,7 @@ int main()
 		// Unpackage using the resource file
 		const auto start = std::chrono::system_clock::now();
 		std::cout << "...working..." << std::endl;
-		size_t fileCount(0), byteCount(0);
+		size_t fileCount(0ull), byteCount(0ull);
 		if (Archiver::Unpack(directory, fileCount, byteCount)) {
 			// Success, report results
 			const auto end = std::chrono::system_clock::now();
@@ -32,7 +32,7 @@ int main()
 				<< "Decompression into \"" << directory << "\" complete.\n"
 				<< "Files unpackaged: " << fileCount << "\n"
 				<< "Bytes unpackaged: " << byteCount << "\n"
-				<< "Elapsed time: " << elapsed_seconds.count() << "\n";
+				<< "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
 		}
 	}
 
