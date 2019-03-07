@@ -16,41 +16,41 @@
 @param	index1		the starting index for buffer1, updated with next best match index.
 @param	index2		the starting index for buffer2, updated with next best match index.
 @return				true if a match can be found, false otherwise. */
-static bool find_next_best_match(const char * const buffer1, const char * const buffer2, const size_t & size1, const size_t & size2, size_t & index1, size_t & index2, size_t & matchLength)
+static bool find_next_best_match(char * const buffer1, char * const buffer2, const size_t & size1, const size_t & size2, size_t & index1, size_t & index2, size_t & matchLength)
 {
-	const auto start = std::chrono::system_clock::now();
 	struct MatchInfo {
 		size_t length = 0ull, start1 = 0ull, start2 = 0ull;
-	};
-	MatchInfo bestMatch;
+	} bestMatch;
+	auto end1 = size1, end2 = size2;
 	const auto start2 = index2;
-	while (index1 < size1 && index2 < size2) {
-		bool matchFound = false;
-		// Check if values match
-		if (buffer1[index1] == buffer2[index2]) {
-			// Check how long this series of matches continues for
-			size_t offset = 1ull;
-			for (; ((index1 + offset) < size1) && ((index2 + offset) < size2); ++offset)
-				if (buffer1[index1 + offset] != buffer2[index2 + offset])
-					break;			
-			if (offset > bestMatch.length)
-				bestMatch = MatchInfo{ offset, index1, index2 };
-			matchFound = true;			
+	for (; index1 < end1; ++index1) {		
+		for (index2 = start2; index2 < end2; ++index2) {
+			// Check if values match			
+			if (buffer1[index1] == buffer2[index2]) {
+				// Optimization step - we want the longest series, so we can bail early if this isn't true
+				if (buffer1[index1 + bestMatch.length] == buffer2[index2 + bestMatch.length]) {
+					// Check how long this series of matches continues for
+					size_t offset = 1ull;
+					for (; ((index1 + offset) < end1) && ((index2 + offset) < end2); ++offset)
+						if (buffer1[index1 + offset] != buffer2[index2 + offset])
+							break;
+
+					if (offset > bestMatch.length) {
+						bestMatch = MatchInfo{ offset, index1, index2 };
+
+						// Reduce end amount by best match length
+						// avoid checking for matches that can't be any longer
+						end1 = size1 - bestMatch.length;
+						end2 = size2 - bestMatch.length;
+					}
+				}
+				break;
+			}
 		}
-		else
-			index2++;
-		if (matchFound || index2 >= size2) {
-			// Increment buffer1, restart buffer2
-			index1++;
-			index2 = start2;
-		}		
-	}
+	}	
 	index1 = bestMatch.start1;
 	index2 = bestMatch.start2;
-	matchLength += bestMatch.length;
-	const auto end = std::chrono::system_clock::now();
-	const std::chrono::duration<double> elapsed_seconds = end - start;
-	const auto DURATION = elapsed_seconds.count();
+	matchLength = bestMatch.length;
 	return bool(bestMatch.length > 0ull);
 }
 
@@ -119,8 +119,7 @@ int main()
 		}
 
 		// Both buffers match at index1 and index2
-		if (index1 + 1 < size_old) 
-		{
+		if (index1 + 1 < size_old) {
 			// Merge all subsequent 'keep' instructions together
 			if (instructions.size() && instructions.back().endKeep > 0ull) 
 				instructions.back().endKeep = index1 + 1;
@@ -130,7 +129,6 @@ int main()
 		index1++;
 		index2++;
 	}
-
 	// If we haven't finished reading from buffer_new, append whatever data is left-over
 	if (index2 < size_new) {
 		Instruction instruction;
