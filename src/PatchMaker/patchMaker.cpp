@@ -34,7 +34,6 @@ static bool find_next_best_match(char * const buffer1, char * const buffer2, con
 					for (; ((index1 + offset) < end1) && ((index2 + offset) < end2); ++offset)
 						if (buffer1[index1 + offset] != buffer2[index2 + offset])
 							break;
-
 					if (offset > bestMatch.length) {
 						bestMatch = MatchInfo{ offset, index1, index2 };
 
@@ -43,11 +42,12 @@ static bool find_next_best_match(char * const buffer1, char * const buffer2, con
 						end1 = size1 - bestMatch.length;
 						end2 = size2 - bestMatch.length;
 					}
+					index1 += offset;
 				}
 				break;
 			}
 		}
-	}	
+	}
 	index1 = bestMatch.start1;
 	index2 = bestMatch.start2;
 	matchLength = bestMatch.length;
@@ -112,8 +112,8 @@ int main()
 				// While finding the next best match, we've determined the next range of 'keep' instructions
 				// Create it's instruction now and skip ahead by that amount, avoiding redundant comparisons
 				instructions.emplace_back(Instruction{ index1_Next, index1_Next + matchLength, index2_Next });
-				index2 = index2_Next + matchLength;
 				index1 = index1_Next + matchLength;
+				index2 = index2_Next + matchLength;
 				continue;
 			}
 		}
