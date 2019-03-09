@@ -1,5 +1,6 @@
-#include "Windows.h"
-#include <string>
+#pragma once
+#ifndef RESOURCE_H
+#define RESOURCE_H
 
 // Used by installer.rc
 #define IDR_ARCHIVE                       101
@@ -15,6 +16,9 @@
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
+
+#include "Windows.h"
+#include <string>
 
 
 /** Utility class encapsulating resource files embedded in a application. */
@@ -55,3 +59,6 @@ private:
 	void * m_ptr = nullptr;
 	size_t m_size = 0;
 };
+
+#endif // RESOURCE_H
+// SPECIFIC TO THIS ONE FILE, KEEP 1 EXTRA LINE AFTER, BUG WITH VS RESOURCE COMPILER

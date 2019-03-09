@@ -1,7 +1,7 @@
 #include "Archiver.h"
+#include "buffer_tools.h"
 #include "Resource.h"
 #include "Threader.h"
-#include "lz4.h"
 #include <atomic>
 #include <fstream>
 #include <filesystem>
@@ -111,12 +111,13 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 	// Wait for threaded operations to complete
 	while (filesRead != files.size())
 		continue;
+	threader.shutdown();
 
 	// Compress the archive
 	char * compressedBuffer(nullptr);
 	size_t compressedSize(0ull);
 	bool returnResult = false;
-	if (Archiver::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
+	if (BFT::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
 		// Update variables
 		fileCount = filesRead;
 		byteCount = compressedSize;
@@ -149,7 +150,7 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	const bool result = Archiver::DecompressBuffer(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
+	const bool result = BFT::DecompressBuffer(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
 	if (!result)
 		return false;
 
@@ -198,49 +199,11 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 
 	// Wait for threaded operations to complete
 	while (jobsFinished != jobsStarted)
-		continue;	
+		continue;
+	threader.shutdown();
 
 	// Success
 	fileCount = filesWritten;
 	byteCount = bytesWritten;
 	return true;	
-}
-
-bool Archiver::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
-{
-	// Allocate enough room for the compressed buffer
-	*destinationBuffer = new char[sourceSize + sizeof(size_t)];
-
-	// First chunk of data = the total uncompressed size
-	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
-
-	// Increment pointer so that the compression works on the remaining part of the buffer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) + size_t(sizeof(size_t));
-
-	// Compress the buffer
-	auto result = LZ4_compress_default(
-		sourceBuffer,
-		*destinationBuffer,
-		int(sourceSize),
-		int(sourceSize)
-	);
-
-	// Decrement pointer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) - size_t(sizeof(size_t));
-	destinationSize = size_t(result) + sizeof(size_t);
-	return (result > 0);
-}
-
-bool Archiver::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
-{
-	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
-	*destinationBuffer = new char[destinationSize];
-	auto result = LZ4_decompress_safe(
-		reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(sourceBuffer) + size_t(sizeof(size_t))),
-		reinterpret_cast<char*>(*destinationBuffer),
-		int(sourceSize - size_t(sizeof(size_t))),
-		int(destinationSize)
-	);
-
-	return (result > 0);
 }

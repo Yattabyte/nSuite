@@ -16,8 +16,10 @@ set (Module installerMaker)
 add_executable(${Module} 		${ROOT} 
 								${CORE_DIR}/Resource.h
 								${CORE_DIR}/Threader.h 
+								${CORE_DIR}/buffer_tools.h 
+								${CORE_DIR}/buffer_tools.cpp
 								${CORE_DIR}/Archiver.h 
-								${CORE_DIR}/Archiver.cpp	)	
+								${CORE_DIR}/Archiver.cpp		)
 # This module requires the installer to be built first
 add_dependencies(installerMaker installer)
 # Set working directory to the project directory
