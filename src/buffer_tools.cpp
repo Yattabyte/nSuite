@@ -78,16 +78,18 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 			struct MatchInfo {
 				size_t length = 0ull, start1 = 0ull, start2 = 0ull;
 			};
-			size_t bestTotal(0ull), bestContinuous(0ull), bestMatchCount(windowSize);
+			size_t bestContinuous(0ull), bestMatchCount(windowSize);
 			std::vector<MatchInfo> bestSeries;
-			for (size_t index1 = 0ull; index1 < windowSize; ++index1) {
+			for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
+				const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
 				std::vector<MatchInfo> matches;
-				size_t totalUnitsMatched(0ull), largestContinuous(0ull);
-				for (size_t index2 = 0ull; index2 < windowSize; ++index2) {
-					// Check if values match	
-					if (buffer_slice_old[index1] == buffer_slice_new[index2]) {
+				size_t largestContinuous(0ull);
+				for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2+= 8ull) {
+					const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_new[index2]);
+					// Check if values match						
+					if (OLD_FIRST8 == NEW_FIRST8) {
 						// Check how long this series of matches continues for
-						size_t offset = 1ull;
+						size_t offset = 8ull;
 						for (; ((index1 + offset) < windowSize) && ((index2 + offset) < windowSize); ++offset)
 							if (buffer_slice_old[index1 + offset] != buffer_slice_new[index2 + offset])
 								break;
@@ -97,15 +99,13 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 
 						if (offset > largestContinuous)
 							largestContinuous = offset;
-						totalUnitsMatched += offset;
 
 						index2 += offset;
 					}
 				}
 				// Check if the recently completed series saved the most data in the most linear fashion
-				if (totalUnitsMatched > bestTotal && largestContinuous > bestContinuous && matches.size() <= bestMatchCount) {
+				if (largestContinuous > bestContinuous && matches.size() <= bestMatchCount) {
 					// Save the series for later
-					bestTotal = totalUnitsMatched;
 					bestContinuous = largestContinuous;
 					bestMatchCount = matches.size();
 					bestSeries = matches;
