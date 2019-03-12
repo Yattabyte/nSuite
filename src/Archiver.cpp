@@ -24,7 +24,7 @@ static std::vector<std::filesystem::directory_entry> get_file_paths(const std::s
 @param	ptr			the pointer to increment by the offset amount.
 @param	offset		the offset amount to apply to the pointer's address.
 @return				the modified pointer address. */
-static void * INCR_PTR(void *const ptr, const size_t & offset) 
+static void * PTR_ADD(void *const ptr, const size_t & offset) 
 {
 	return (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
 };
@@ -82,21 +82,21 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 			void * ptr = pointer;
 			auto pathSize = file.trunc_path.size();
 			memcpy(ptr, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-			ptr = INCR_PTR(ptr, size_t(sizeof(size_t)));
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			// Write the file path string, into the archive
 			memcpy(ptr, file.trunc_path.data(), pathSize);
-			ptr = INCR_PTR(ptr, pathSize);
+			ptr = PTR_ADD(ptr, pathSize);
 
 			// Write the file write time into the archive
 			auto writeTime = file.writeTime;
 			memcpy(ptr, reinterpret_cast<char*>(&writeTime), size_t(sizeof(std::filesystem::file_time_type)));
-			ptr = INCR_PTR(ptr, size_t(sizeof(std::filesystem::file_time_type)));
+			ptr = PTR_ADD(ptr, size_t(sizeof(std::filesystem::file_time_type)));
 
 			// Write the file size in bytes, into the archive
 			auto fileSize = file.size;
 			memcpy(ptr, reinterpret_cast<char*>(&fileSize), size_t(sizeof(size_t)));
-			ptr = INCR_PTR(ptr, size_t(sizeof(size_t)));
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			// Write the file into the archive
 			std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
@@ -105,7 +105,7 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 			filesRead++;
 		});
 
-		pointer = INCR_PTR(pointer, file.unitSize);
+		pointer = PTR_ADD(pointer, file.unitSize);
 	}
 
 	// Wait for threaded operations to complete
@@ -161,20 +161,20 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = INCR_PTR(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
 		const auto path = directory + std::string(path_array, pathSize);
-		readingPtr = INCR_PTR(readingPtr, pathSize);
+		readingPtr = PTR_ADD(readingPtr, pathSize);
 
 		// Read the file write time into the archive
 		auto writeTime = *reinterpret_cast<std::filesystem::file_time_type*>(readingPtr);
-		readingPtr = INCR_PTR(readingPtr, size_t(sizeof(std::filesystem::file_time_type)));
+		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(std::filesystem::file_time_type)));
 
 		// Read the file size in bytes, from the archive 
 		const auto fileSize = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = INCR_PTR(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 
 		// Write file out to disk, from the archive
 		void * ptrCopy = readingPtr; // needed for lambda, since readingPtr gets incremented
@@ -193,7 +193,7 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 		});
 		jobsStarted++;
 
-		readingPtr = INCR_PTR(readingPtr, fileSize);
+		readingPtr = PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(std::filesystem::file_time_type)) + size_t(sizeof(size_t)) + fileSize;
 	}
 

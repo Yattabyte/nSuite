@@ -9,9 +9,9 @@
 @param	ptr			the pointer to increment by the offset amount.
 @param	offset		the offset amount to apply to the pointer's address.
 @return				the modified pointer address. */
-static void * INCR_PTR(void *const ptr, const size_t & offset)
+static void * PTR_ADD(void *const ptr, const size_t & offset)
 {
-	return (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
+	return static_cast<char*>(ptr) + offset;
 };
 
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
@@ -68,18 +68,18 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	size_t bytesUsed_old(0ull), bytesUsed_new(0ull);
 	while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
 		// Variables for this current chunk
-		auto buffer_slice_old = reinterpret_cast<char*>(INCR_PTR(buffer_old, bytesUsed_old));
-		auto buffer_slice_new = reinterpret_cast<char*>(INCR_PTR(buffer_new, bytesUsed_new));
 		auto windowSize = std::min<size_t>(amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
 
 		// Find best matches for this chunk
-		threader.addJob([&jobsFinished, &instructions, &instructionMutex, buffer_slice_old, buffer_slice_new, windowSize, bytesUsed_old, bytesUsed_new]() {
+		threader.addJob([&jobsFinished, &instructions, &instructionMutex, &buffer_old, &buffer_new, windowSize, &size_old, &size_new, bytesUsed_old, bytesUsed_new]() {
 			// Step 1: Find all regions that match
 			struct MatchInfo {
 				size_t length = 0ull, start1 = 0ull, start2 = 0ull;
 			};
 			size_t bestContinuous(0ull), bestMatchCount(windowSize);
 			std::vector<MatchInfo> bestSeries;
+			auto buffer_slice_old = reinterpret_cast<char*>(PTR_ADD(buffer_old, bytesUsed_old));
+			auto buffer_slice_new = reinterpret_cast<char*>(PTR_ADD(buffer_new, bytesUsed_new));
 			for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
 				const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
 				std::vector<MatchInfo> matches;
@@ -88,22 +88,26 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 					const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_new[index2]);
 					// Check if values match						
 					if (OLD_FIRST8 == NEW_FIRST8) {
-						// Check how long this series of matches continues for
 						size_t offset = 8ull;
-						for (; ((index1 + offset) < windowSize) && ((index2 + offset) < windowSize); ++offset)
-							if (buffer_slice_old[index1 + offset] != buffer_slice_new[index2 + offset])
-								break;
+						// Restrict matches to be at least 32 bytes (minimum byte size of 1 instruction)
+						if (buffer_slice_old[index1 + 32ull] == buffer_slice_new[index2 + 32ull]) {
+							// Check how long this series of matches continues for
+							for (; ((index1 + offset) < windowSize) && ((index2 + offset) < windowSize); ++offset)
+								if (buffer_slice_old[index1 + offset] != buffer_slice_new[index2 + offset])
+									break;
 
-						// Save series
-						matches.emplace_back(MatchInfo{ offset, index1, index2 });
-
-						if (offset > largestContinuous)
-							largestContinuous = offset;
+							// Save series
+							if (offset >= 32ull) {
+								matches.emplace_back(MatchInfo{ offset, bytesUsed_old + index1, bytesUsed_new + index2 });
+								if (offset > largestContinuous)
+									largestContinuous = offset;
+							}
+						}
 
 						index2 += offset;
 					}
 				}
-				// Check if the recently completed series saved the most data in the most linear fashion
+				// Check if the recently completed series saved the most continuous data
 				if (largestContinuous > bestContinuous && matches.size() <= bestMatchCount) {
 					// Save the series for later
 					bestContinuous = largestContinuous;
@@ -111,27 +115,81 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 					bestSeries = matches;
 				}
 
-				// Optimization: if the largest continous series found == window size, then break, because these 2 windows/chunks match
-				if (largestContinuous >= windowSize)
+				// Break if the largest series is as big as the window
+				if (bestContinuous >= windowSize)
 					break;
 			}
 
-			// Step 2: Generate instructions based on the matching-regions found
+			// Step 2 (OPTIONAL): Attempt to find matches for all non-matching data in other areas of the buffer
+			bool attemptToSalvage = false;
+			if (attemptToSalvage) {
+				size_t lastMatchEnd(bytesUsed_new);
+				for (size_t mx = 0; mx <= bestSeries.size(); ++mx) {
+					const size_t matchLength = mx == bestSeries.size() ? (0ull) : bestSeries[mx].length;
+					const size_t new_endSearch = mx == bestSeries.size() ? (bytesUsed_new + windowSize) : bestSeries[mx].start2;
+					const size_t old_startSearch = bytesUsed_old < windowSize ? 0 : bytesUsed_old - windowSize;
+					const size_t old_endSearch = (bytesUsed_old + (windowSize * 2ull)) > size_old ? size_old : (bytesUsed_old + (windowSize * 2ull));
+
+					MatchInfo bestMatch;
+					for (size_t index_new = lastMatchEnd; index_new < new_endSearch; index_new += 8ull) {
+						const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_new[index_new]);
+
+						for (size_t index_old = old_startSearch; index_old < old_endSearch; index_old += 8ull) {
+							if (index_old == bytesUsed_old) {
+								// Skip region that we already processed in step 1
+								index_old += windowSize;
+								continue;
+							}
+							const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_old[index_old]);
+
+							// Check if values match						
+							if (NEW_FIRST8 == OLD_FIRST8) {
+								// Skip ahead if this 'series' can't possibly be larger than the last best match
+								if (bestMatch.length > 0ull && (buffer_new[index_new + bestMatch.length] != buffer_old[index_old + bestMatch.length])) {
+									index_old += bestMatch.length;
+									continue;
+								}
+								else {
+									// Check how long this series of matches continues for
+									size_t offset = 8ull;
+									for (; ((index_new + offset) < new_endSearch) && ((index_old + offset) < size_old); ++offset)
+										if (buffer_new[index_new + offset] != buffer_old[index_old + offset])
+											break;
+
+									// Save longest match
+									if (offset > bestMatch.length && offset > 32ull)
+										bestMatch = MatchInfo{ offset, index_old, index_new };
+
+									index_old += offset;
+								}
+							}
+						}
+					}
+
+					if (bestMatch.length > 0ull) {
+						bestSeries.insert(bestSeries.begin() + mx, bestMatch);
+						mx++;
+					}
+
+					lastMatchEnd = new_endSearch + matchLength;
+				}
+			}							
+			
+			// Step 3: Generate instructions based on the matching-regions found
 			// Note: 
-			//			data from [start1 -> +length] == [start2 -> + length]
-			//			data before and after these ranges =/=
+			//			data from [start1 -> +length] equals [start2 -> + length]
+			//			data before and after these ranges isn't equal
 			if (!bestSeries.size()) {
 				// No Matches, copy entire window
 				Instruction inst;
 				inst.beginNew = bytesUsed_new;
 				inst.newData.resize(windowSize);
-				for (size_t x = 0; x < windowSize; ++x)
-					inst.newData[x] = buffer_slice_new[x];
+				std::memcpy(inst.newData.data(), buffer_slice_new, windowSize);
 				std::unique_lock<std::mutex> writeGuard(instructionMutex);
 				instructions.push_back(inst);
 			}
 			else {
-				size_t lastMatchEnd(0ull);
+				size_t lastMatchEnd(bytesUsed_new);
 				for (size_t mx = 0, ms = bestSeries.size(); mx < ms; ++mx) {
 					const auto & match = bestSeries[mx];
 
@@ -139,28 +197,26 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 					const auto newDataLength = match.start2 - lastMatchEnd;
 					if (newDataLength > 0ull) {
 						Instruction inst;
-						inst.beginNew = bytesUsed_new + lastMatchEnd;
+						inst.beginNew = lastMatchEnd;
 						inst.newData.resize(newDataLength);
-						for (size_t inst_index = 0, buffer_index = lastMatchEnd; inst_index < newDataLength; ++inst_index, ++buffer_index)
-							inst.newData[inst_index] = buffer_slice_new[buffer_index];
+						std::memcpy(inst.newData.data(), &buffer_new[lastMatchEnd], newDataLength);
 						std::unique_lock<std::mutex> writeGuard(instructionMutex);
 						instructions.push_back(inst);
 					}
 
 					// Retain data region for this current match
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
-					instructions.emplace_back(Instruction{ bytesUsed_old + match.start1, bytesUsed_old + match.start1 + match.length, bytesUsed_new + match.start2 });
+					instructions.emplace_back(Instruction{ match.start1, match.start1 + match.length, match.start2 });
 					lastMatchEnd = match.start2 + match.length;
 				}
 
 				// Copy data block at end of last matching region -> end of window
-				const auto newDataLength = windowSize - lastMatchEnd;
+				const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
 				if (newDataLength > 0ull) {
 					Instruction inst;
-					inst.beginNew = bytesUsed_new + lastMatchEnd;
+					inst.beginNew = lastMatchEnd;
 					inst.newData.resize(newDataLength);
-					for (size_t inst_index = 0, buffer_index = lastMatchEnd; inst_index < newDataLength; ++inst_index, ++buffer_index)
-						inst.newData[inst_index] = buffer_slice_new[buffer_index];
+					std::memcpy(inst.newData.data(), &buffer_new[lastMatchEnd], newDataLength);
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
 					instructions.push_back(inst);
 				}
@@ -175,14 +231,12 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 
 	// If we haven't finished reading from buffer_new, append whatever data is left-over
 	if (bytesUsed_new < size_new) {
-		Instruction instruction;
-		instruction.beginNew = bytesUsed_new;
-		instruction.newData.resize(size_new - bytesUsed_new);
-		for (size_t a = bytesUsed_new, dataIndex = 0; a < size_new; ++a, ++dataIndex)
-			instruction.newData[dataIndex] = buffer_new[a];
-
+		Instruction inst;
+		inst.beginNew = bytesUsed_new;
+		inst.newData.resize(size_new - bytesUsed_new);
+		std::memcpy(inst.newData.data(), &buffer_new[bytesUsed_new], size_new - bytesUsed_new);
 		std::unique_lock<std::mutex> writeGuard(instructionMutex);
-		instructions.push_back(instruction);
+		instructions.push_back(inst);
 	}
 
 	while (jobsStarted != jobsFinished)
@@ -199,25 +253,25 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	char * buffer_patch = new char[size_patch];
 	void * writingPtr = buffer_patch;
 	// Write-out source file size
-	memcpy(writingPtr, reinterpret_cast<char*>(&const_cast<size_t&>(size_new)), sizeof(size_t));
-	writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+	std::memcpy(writingPtr, reinterpret_cast<char*>(&const_cast<size_t&>(size_new)), sizeof(size_t));
+	writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 	// Write-out instructions
 	for (auto instruction : instructions) {
-		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginKeep), sizeof(size_t));
-		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginKeep), sizeof(size_t));
+		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 
-		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.endKeep), sizeof(size_t));
-		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.endKeep), sizeof(size_t));
+		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 
-		memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginNew), sizeof(size_t));
-		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginNew), sizeof(size_t));
+		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 
 		auto length = instruction.newData.size();
-		memcpy(writingPtr, reinterpret_cast<char*>(&length), sizeof(size_t));
-		writingPtr = INCR_PTR(writingPtr, sizeof(size_t));
+		std::memcpy(writingPtr, reinterpret_cast<char*>(&length), sizeof(size_t));
+		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 
-		memcpy(writingPtr, instruction.newData.data(), length);
-		writingPtr = INCR_PTR(writingPtr, length);
+		std::memcpy(writingPtr, instruction.newData.data(), length);
+		writingPtr = PTR_ADD(writingPtr, length);
 	}
 
 	// Attempt to compress the buffer
@@ -243,27 +297,27 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		size_t bytesRead(0ull);
 		void * readingPtr = buffer_diff_full;
 		size_new = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = INCR_PTR(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 		bytesRead += sizeof(size_t);
 		while (bytesRead < size_diff_full) {
 			Instruction inst;
 			inst.beginKeep = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = INCR_PTR(readingPtr, sizeof(size_t));
+			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
 
 			inst.endKeep = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = INCR_PTR(readingPtr, sizeof(size_t));
+			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
 
 			inst.beginNew = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = INCR_PTR(readingPtr, sizeof(size_t));
+			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
 
 			size_t length = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = INCR_PTR(readingPtr, sizeof(size_t));
+			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
 			if (length) {
 				auto charArray = reinterpret_cast<char*>(readingPtr);
 				inst.newData.resize(length);
 				for (size_t x = 0; x < length; ++x)
 					inst.newData[x] = charArray[x];
-				readingPtr = INCR_PTR(readingPtr, length);
+				readingPtr = PTR_ADD(readingPtr, length);
 			}
 			instructions.push_back(inst);
 			bytesRead += (size_t(sizeof(size_t)) * 4ull) + (sizeof(char) * length);
