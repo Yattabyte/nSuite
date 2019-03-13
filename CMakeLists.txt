@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
-# Project Name: FreeStaller
-project(FreeStaller)
+# Project Name: EZInstaller
+project(EZInstaller)
 
 # Get dependency directory locations from the user
 set (LZ4_DIR "" CACHE PATH "LZ4 root directory")
@@ -12,8 +12,8 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 include_directories ( 	${LZ4_DIR}/lib/
 						${CORE_DIR}		)
 
-link_libraries 	(					debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
-									optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	)
+link_libraries 	(	debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
+					optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	)
 					
 # add all sub-projects and plugins here
 add_subdirectory( "src/installer" )

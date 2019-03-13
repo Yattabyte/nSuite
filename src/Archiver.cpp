@@ -1,33 +1,12 @@
 #include "Archiver.h"
-#include "buffer_tools.h"
+#include "BufferTools.h"
+#include "Common.h"
 #include "Resource.h"
 #include "Threader.h"
 #include <atomic>
 #include <fstream>
-#include <filesystem>
 #include <vector>
 
-
-/** Return file-info for all files within the directory specified.
-@param	directory	the directory to retrieve file-info from.
-@return				a vector of file information, including file names, sizes, meta-data, etc. */
-static std::vector<std::filesystem::directory_entry> get_file_paths(const std::string & directory)
-{
-	std::vector<std::filesystem::directory_entry> paths;
-	for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
-		if (entry.is_regular_file())
-			paths.emplace_back(entry);
-	return paths;
-}
-
-/** Increment a pointer's address by the offset provided.
-@param	ptr			the pointer to increment by the offset amount.
-@param	offset		the offset amount to apply to the pointer's address.
-@return				the modified pointer address. */
-static void * PTR_ADD(void *const ptr, const size_t & offset) 
-{
-	return (void*)(reinterpret_cast<unsigned char*>(ptr) + offset);
-};
 
 bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
 {

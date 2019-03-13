@@ -1,18 +1,13 @@
 #include "Archiver.h"
+#include "Common.h"
 #include <chrono>
-#include <direct.h>
 #include <iostream>
-#include <string>
 
 
 /** Entry point. */
 int main()
 {
-	// Get the running directory
-	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
-	const auto directory = std::string(cCurrentPath);
+	const auto directory = get_current_directory();
 
 	// Check if user is ready to install
 	std::cout << "Install to the current directory: \"" + directory + "\"\nInput (Y/N): ";

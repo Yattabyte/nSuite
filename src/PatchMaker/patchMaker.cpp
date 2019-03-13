@@ -1,5 +1,6 @@
 #include "Archiver.h"
-#include "buffer_tools.h"
+#include "BufferTools.h"
+#include "Common.h"
 #include <chrono>
 #include <direct.h>
 #include <fstream>
@@ -11,13 +12,8 @@
 /** Entry point. */
 int main()
 {
-	// Get the running directory
-	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
-	const auto directory = std::string(cCurrentPath);
-
 	// Get the proper path names, and read the source files into their appropriate buffers.
+	const auto directory = get_current_directory();
 	const auto start = std::chrono::system_clock::now();
 	const auto path_old = directory + "\\old.exe", path_new = directory + "\\new.exe", path_diff = directory + "\\patch.diff";
 	const auto size_old = std::filesystem::file_size(path_old), size_new = std::filesystem::file_size(path_new);

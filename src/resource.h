@@ -26,12 +26,12 @@ class Resource {
 public:
 	// Public (de)constructors
 	/** Destroys this resource object, unlocking it for future use. */
-	~Resource() {
+	inline ~Resource() {
 		UnlockResource(m_hMemory);
 		FreeResource(m_hMemory);
 	}
 	/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
-	Resource(const int & resourceID, const std::string & resourceClass, const HMODULE & moduleHandle = nullptr) {
+	inline Resource(const int & resourceID, const std::string & resourceClass, const HMODULE & moduleHandle = nullptr) {
 		m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass.c_str());
 		m_hMemory = LoadResource(moduleHandle, m_hResource);
 		m_ptr = LockResource(m_hMemory);

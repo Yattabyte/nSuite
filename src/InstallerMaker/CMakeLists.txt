@@ -13,13 +13,16 @@ endforeach()
 ############
 set (Module installerMaker)
 # Create a library using those source files	
-add_executable(${Module} 		${ROOT} 
-								${CORE_DIR}/Resource.h
-								${CORE_DIR}/Threader.h 
-								${CORE_DIR}/buffer_tools.h 
-								${CORE_DIR}/buffer_tools.cpp
-								${CORE_DIR}/Archiver.h 
-								${CORE_DIR}/Archiver.cpp		)
+add_executable(${Module} 	${ROOT} 
+							${CORE_DIR}/Common.h	
+							${CORE_DIR}/Resource.h
+							${CORE_DIR}/Threader.h 					
+							${CORE_DIR}/Instructions.h 							
+							${CORE_DIR}/Instructions.cpp 	
+							${CORE_DIR}/BufferTools.h 
+							${CORE_DIR}/BufferTools.cpp
+							${CORE_DIR}/Archiver.h 
+							${CORE_DIR}/Archiver.cpp		)
 # This module requires the installer to be built first
 add_dependencies(installerMaker installer)
 # Set working directory to the project directory
