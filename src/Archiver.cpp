@@ -54,9 +54,8 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 
 	// Modify buffer
 	void * pointer = filebuffer;
-	std::atomic_size_t filesRead(0ull);
 	for each (const auto & file in files) {
-		threader.addJob([file, pointer, &filesRead]() {
+		threader.addJob([file, pointer]() {
 			// Write the total number of characters in the path string, into the archive
 			void * ptr = pointer;
 			auto pathSize = file.trunc_path.size();
@@ -81,14 +80,13 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 			std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
 			fileOnDisk.read(reinterpret_cast<char*>(ptr), (std::streamsize)fileSize);
 			fileOnDisk.close();
-			filesRead++;
 		});
 
 		pointer = PTR_ADD(pointer, file.unitSize);
 	}
 
 	// Wait for threaded operations to complete
-	while (filesRead != files.size())
+	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
 
@@ -98,7 +96,7 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 	bool returnResult = false;
 	if (BFT::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
 		// Update variables
-		fileCount = filesRead;
+		fileCount = files.size();
 		byteCount = compressedSize;
 
 		// Write installer to disk
@@ -134,8 +132,8 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 		return false;
 
 	// Read the archive
-	size_t jobsStarted(0ull), bytesRead(0ull);
-	std::atomic_size_t jobsFinished(0ull), filesWritten(0ull), bytesWritten(0ull);
+	size_t bytesRead(0ull);
+	std::atomic_size_t filesWritten(0ull), bytesWritten(0ull);
 	void * readingPtr = decompressedBuffer;
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
@@ -157,7 +155,7 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 
 		// Write file out to disk, from the archive
 		void * ptrCopy = readingPtr; // needed for lambda, since readingPtr gets incremented
-		threader.addJob([ptrCopy, path, fileSize, writeTime, &filesWritten, &bytesWritten, &jobsFinished]() {
+		threader.addJob([ptrCopy, path, fileSize, writeTime, &filesWritten, &bytesWritten]() {
 			// Write-out the file if it doesn't exist yet, if the size is different, or if it's older
 			if (!std::filesystem::exists(path) || std::filesystem::file_size(path) != fileSize || std::filesystem::last_write_time(path) < writeTime) {
 				std::filesystem::create_directories(std::filesystem::path(path).parent_path());
@@ -168,16 +166,14 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 				bytesWritten += fileSize;
 				filesWritten++;
 			}
-			jobsFinished++;
 		});
-		jobsStarted++;
 
 		readingPtr = PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(std::filesystem::file_time_type)) + size_t(sizeof(size_t)) + fileSize;
 	}
 
 	// Wait for threaded operations to complete
-	while (jobsFinished != jobsStarted)
+	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
 

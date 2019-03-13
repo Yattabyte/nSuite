@@ -34,6 +34,7 @@ public:
 						writeGuard.release();
 						// Do Job
 						job();
+						m_jobsFinished++;
 					}
 				}
 			});
@@ -49,6 +50,10 @@ public:
 	inline void addJob(const std::function<void()> && func) {
 		std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
 		m_jobs.emplace_back(func);
+		m_jobsStarted++;
+	}
+	inline bool isFinished() const {
+		return m_jobsStarted == m_jobsFinished;
 	}
 	inline void shutdown() {
 		m_alive = false;
@@ -67,6 +72,7 @@ private:
 	std::atomic_bool m_alive = true;
 	std::vector<std::thread> m_threads;
 	std::deque<std::function<void()>> m_jobs;
+	std::atomic_size_t m_jobsStarted = 0ull, m_jobsFinished = 0ull;
 };
 
 #endif // THREADER_H

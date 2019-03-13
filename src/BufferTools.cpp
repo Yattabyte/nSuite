@@ -50,7 +50,6 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	instructions.reserve(std::max(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
 	Threader threader;
-	std::atomic_size_t jobsStarted(0ull), jobsFinished(0ull);
 	constexpr size_t amount(4096);
 	size_t bytesUsed_old(0ull), bytesUsed_new(0ull);
 	while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
@@ -58,7 +57,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 		auto windowSize = std::min<size_t>(amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
 
 		// Find best matches for this chunk
-		threader.addJob([&jobsFinished, &instructions, &instructionMutex, &buffer_old, &buffer_new, windowSize, &size_old, &size_new, bytesUsed_old, bytesUsed_new]() {
+		threader.addJob([&instructions, &instructionMutex, &buffer_old, &buffer_new, windowSize, &size_old, &size_new, bytesUsed_old, bytesUsed_new]() {
 			// Step 1: Find all regions that match
 			struct MatchInfo {
 				size_t length = 0ull, start1 = 0ull, start2 = 0ull;
@@ -158,12 +157,10 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 					instructions.push_back(inst);
 				}
 			}
-			jobsFinished++;
 		});
 		// increment
 		bytesUsed_old += windowSize;
 		bytesUsed_new += windowSize;
-		jobsStarted++;
 	}
 
 	if (bytesUsed_new < size_new) {
@@ -177,12 +174,12 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	}
 
 	// Wait for jobs to finish
-	while (jobsStarted != jobsFinished)
+	while (!threader.isFinished())
 		continue;
 
 	// Test replacing insertions with some repeat instructions
 	for (size_t i = 0; i < instructions.size(); ++i) {
-		threader.addJob([i, &instructions,  &instructionMutex, &jobsFinished]() {
+		threader.addJob([i, &instructions, &instructionMutex]() {
 			auto & instruction = instructions[i];
 			if (const auto inst(std::get_if<Insert_Instruction>(&instruction)); inst) {
 				for (size_t x = 0ull, mx = inst->newData.size(); x < mx; ++x) {
@@ -218,13 +215,11 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 					}
 				}
 			}
-			jobsFinished++;
 		});
-		jobsStarted++;		
 	}
 
 	// Wait for jobs to finish
-	while (jobsStarted != jobsFinished)
+	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
 	if (instructionCount != nullptr)
@@ -269,28 +264,27 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		*buffer_new = new char[size_new];
 		constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 		const auto CallDo = [&buffer_new, &size_new, &buffer_old, size_old](const auto & obj) { return obj.DO(*buffer_new, size_new, buffer_old, size_old); };
-		std::atomic_size_t jobsStarted(0ull), jobsFinished(0ull);
+		size_t count(0ull);
 		while (bytesRead < size_diff_full) {			
 			// Make the instruction, reading it in from memory
-			auto instruction = Instruction_Maker::Make(&readingPtr);
+			const auto & instruction = Instruction_Maker::Make(&readingPtr);
 			// Read the instruction size
 			bytesRead += std::visit(CallSize, instruction);
-			threader.addJob([&jobsFinished, instruction, &CallDo]() {
+			threader.addJob([instruction, &CallDo]() {
 				// Execute the instruction on a separate thread
 				std::visit(CallDo, instruction);
-				jobsFinished++;
 			});
-			jobsStarted++;
+			count++;
 		}
 
 		// Wait for jobs to finish, then prepare to end
-		while (jobsStarted != jobsFinished)
+		while (!threader.isFinished())
 			continue;
 		threader.shutdown();
 		delete[] buffer_diff_full;
 
 		if (instructionCount != nullptr)
-			*instructionCount = jobsFinished;
+			*instructionCount = count;
 		return true;
 	}
 	return false;
