@@ -3,6 +3,7 @@
 #include "lz4.h"
 #include <algorithm>
 #include <vector>
+#include <variant>
 
 
 /** Increment a pointer's address by the offset provided.
@@ -12,6 +13,148 @@
 static void * PTR_ADD(void *const ptr, const size_t & offset)
 {
 	return static_cast<char*>(ptr) + offset;
+};
+
+struct Copy_Instruction {
+	static constexpr char TYPE = 'C';
+	size_t index, beginRead = 0ull, endRead = 0ull;
+	size_t SIZE() const {
+		return sizeof(char) + (sizeof(size_t) * 3ull);
+	}
+	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const {
+		for (auto i = index, x = beginRead; i < newSize && x < endRead && x < oldSize; ++i, ++x)
+			bufferNew[i] = bufferOld[x];
+	}
+	void WRITE(void ** pointer) const {
+		// Write Type
+		*reinterpret_cast<char*>(*pointer) = TYPE;
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+		// Write Index
+		std::memcpy(*pointer, &index, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Write Begin
+		std::memcpy(*pointer, &beginRead, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Write End
+		std::memcpy(*pointer, &endRead, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+	}
+	static Copy_Instruction READ(void ** pointer) {
+		// Type already read
+		Copy_Instruction inst;
+		// Read Index
+		inst.index = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Read Begin
+		inst.beginRead = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Read End
+		inst.endRead = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		return inst;
+	}
+};
+struct Insert_Instruction {
+	static constexpr char TYPE = 'I';
+	size_t index;
+	std::vector<char> newData;
+	size_t SIZE() const {
+		return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * newData.size());
+	}
+	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const {
+		for (auto i = index, x = size_t(0ull), length = newData.size(); i < newSize && x < length; ++i, ++x)
+			bufferNew[i] = newData[x];
+	}
+	void WRITE(void ** pointer) const {
+		// Write Type
+		*reinterpret_cast<char*>(*pointer) = TYPE;
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+		// Write Index
+		std::memcpy(*pointer, &index, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Write Length
+		auto length = newData.size();
+		std::memcpy(*pointer, &length, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		if (length) {
+			// Write Data
+			std::memcpy(*pointer, newData.data(), length);
+			*pointer = PTR_ADD(*pointer, length);
+		}
+	}
+	static Insert_Instruction READ(void ** pointer) {
+		// Type already read
+		Insert_Instruction inst;
+		// Read Index
+		inst.index = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Read Length
+		size_t length = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		if (length) {
+			// Read Data
+			inst.newData.resize(length);
+			std::memcpy(inst.newData.data(), *pointer, length);
+			*pointer = PTR_ADD(*pointer, length);
+		}
+		return inst;
+	}
+};
+struct Repeat_Instruction {
+	static constexpr char TYPE = 'R';
+	size_t index, amount; 
+	char value;
+	size_t SIZE() const {
+		return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
+	}
+	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const {
+		for (auto i = index, x = size_t(0ull); i < newSize && x < amount; ++i, ++x)
+			bufferNew[i] = value;
+	}
+	void WRITE(void ** pointer) const {
+		// Write Type
+		*reinterpret_cast<char*>(*pointer) = TYPE;
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+		// Write Index
+		std::memcpy(*pointer, &index, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Write Amount
+		std::memcpy(*pointer, &amount, sizeof(size_t));
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Write Value
+		std::memcpy(*pointer, &value, sizeof(char));
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+	}
+	static Repeat_Instruction READ(void ** pointer) {
+		// Type already read
+		Repeat_Instruction inst;
+		// Read Index
+		inst.index = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Read Amount
+		inst.amount = *reinterpret_cast<size_t*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(size_t));
+		// Read Value
+		inst.value = *reinterpret_cast<char*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+		return inst;
+	}
+};
+using InstructionTypes = std::variant<Copy_Instruction, Insert_Instruction, Repeat_Instruction>;
+struct Instruction_Maker {
+	static InstructionTypes Make(void ** pointer) {
+		const char type = *reinterpret_cast<char*>(*pointer);
+		*pointer = PTR_ADD(*pointer, sizeof(char));
+		switch (type) {
+		case Copy_Instruction::TYPE:
+			return Copy_Instruction::READ(pointer);
+		case Insert_Instruction::TYPE:
+			return Insert_Instruction::READ(pointer);
+		case Repeat_Instruction::TYPE:
+			return Repeat_Instruction::READ(pointer);
+		}
+		return {};
+	}
 };
 
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
@@ -55,16 +198,12 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
 {
-	struct Instruction {
-		size_t beginKeep = 0ull, endKeep = 0ull;	// range to keep
-		size_t beginNew = 0ull;						// spot to insert
-		std::vector<char> newData;					// data to insert
-	};
-	std::vector<Instruction> instructions;
+	std::vector<InstructionTypes> instructions;
+	instructions.reserve(std::max(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
 	Threader threader;
 	std::atomic_size_t jobsStarted(0ull), jobsFinished(0ull);
-	constexpr size_t amount(2048ull);
+	constexpr size_t amount(4096);
 	size_t bytesUsed_old(0ull), bytesUsed_new(0ull);
 	while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
 		// Variables for this current chunk
@@ -118,71 +257,17 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 				// Break if the largest series is as big as the window
 				if (bestContinuous >= windowSize)
 					break;
-			}
-
-			// Step 2 (OPTIONAL): Attempt to find matches for all non-matching data in other areas of the buffer
-			bool attemptToSalvage = false;
-			if (attemptToSalvage) {
-				size_t lastMatchEnd(bytesUsed_new);
-				for (size_t mx = 0; mx <= bestSeries.size(); ++mx) {
-					const size_t matchLength = mx == bestSeries.size() ? (0ull) : bestSeries[mx].length;
-					const size_t new_endSearch = mx == bestSeries.size() ? (bytesUsed_new + windowSize) : bestSeries[mx].start2;
-					const size_t old_startSearch = bytesUsed_old < windowSize ? 0 : bytesUsed_old - windowSize;
-					const size_t old_endSearch = (bytesUsed_old + (windowSize * 2ull)) > size_old ? size_old : (bytesUsed_old + (windowSize * 2ull));
-
-					MatchInfo bestMatch;
-					for (size_t index_new = lastMatchEnd; index_new < new_endSearch; index_new += 8ull) {
-						const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_new[index_new]);
-
-						for (size_t index_old = old_startSearch; index_old < old_endSearch; index_old += 8ull) {
-							if (index_old == bytesUsed_old) {
-								// Skip region that we already processed in step 1
-								index_old += windowSize;
-								continue;
-							}
-							const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_old[index_old]);
-
-							// Check if values match						
-							if (NEW_FIRST8 == OLD_FIRST8) {
-								// Skip ahead if this 'series' can't possibly be larger than the last best match
-								if (bestMatch.length > 0ull && (buffer_new[index_new + bestMatch.length] != buffer_old[index_old + bestMatch.length])) {
-									index_old += bestMatch.length;
-									continue;
-								}
-								else {
-									// Check how long this series of matches continues for
-									size_t offset = 8ull;
-									for (; ((index_new + offset) < new_endSearch) && ((index_old + offset) < size_old); ++offset)
-										if (buffer_new[index_new + offset] != buffer_old[index_old + offset])
-											break;
-
-									// Save longest match
-									if (offset > bestMatch.length && offset > 32ull)
-										bestMatch = MatchInfo{ offset, index_old, index_new };
-
-									index_old += offset;
-								}
-							}
-						}
-					}
-
-					if (bestMatch.length > 0ull) {
-						bestSeries.insert(bestSeries.begin() + mx, bestMatch);
-						mx++;
-					}
-
-					lastMatchEnd = new_endSearch + matchLength;
-				}
-			}							
+			}			
 			
-			// Step 3: Generate instructions based on the matching-regions found
+			// Step 2: Generate instructions based on the matching-regions found
 			// Note: 
 			//			data from [start1 -> +length] equals [start2 -> + length]
 			//			data before and after these ranges isn't equal
 			if (!bestSeries.size()) {
-				// No Matches, copy entire window
-				Instruction inst;
-				inst.beginNew = bytesUsed_new;
+				// NO MATCHES
+				// NEW INSERT_INSTRUCTION: use entire window
+				Insert_Instruction inst;
+				inst.index = bytesUsed_new;
 				inst.newData.resize(windowSize);
 				std::memcpy(inst.newData.data(), buffer_slice_new, windowSize);
 				std::unique_lock<std::mutex> writeGuard(instructionMutex);
@@ -193,28 +278,32 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 				for (size_t mx = 0, ms = bestSeries.size(); mx < ms; ++mx) {
 					const auto & match = bestSeries[mx];
 
-					// Copy data block at end of last matching region -> beginning of current matching region
 					const auto newDataLength = match.start2 - lastMatchEnd;
 					if (newDataLength > 0ull) {
-						Instruction inst;
-						inst.beginNew = lastMatchEnd;
+						// NEW INSERT_INSTRUCTION: Use data from end of last match until beginning of current match
+						Insert_Instruction inst;
+						inst.index = lastMatchEnd;
 						inst.newData.resize(newDataLength);
 						std::memcpy(inst.newData.data(), &buffer_new[lastMatchEnd], newDataLength);
 						std::unique_lock<std::mutex> writeGuard(instructionMutex);
 						instructions.push_back(inst);
 					}
 
-					// Retain data region for this current match
+					// NEW COPY_INSTRUCTION: Use data from begining of match until end of match
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
-					instructions.emplace_back(Instruction{ match.start1, match.start1 + match.length, match.start2 });
+					Copy_Instruction inst;
+					inst.index = match.start2;
+					inst.beginRead = match.start1;
+					inst.endRead = match.start1 + match.length;
+					instructions.push_back(inst);
 					lastMatchEnd = match.start2 + match.length;
 				}
 
-				// Copy data block at end of last matching region -> end of window
 				const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
 				if (newDataLength > 0ull) {
-					Instruction inst;
-					inst.beginNew = lastMatchEnd;
+					// NEW INSERT_INSTRUCTION: Use data from end of last match until end of window
+					Insert_Instruction inst;
+					inst.index = lastMatchEnd;
 					inst.newData.resize(newDataLength);
 					std::memcpy(inst.newData.data(), &buffer_new[lastMatchEnd], newDataLength);
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
@@ -229,112 +318,125 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 		jobsStarted++;
 	}
 
-	// If we haven't finished reading from buffer_new, append whatever data is left-over
 	if (bytesUsed_new < size_new) {
-		Instruction inst;
-		inst.beginNew = bytesUsed_new;
+		// NEW INSERT_INSTRUCTION: Use data from end of last block until end-of-file
+		Insert_Instruction inst;
+		inst.index = bytesUsed_new;
 		inst.newData.resize(size_new - bytesUsed_new);
 		std::memcpy(inst.newData.data(), &buffer_new[bytesUsed_new], size_new - bytesUsed_new);
 		std::unique_lock<std::mutex> writeGuard(instructionMutex);
 		instructions.push_back(inst);
 	}
 
+	// Wait for jobs to finish
 	while (jobsStarted != jobsFinished)
 		continue;
 	threader.shutdown();
+
+	// Test replacing insertions with some repeat instructions
+	for (size_t i = 0; i < instructions.size(); ++i) {
+		auto & instruction = instructions[i];
+
+		if (const auto inst(std::get_if<Insert_Instruction>(&instruction)); inst) {
+			for (size_t x = 0ull; x < inst->newData.size(); ++x) {
+				const auto & value_at_x = inst->newData[x];
+				for (size_t y = x + 1; y < inst->newData.size(); ++y) {
+					if (value_at_x != inst->newData[y]) {
+						const auto length = y - x;
+						if (length > 36ull) {
+							// Worthwhile to insert a new instruction
+							// Keep data up-until region where repeats occur
+							std::unique_lock<std::mutex> writeGuard(instructionMutex);
+							Insert_Instruction instBefore;
+							instBefore.index = inst->index;
+							instBefore.newData.resize(x);
+							std::memcpy(instBefore.newData.data(), inst->newData.data(), x);
+							instructions.push_back(instBefore);
+							// Generate new Repeat Instruction
+							Repeat_Instruction instRepeat;
+							instRepeat.index = inst->index + x;
+							instRepeat.value = value_at_x;
+							instRepeat.amount = length;
+							instructions.push_back(instRepeat);
+							// Modify original insert-instruction to contain remainder of the data
+							inst->index = inst->index + x + length;
+							std::memmove(&inst->newData[0], &inst->newData[y], inst->newData.size() - y);
+							inst->newData.resize(inst->newData.size() - y);
+							x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
+							break;
+						}
+						x = y - 1;
+						break;
+					}
+
+				}
+			}
+		}
+	}
 	if (instructionCount != nullptr)
 		*instructionCount = instructions.size();
 
 	// Create buffer for the patch file, writing all instruction data into it
 	size_t size_patch(0ull);
+	constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 	for each (const auto & instruction in instructions)
-		size_patch += size_t((sizeof(size_t) * 4ull) + (sizeof(char) * instruction.newData.size()));
+		size_patch += std::visit(CallSize, instruction);
 	size_patch += sizeof(size_t);// size increased b/c first bytes == source file size
 	char * buffer_patch = new char[size_patch];
 	void * writingPtr = buffer_patch;
 	// Write-out source file size
-	std::memcpy(writingPtr, reinterpret_cast<char*>(&const_cast<size_t&>(size_new)), sizeof(size_t));
+	std::memcpy(writingPtr, &size_new, sizeof(size_t));
 	writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
 	// Write-out instructions
-	for (auto instruction : instructions) {
-		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginKeep), sizeof(size_t));
-		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
-
-		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.endKeep), sizeof(size_t));
-		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
-
-		std::memcpy(writingPtr, reinterpret_cast<char*>(&instruction.beginNew), sizeof(size_t));
-		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
-
-		auto length = instruction.newData.size();
-		std::memcpy(writingPtr, reinterpret_cast<char*>(&length), sizeof(size_t));
-		writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
-
-		std::memcpy(writingPtr, instruction.newData.data(), length);
-		writingPtr = PTR_ADD(writingPtr, length);
-	}
+	const auto CallWrite = [&writingPtr](const auto & obj) { obj.WRITE(&writingPtr); };
+	for (auto & instruction : instructions) 
+		std::visit(CallWrite, instruction);		
 
 	// Attempt to compress the buffer
 	bool CompressResult = BFT::CompressBuffer(buffer_patch, size_patch, buffer_diff, size_diff);
 	delete[] buffer_patch;
 	return CompressResult;
+	return true;
 }
 
 bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount)
 {
 	// Attempt to decompress the buffer
+	Threader threader;
 	char * buffer_diff_full(nullptr);
 	size_t size_diff_full(0ull);
 	if (BFT::DecompressBuffer(buffer_diff, size_diff, &buffer_diff_full, size_diff_full)) {
-		struct Instruction {
-			size_t beginKeep = 0ull, endKeep = 0ull;	// range to keep
-			size_t beginNew = 0ull;						// spot to insert
-			std::vector<char> newData;					// data to insert
-		};
-		std::vector<Instruction> instructions;
-
 		// Convert buffer into instructions
 		size_t bytesRead(0ull);
 		void * readingPtr = buffer_diff_full;
 		size_new = *reinterpret_cast<size_t*>(readingPtr);
 		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 		bytesRead += sizeof(size_t);
-		while (bytesRead < size_diff_full) {
-			Instruction inst;
-			inst.beginKeep = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
-
-			inst.endKeep = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
-
-			inst.beginNew = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
-
-			size_t length = *reinterpret_cast<size_t*>(readingPtr);
-			readingPtr = PTR_ADD(readingPtr, sizeof(size_t));
-			if (length) {
-				auto charArray = reinterpret_cast<char*>(readingPtr);
-				inst.newData.resize(length);
-				for (size_t x = 0; x < length; ++x)
-					inst.newData[x] = charArray[x];
-				readingPtr = PTR_ADD(readingPtr, length);
-			}
-			instructions.push_back(inst);
-			bytesRead += (size_t(sizeof(size_t)) * 4ull) + (sizeof(char) * length);
+		*buffer_new = new char[size_new];
+		constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
+		const auto CallDo = [&buffer_new, &size_new, &buffer_old, size_old](const auto & obj) { return obj.DO(*buffer_new, size_new, buffer_old, size_old); };
+		std::atomic_size_t jobsStarted(0ull), jobsFinished(0ull);
+		while (bytesRead < size_diff_full) {			
+			// Make the instruction, reading it in from memory
+			auto instruction = Instruction_Maker::Make(&readingPtr);
+			// Read the instruction size
+			bytesRead += std::visit(CallSize, instruction);
+			threader.addJob([&jobsFinished, instruction, &CallDo]() {
+				// Execute the instruction on a separate thread
+				std::visit(CallDo, instruction);
+				jobsFinished++;
+			});
+			jobsStarted++;
 		}
+
+		// Wait for jobs to finish, then prepare to end
+		while (jobsStarted != jobsFinished)
+			continue;
+		threader.shutdown();
 		delete[] buffer_diff_full;
 
-		// Reconstruct new buffer from buffer_old + changes
-		* buffer_new = new char[size_new];
-		for each (const auto & change in instructions) {
-			auto index3 = change.beginNew;
-			for (auto x = change.beginKeep; x < change.endKeep && x < size_old; ++x) 
-				(*buffer_new)[index3++] = buffer_old[x];			
-			for each (const auto & value in change.newData)
-				(*buffer_new)[index3++] = value;
-		}
 		if (instructionCount != nullptr)
-			*instructionCount = instructions.size();
+			*instructionCount = jobsFinished;
 		return true;
 	}
 	return false;
