@@ -50,6 +50,11 @@ public:
 	inline size_t getSize() const {
 		return m_size;
 	}
+	/** Check if this resource has successfully completed initialization and has at least 1 byte of data.
+	@return		true if this resource exists, false otherwise. */
+	inline bool exists() const {
+		return (m_hResource && m_hMemory && m_ptr) && (m_size > 0ull);
+	}
 
 
 private:

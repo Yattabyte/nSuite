@@ -19,9 +19,7 @@ add_executable(${Module} 	${ROOT}
 							${CORE_DIR}/Instructions.h 							
 							${CORE_DIR}/Instructions.cpp 					
 							${CORE_DIR}/BufferTools.h 
-							${CORE_DIR}/BufferTools.cpp
-							${CORE_DIR}/Archiver.h 
-							${CORE_DIR}/Archiver.cpp		)	
+							${CORE_DIR}/BufferTools.cpp)	
 # Set working directory to the project directory
 set_target_properties(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 											LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}

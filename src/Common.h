@@ -17,6 +17,15 @@ inline static void * PTR_ADD(void *const ptr, const size_t & offset)
 	return static_cast<std::byte*>(ptr) + offset;
 };
 
+/** Cleans up a target string representing a file path, removing leading and trailing quotes*/
+inline static void sanitize_path(std::string & path)
+{
+	if (path.front() == '"' || path.front() == '\'')
+		path.erase(0ull, 1ull);
+	if (path.back() == '"' || path.back() == '\'')
+		path.erase(path.size() - 1ull);
+}
+
 /** Return file-info for all files within the directory specified.
 @param	directory	the directory to retrieve file-info from.
 @return				a vector of file information, including file names, sizes, meta-data, etc. */

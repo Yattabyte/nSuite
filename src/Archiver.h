@@ -12,8 +12,9 @@ public:
 	@param	directory	the directory to compress / create an installer in.
 	@param	fileCount	reference updated with the number of files packaged. 
 	@param	byteCount	reference updated with the number of bytes packaged. 
+	@param	archBuffer	pointer to the archive buffer.
 	@return				true if packing success, false otherwise. */
-	static bool Pack(const std::string & directory, size_t & fileCount, size_t & byteCount);
+	static bool Pack(const std::string & directory, size_t & fileCount, size_t & byteCount, char ** archBuffer);
 	/** Unpacks the installer's contents into a directory.
 	@param	directory	the directory to decompress into.
 	@param	fileCount	reference updated with the number of files unpackaged.

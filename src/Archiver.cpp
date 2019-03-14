@@ -8,7 +8,7 @@
 #include <vector>
 
 
-bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount)
+bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & byteCount, char ** archBuffer)
 {
 	// Variables
 	fileCount = 0ull;
@@ -48,6 +48,7 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 		archiveSize += unitSize;
 		files.push_back({ entry.path().string(), path, entry.file_size(), unitSize, entry.last_write_time() });
 	}
+	fileCount = files.size();
 
 	// Create buffer for final file data
 	char * filebuffer = new char[archiveSize];
@@ -91,30 +92,10 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 	threader.shutdown();
 
 	// Compress the archive
-	char * compressedBuffer(nullptr);
-	size_t compressedSize(0ull);
-	bool returnResult = false;
-	if (BFT::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
-		// Update variables
-		fileCount = files.size();
-		byteCount = compressedSize;
-
-		// Write installer to disk
-		Resource installer(IDR_INSTALLER, "INSTALLER");
-		std::ofstream file(directory + "\\installer.exe", std::ios::binary | std::ios::out);
-		if (file.is_open())
-			file.write(reinterpret_cast<char*>(installer.getPtr()), (std::streamsize)installer.getSize());
-		file.close();
-
-		// Update installer's resource
-		auto handle = BeginUpdateResource("installer.exe", true);
-		returnResult = (bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), compressedBuffer, (DWORD)byteCount);
-		EndUpdateResource(handle, FALSE);
-	}
-
+	bool returnResult = BFT::CompressBuffer(filebuffer, archiveSize, archBuffer, byteCount);
+		
 	// Clean up
 	delete[] filebuffer;
-	delete[] compressedBuffer;
 	return returnResult;
 }
 
@@ -125,6 +106,9 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 	byteCount = 0ull;
 	Threader threader;
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
+	if (!archive.exists())
+		return false;
+
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
 	const bool result = BFT::DecompressBuffer(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
