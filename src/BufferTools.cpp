@@ -207,6 +207,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 								std::memmove(&inst->newData[0], &inst->newData[y], inst->newData.size() - y);
 								inst->newData.resize(inst->newData.size() - y);
 								x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
+								mx = inst->newData.size();
 								break;
 							}
 							x = y - 1;
@@ -288,4 +289,21 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		return true;
 	}
 	return false;
+}
+
+size_t BFT::HashBuffer(char * buffer, const size_t & size)
+{
+	size_t value(1234567890ull);
+	auto pointer = reinterpret_cast<size_t*>(buffer);
+
+	size_t x = 0ull, max = size / 8ull;
+	for (; x < max; ++x)
+		value = ((value << 5) + value) + pointer[x];
+
+	// in case size isn't a multiple of 8, data will be leftover
+	x *= 8ull; // modify index so we can compare byte-wise
+	for (; x < size; ++x)
+		value = ((value << 5) + value) + buffer[x]; // compare remaining bytes
+
+	return value;
 }

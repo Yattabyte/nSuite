@@ -37,9 +37,11 @@ public:
 						m_jobsFinished++;
 					}
 				}
+				m_threadsActive--;
 			});
 			thread.detach();
 			m_threads.emplace_back(std::move(thread));
+			m_threadsActive++;
 		}
 	}
 
@@ -61,8 +63,9 @@ public:
 			if (m_threads[x].joinable())
 				m_threads[x].join();
 		}
+		while (m_threadsActive > 0ull)
+			continue;
 		m_threads.clear();
-		m_jobs.clear();
 	}
 
 
@@ -72,7 +75,7 @@ private:
 	std::atomic_bool m_alive = true;
 	std::vector<std::thread> m_threads;
 	std::deque<std::function<void()>> m_jobs;
-	std::atomic_size_t m_jobsStarted = 0ull, m_jobsFinished = 0ull;
+	std::atomic_size_t m_threadsActive = 0ull, m_jobsStarted = 0ull, m_jobsFinished = 0ull;
 };
 
 #endif // THREADER_H

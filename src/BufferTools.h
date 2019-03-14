@@ -40,6 +40,11 @@ namespace BFT {
 	@param	instructionCount	optional pointer to update with the number of instructions processed.
 	@return						true if patch success, false otherwise. */
 	bool PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount = nullptr);
+	/** Generate a hash value for the buffer provided. 
+	@param	buffer				pointer to the buffer to hash.
+	@param	size				the size of the buffer.
+	@return						hash value for the buffer. */
+	size_t HashBuffer(char * buffer, const size_t & size);
 };
 
 #endif // BUFFER_TOOLS_H

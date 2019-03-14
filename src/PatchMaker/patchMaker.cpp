@@ -25,15 +25,27 @@ int main()
 		file_old.close();
 		file_new.close();
 	}
+
+	// Hash these files first, get the buffer contents cached sooner
+	// Hash values are separated from rest of diff buffer so they can be read before decompression ops.
+	size_t hash_old = BFT::HashBuffer(buffer_old, size_old);
+	size_t hash_new = BFT::HashBuffer(buffer_new, size_new);
 	
+	// Begin diffing the buffers
 	char * buffer_diff(nullptr);
 	size_t size_diff(0ull), instructionCount(0ull);
 	if (BFT::DiffBuffers(buffer_old, size_old, buffer_new, size_new, &buffer_diff, size_diff, &instructionCount)) {
 		// Write-out compressed diff to disk
 		std::filesystem::create_directories(std::filesystem::path(path_diff).parent_path());
 		std::ofstream file(path_diff, std::ios::binary | std::ios::out);
-		if (file.is_open())
+		if (file.is_open()) {
+			// Write target 'old file' hash
+			file.write(reinterpret_cast<char*>(&hash_old), std::streamsize(sizeof(size_t)));
+			// Write destination 'new file' hash
+			file.write(reinterpret_cast<char*>(&hash_new), std::streamsize(sizeof(size_t)));
+			// Write diff buffer
 			file.write(buffer_diff, std::streamsize(size_diff));
+		}
 		file.close();		
 		delete[] buffer_diff;
 
