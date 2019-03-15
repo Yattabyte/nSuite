@@ -10,12 +10,13 @@
 static void display_help_and_exit()
 {
 	exit_program("\n"
-		"Help:\n"
-		"~-~-~-~-~-~-~-~-~-~-/\n"
+		"        Help:       /\n"
+		" ~-----------------~\n"
+		"/\n"
 		" * if run without any arguments : uses application directory\n"
 		" * use command -ovrd to skip user-ready prompt.\n"
 		" * use command -src=[path] to specify a directory to package into an installer.\n"
-		" * use command -dst=[path] to specify a directory to write the installer.\n"
+		" * use command -dst=[path] to specify a directory to write the installer.\n\n"
 	);
 }
 

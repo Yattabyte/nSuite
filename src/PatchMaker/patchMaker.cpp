@@ -9,13 +9,13 @@
 static void display_help_and_exit()
 {
 	exit_program(
-		"Help:\n"
-		"~-~-~-~-~-~-~-~-~-~-/\n"
-		" * if run without any arguments : uses application directory\n"
+		"        Help:       /\n"
+		" ~-----------------~\n"
+		"/\n"
 		" * use command -ovrd to skip user-ready prompt.\n"
 		" * use command -old=[path] to specify a path to the older file.\n"
 		" * use command -new=[path] to specify a path to the newer file.\n"
-		" * use command -dst=[path] to specify a path to store the diff file.\n"
+		" * use command -dst=[path] to specify a path to store the diff file.\n\n"
 	);
 }
 
@@ -24,9 +24,7 @@ int main(int argc, char *argv[])
 {
 	// Check command line arguments
 	bool skipPrompt = false;
-	std::string oldPath(get_current_directory()), newPath(oldPath), dstDirectory(oldPath);
-	oldPath += "\\old.exe";
-	newPath += "\\new.exe";
+	std::string oldPath, newPath, dstDirectory;
 	for (int x = 1; x < argc; ++x) {
 		std::string command(argv[x], 5);
 		std::transform(command.begin(), command.end(), command.begin(), ::tolower);
@@ -45,6 +43,10 @@ int main(int argc, char *argv[])
 	sanitize_path(newPath);
 	sanitize_path(dstDirectory);
 
+	// Make sure user inputted all 3 paths
+	if (oldPath.length() == 0 || newPath.length() == 0 || dstDirectory.length() == 0)
+		display_help_and_exit();
+
 	// Report an overview of supplied procedure
 	std::cout
 		<< "Generate diff of:\t\"" << oldPath << "\"\n"
@@ -58,30 +60,29 @@ int main(int argc, char *argv[])
 		std::cout << std::endl;
 	}
 
-	// Get the proper path names, and read the source files into their appropriate buffers.
+	// Read the source files into their appropriate buffers.
 	const auto start = std::chrono::system_clock::now();
 	const auto oldSize = std::filesystem::file_size(oldPath), newSize = std::filesystem::file_size(newPath);
 	std::ifstream oldFile(oldPath, std::ios::binary | std::ios::beg), newFile(newPath, std::ios::binary | std::ios::beg);
-	char * buffer_old = new char[oldSize], * buffer_new = new char[newSize];
+	char * oldBuffer = new char[oldSize], * newBuffer = new char[newSize];
 	if (!oldFile.is_open() || !newFile.is_open())
 		exit_program("Cannot access both source files, aborting...\n");
-	oldFile.read(buffer_old, std::streamsize(oldSize));
-	newFile.read(buffer_new, std::streamsize(newSize));
+	oldFile.read(oldBuffer, std::streamsize(oldSize));
+	newFile.read(newBuffer, std::streamsize(newSize));
 	oldFile.close();
 	newFile.close();	
 
 	// Hash these files first, get the buffer contents cached sooner
-	// Hash values are separated from rest of diff buffer so they can be read before decompression ops.
-	const size_t oldHash = BFT::HashBuffer(buffer_old, oldSize);
-	const size_t newHash = BFT::HashBuffer(buffer_new, newSize);
+	const auto oldHash = BFT::HashBuffer(oldBuffer, oldSize);
+	const auto newHash = BFT::HashBuffer(newBuffer, newSize);
 	
 	// Begin diffing the buffers
-	char * buffer_diff(nullptr);
-	size_t size_diff(0ull), instructionCount(0ull);
-	if (!BFT::DiffBuffers(buffer_old, oldSize, buffer_new, newSize, &buffer_diff, size_diff, &instructionCount)) 
+	char * diffBuffer(nullptr);
+	size_t diffSize(0ull), instructionCount(0ull);
+	if (!BFT::DiffBuffers(oldBuffer, oldSize, newBuffer, newSize, &diffBuffer, diffSize, &instructionCount)) 
 		exit_program("Diffing failed, aborting...\n");
-	delete[] buffer_old;
-	delete[] buffer_new;
+	delete[] oldBuffer;
+	delete[] newBuffer;
 	
 	// Write-out compressed diff to disk
 	const auto time = std::chrono::system_clock::to_time_t(start);
@@ -95,21 +96,22 @@ int main(int argc, char *argv[])
 	if (!file.is_open()) 
 		exit_program("Cannot write diff to disk, aborting...\n");
 	
-	// Write hash values, than the compressed diff buffer
+	// Write hash values first, than the compressed diff buffer
+	// Hashes separated from compressed buffer so the reader can disqualify a patch quicker (w/o decompressing)
 	file.write(reinterpret_cast<char*>(const_cast<size_t*>(&oldHash)), std::streamsize(sizeof(size_t)));
 	file.write(reinterpret_cast<char*>(const_cast<size_t*>(&newHash)), std::streamsize(sizeof(size_t)));
-	file.write(buffer_diff, std::streamsize(size_diff));	
+	file.write(diffBuffer, std::streamsize(diffSize));	
 	file.close();
-	delete[] buffer_diff;
+	diffSize += (sizeof(size_t) * 2ull);
+	delete[] diffBuffer;
 
 	// Output results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout
-		<< "Successfully created diff file.\n"
-		<< "Diff instructions: " << instructionCount << "\n"
-		<< "Diff size: " << size_diff << " bytes\n"
-		<< "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
+		<< "Instruction(s): " << instructionCount << "\n"
+		<< "Bytes written:  " << diffSize << "\n"
+		<< "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

@@ -8,11 +8,12 @@
 static void display_help_and_exit()
 {
 	exit_program(
-		"Help:\n"
-		"~-~-~-~-~-~-~-~-~-~-/\n"
+		"        Help:       /\n"
+		" ~-----------------~\n"
+		"/\n"
 		" * if run without any arguments : uses application directory\n"
 		" * use command -ovrd to skip user-ready prompt.\n"
-		" * use command -dst=[path] to specify the installation directory.\n"
+		" * use command -dst=[path] to specify the installation directory.\n\n"
 	);
 }
 
@@ -60,9 +61,9 @@ int main(int argc, char *argv[])
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout
-		<< "Files unpackaged: " << fileCount << "\n"
-		<< "Bytes unpackaged: " << byteCount << "\n"
-		<< "Elapsed time: " << elapsed_seconds.count() << " seconds\n";
+		<< "Files written:  " << fileCount << "\n"
+		<< "Bytes written:  " << byteCount << "\n"
+		<< "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
 	system("pause");
 	exit(EXIT_SUCCESS);	
 }
