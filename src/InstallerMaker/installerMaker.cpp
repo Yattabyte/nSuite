@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
 	// See if we should skip the user-ready prompt
 	if (!skipPrompt) {
-		std::cout << "Ready?\n";
+		std::cout << "Ready to generate installer?\n";
 		system("pause");
 		std::cout << std::endl;
 	}
@@ -89,8 +89,6 @@ int main(int argc, char *argv[])
 		<< "Files packaged: " << fileCount << "\n"
 		<< "Bytes packaged: " << byteCount << "\n"
 		<< "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
-
-	// Exit
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

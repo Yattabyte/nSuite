@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-# Project Name: EZInstaller
-project(EZInstaller)
+project(nStallr)
 
 # Get dependency directory locations from the user
 set (LZ4_DIR "" CACHE PATH "LZ4 root directory")
