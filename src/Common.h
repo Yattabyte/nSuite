@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <direct.h>
 #include <filesystem>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,15 @@ inline static std::string get_current_directory()
 	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
 		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
 	return std::string(cCurrentPath);
+}
+
+/** Specify a message to print to the terminal before closing the program.
+@param	message		the message to write-out.*/
+inline static void exit_program(const char * message)
+{
+	std::cout << message;
+	system("pause");
+	exit(EXIT_FAILURE);
 }
 
 #endif // COMMON_H

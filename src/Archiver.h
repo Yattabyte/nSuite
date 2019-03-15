@@ -19,8 +19,9 @@ public:
 	@param	directory	the directory to decompress into.
 	@param	fileCount	reference updated with the number of files unpackaged.
 	@param	byteCount	reference updated with the number of bytes unpackaged.
+	@param	archBuffer	the archive buffer.
 	@return				true if unpacking success, false otherwise. */
-	static bool Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount);
+	static bool Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount, char * archBuffer, const size_t & archSize);
 };
 
 #endif // ARCHIVER_H

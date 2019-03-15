@@ -1,7 +1,6 @@
 #include "Archiver.h"
 #include "BufferTools.h"
 #include "Common.h"
-#include "Resource.h"
 #include "Threader.h"
 #include <atomic>
 #include <fstream>
@@ -92,26 +91,23 @@ bool Archiver::Pack(const std::string & directory, size_t & fileCount, size_t & 
 	threader.shutdown();
 
 	// Compress the archive
-	bool returnResult = BFT::CompressBuffer(filebuffer, archiveSize, archBuffer, byteCount);
+	const bool returnResult = BFT::CompressBuffer(filebuffer, archiveSize, archBuffer, byteCount);
 		
 	// Clean up
 	delete[] filebuffer;
 	return returnResult;
 }
 
-bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount)
+bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t & byteCount, char * archBuffer, const size_t & archSize)
 {
 	// Decompress the archive
 	fileCount = 0ull;
 	byteCount = 0ull;
 	Threader threader;
-	Resource archive(IDR_ARCHIVE, "ARCHIVE");
-	if (!archive.exists())
-		return false;
 
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	const bool result = BFT::DecompressBuffer(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &decompressedBuffer, decompressedSize);
+	const bool result = BFT::DecompressBuffer(archBuffer, archSize, &decompressedBuffer, decompressedSize);
 	if (!result)
 		return false;
 
@@ -164,5 +160,6 @@ bool Archiver::Unpack(const std::string & directory, size_t & fileCount, size_t 
 	// Success
 	fileCount = filesWritten;
 	byteCount = bytesWritten;
+	delete[] decompressedBuffer;
 	return true;	
 }
