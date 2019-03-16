@@ -1,4 +1,4 @@
-# EZInstaller
+# nStallr
 
 This project consists of 4 small utilities to bundle, extract, diff, and patch files.
 
