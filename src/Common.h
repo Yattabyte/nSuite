@@ -30,7 +30,7 @@ inline static void sanitize_path(std::string & path)
 /** Return file-info for all files within the directory specified.
 @param	directory	the directory to retrieve file-info from.
 @return				a vector of file information, including file names, sizes, meta-data, etc. */
-inline static std::vector<std::filesystem::directory_entry> get_file_paths(const std::string & directory)
+inline static auto get_file_paths(const std::string & directory)
 {
 	std::vector<std::filesystem::directory_entry> paths;
 	for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))

@@ -177,7 +177,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	while (!threader.isFinished())
 		continue;
 
-	// Test replacing insertions with some repeat instructions
+	// Replace insertions with some repeat instructions
 	for (size_t i = 0; i < instructions.size(); ++i) {
 		threader.addJob([i, &instructions, &instructionMutex]() {
 			auto & instruction = instructions[i];
@@ -224,7 +224,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 		continue;
 	threader.shutdown();
 	if (instructionCount != nullptr)
-		*instructionCount = instructions.size();
+		*instructionCount += instructions.size();
 
 	// Create buffer for the patch file, writing all instruction data into it
 	size_t size_patch(0ull);
@@ -246,7 +246,6 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	bool CompressResult = BFT::CompressBuffer(buffer_patch, size_patch, buffer_diff, size_diff);
 	delete[] buffer_patch;
 	return CompressResult;
-	return true;
 }
 
 bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount)
@@ -285,7 +284,7 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		delete[] buffer_diff_full;
 
 		if (instructionCount != nullptr)
-			*instructionCount = count;
+			*instructionCount += count;
 		return true;
 	}
 	return false;
