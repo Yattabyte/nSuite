@@ -7,8 +7,9 @@
 
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
-	// Allocate enough room for the compressed buffer
-	*destinationBuffer = new char[sourceSize + sizeof(size_t)];
+	// Allocate enough room for the compressed buffer (2 size_t bigger than source buffer)
+	destinationSize = (sourceSize * 2ull) + size_t(sizeof(size_t));
+	*destinationBuffer = new char[destinationSize];
 
 	// First chunk of data = the total uncompressed size
 	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
@@ -21,7 +22,7 @@ bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char **
 		sourceBuffer,
 		*destinationBuffer,
 		int(sourceSize),
-		int(sourceSize)
+		int(destinationSize - size_t(sizeof(size_t)))
 	);
 
 	// Decrement pointer

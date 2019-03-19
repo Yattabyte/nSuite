@@ -1,14 +1,12 @@
 #include "PatchDirectory.h"
 #include "BufferTools.h"
 #include "Common.h"
-#include "Threader.h"
 #include <fstream>
 
 
 void PatchDirectory::execute(const int & argc, char * argv[]) const
 {
 	// Check command line arguments
-	Threader threader;
 	std::string diffDirectory(""), srcDirectory("");
 	for (int x = 2; x < argc; ++x) {
 		std::string command(argv[x], 5);
@@ -33,12 +31,11 @@ void PatchDirectory::execute(const int & argc, char * argv[]) const
 		exit_program("Cannot read diff file, aborting...\n");
 
 	// Start reading diff file
-	size_t bytesRead(0ull);
-	std::atomic_size_t instructionCount(0ull);
+	size_t bytesRead(0ull), instructionCount(0ull);
 	while (bytesRead < diffSize) {
 		// Read file path
 		std::string path;
-		size_t pathLength = 0ull;
+		size_t pathLength(0ull);
 		diffFile.read(reinterpret_cast<char*>(&pathLength), std::streamsize(sizeof(size_t)));
 		path.resize(pathLength);
 		diffFile.read(path.data(), std::streamsize(pathLength));
@@ -63,64 +60,63 @@ void PatchDirectory::execute(const int & argc, char * argv[]) const
 		bytesRead += (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + instructionSize;
 
 		// Process instruction set
-		threader.addJob([path, fullPath, flag, diff_oldHash, diff_newHash, instructionSet, instructionSize, &instructionCount]() {
 			// Try to read the target file (may not exist)
-			char *oldBuffer = nullptr;
-			size_t oldSize = 0ull, oldHash = 0ull;
-			if (std::filesystem::exists(fullPath))
-				oldSize = std::filesystem::file_size(fullPath);
-			const bool srcRead = ReadFile(fullPath, oldSize, &oldBuffer, oldHash);
+		char *oldBuffer(nullptr);
+		size_t oldSize(0ull), oldHash(0ull);
+		if (std::filesystem::exists(fullPath))
+			oldSize = std::filesystem::file_size(fullPath);
+		const bool srcRead = ReadFile(fullPath, oldSize, &oldBuffer, oldHash);
 
-			switch (flag) {			
-			case 'D': // Delete source file
-				// Only remove source files if they match entirely
-				if (srcRead && oldHash == diff_oldHash)
-					if (!std::filesystem::remove(fullPath))
-						exit_program("Critical failure: cannot delete file from disk, aborting...\n");
-				break; // Done deletion procedure
-			
-			case 'N': // Create source file
-				std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
+		switch (flag) {
+		case 'D': // Delete source file
+			// Only remove source files if they match entirely
+			if (srcRead && oldHash == diff_oldHash)
+				if (!std::filesystem::remove(fullPath))
+					exit_program("Critical failure: cannot delete file from disk, aborting...\n");
+			std::cout << "removing file \"" << path << "\"\n";
+			break; // Done deletion procedure
 
-			case 'U': // Update source file
-			default:
-				if (flag == 'U' && !srcRead)
+		case 'N': // Create source file
+			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
+			if (!srcRead)
+				std::cout << "adding file \"" << path << "\"\n";
+		case 'U': // Update source file
+		default:
+			if (flag == 'U') {
+				if (!srcRead)
 					exit_program("Cannot read source file from disk, aborting...\n");
 				if (oldHash == diff_newHash) {
 					std::cout << "The file \"" << path << "\" is already up to date, skipping...\n";
 					break;
 				}
-
-				// Patch buffer
-				char * newBuffer = nullptr;
-				size_t newSize(0ull), instructions(0ull);
-				BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, instructionSet, instructionSize, &instructions);
-				size_t newHash = BFT::HashBuffer(newBuffer, newSize);
-				instructionCount += instructions;
-				delete[] instructionSet;
-
-				// Confirm new hashes match
-				if (newHash != diff_newHash)
-					exit_program("Critical failure: patched file is corrupted (hash mismatch), aborting...\n");
-
-				// Write patched buffer to disk
-				std::ofstream newFile(fullPath, std::ios::binary | std::ios::out);
-				if (!newFile.is_open())
-					exit_program("Cannot write updated file to disk, aborting...\n");
-				newFile.write(newBuffer, std::streamsize(newSize));
-				newFile.close();
-				delete[] newBuffer;
-
-				// Cleanup and finish
-				if (oldBuffer != nullptr)
-					delete[] oldBuffer;
+				else
+					std::cout << "diffing file \"" << path << "\"\n";
 			}
-		});		
-	}
 
-	// Wait for jobs to finish
-	while (!threader.isFinished())
-		continue;
+			// Patch buffer
+			char * newBuffer(nullptr);
+			size_t newSize(0ull), instructions(0ull);
+			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, instructionSet, instructionSize, &instructions);
+			size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+			instructionCount += instructions;
+			delete[] instructionSet;
+
+			// Confirm new hashes match
+			if (newHash != diff_newHash)
+				exit_program("Critical failure: patched file is corrupted (hash mismatch), aborting...\n");
+
+			// Write patched buffer to disk
+			std::ofstream newFile(fullPath, std::ios::binary | std::ios::out);
+			if (!newFile.is_open())
+				exit_program("Cannot write updated file to disk, aborting...\n");
+			newFile.write(newBuffer, std::streamsize(newSize));
+			newFile.close();
+			delete[] newBuffer;
+
+			// Cleanup and finish
+			delete[] oldBuffer;
+		}		
+	}
 
 	// Output results
 	std::cout
