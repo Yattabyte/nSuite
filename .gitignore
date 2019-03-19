@@ -38,8 +38,7 @@ Documentation/
 .vs/
 src/installer/installer.dir/
 src/installerMaker/installerMaker.dir/
-src/patcher/patcher.dir/
-src/patchMaker/patchMaker.dir/
+src/nstlr/nstlr.dir/
 app/
 
 # Other

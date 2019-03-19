@@ -2,7 +2,12 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+
+/** An interface for specific commands used in the nStlr application.*/
 struct Command {
+	/** Virtual method for executing a command.
+	@param		argc		the number of arguments.
+	@param		argv		array of arguments. */
 	virtual void execute(const int & argc, char * argv[]) const = 0;
 };
 

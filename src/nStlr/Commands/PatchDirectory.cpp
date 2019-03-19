@@ -5,19 +5,6 @@
 #include <fstream>
 
 
-static bool read_file(const std::string & path, const size_t & size, char ** buffer, size_t & hash)
-{
-	std::ifstream f(path, std::ios::binary | std::ios::beg);
-	if (f.is_open()) {
-		*buffer = new char[size];
-		f.read(*buffer, std::streamsize(size));
-		f.close();
-		hash = BFT::HashBuffer(*buffer, size);
-		return true;
-	}
-	return false;
-}
-
 void PatchDirectory::execute(const int & argc, char * argv[]) const
 {
 	// Check command line arguments
@@ -82,7 +69,7 @@ void PatchDirectory::execute(const int & argc, char * argv[]) const
 			size_t oldSize = 0ull, oldHash = 0ull;
 			if (std::filesystem::exists(fullPath))
 				oldSize = std::filesystem::file_size(fullPath);
-			const bool srcRead = read_file(fullPath, oldSize, &oldBuffer, oldHash);
+			const bool srcRead = ReadFile(fullPath, oldSize, &oldBuffer, oldHash);
 
 			switch (flag) {			
 			case 'D': // Delete source file
@@ -138,5 +125,18 @@ void PatchDirectory::execute(const int & argc, char * argv[]) const
 	// Output results
 	std::cout
 		<< "Instruction(s): " << instructionCount << "\n"
-		<< "Bytes written:  " << bytesRead << "\n";
+		<< "Bytes read:  " << bytesRead << "\n";
+}
+
+bool PatchDirectory::ReadFile(const std::string & path, const size_t & size, char ** buffer, size_t & hash)
+{
+	std::ifstream f(path, std::ios::binary | std::ios::beg);
+	if (f.is_open()) {
+		*buffer = new char[size];
+		f.read(*buffer, std::streamsize(size));
+		f.close();
+		hash = BFT::HashBuffer(*buffer, size);
+		return true;
+	}
+	return false;
 }

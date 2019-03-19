@@ -14,7 +14,10 @@ int main(int argc, char *argv[])
 	// Load all commands into a command map
 	const auto start = std::chrono::system_clock::now();
 	struct compare_string { bool operator()(const char * a, const char * b) const { return strcmp(a, b) < 0; } };
-	const std::map<const char *, Command*, compare_string> commandMap{ {"-dd", new DiffDirectory()}, {"-pd", new PatchDirectory()} };
+	const std::map<const char *, Command*, compare_string> commandMap{ 
+		{"-dd", new DiffDirectory()},
+		{"-pd", new PatchDirectory()}
+	};
 
 	// Check for valid arguments
 	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end())
