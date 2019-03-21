@@ -1,6 +1,6 @@
 #pragma once
-#ifndef COMPRESSDIRECTORY_H
-#define COMPRESSDIRECTORY_H
+#ifndef INSTALLERCOMMAND_H
+#define INSTALLERCOMMAND_H
 
 #include "Command.h"
 
@@ -12,4 +12,4 @@ public:
 	virtual void execute(const int & argc, char * argv[]) const override;
 };
 
-#endif // COMPRESSDIRECTORY_H
+#endif // INSTALLERCOMMAND_H

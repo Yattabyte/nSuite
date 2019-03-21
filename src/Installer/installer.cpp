@@ -4,18 +4,6 @@
 #include <chrono>
 
 
-/** Displays help information about this program, then terminates it. */
-static void display_help_and_exit()
-{
-	exit_program(
-		"        Help:       /\n"
-		" ~-----------------~\n"
-		"/\n"
-		" * if run without any arguments : uses application directory\n"
-		" * use command -dst=[path] to specify the installation directory.\n\n"
-	);
-}
-
 /** Entry point. */
 int main(int argc, char *argv[])
 {
@@ -27,7 +15,13 @@ int main(int argc, char *argv[])
 		if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			display_help_and_exit();
+			exit_program(
+				"        Help:       /\n"
+				" ~-----------------~\n"
+				"/\n"
+				" * if run without any arguments : uses application directory\n"
+				" * use command -dst=[path] to specify the installation directory.\n\n"
+			);
 	}
 	sanitize_path(dstDirectory);
 

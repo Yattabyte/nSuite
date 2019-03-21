@@ -15,9 +15,9 @@ int main(int argc, char *argv[])
 	const auto start = std::chrono::system_clock::now();
 	struct compare_string { bool operator()(const char * a, const char * b) const { return strcmp(a, b) < 0; } };
 	const std::map<const char *, Command*, compare_string> commandMap{ 
-		{"-installer", new InstallerCommand()},
-		{"-diff", new DiffCommand()},
-		{"-patch", new PatchCommand()}
+		{	"-installer"	,	new InstallerCommand()	},
+		{	"-diff"			,	new DiffCommand()		},
+		{	"-patch"		,	new PatchCommand()		}
 	};
 
 	// Check for valid arguments
@@ -27,18 +27,19 @@ int main(int argc, char *argv[])
 			" ~-----------------~\n"
 			"/\n"
 			" Operations Supported:\n"
-			" -cd (To compress and package an entire directory)\n"
-			" -dd (To diff an entire directory)\n"
-			" -pd (To patch an entire directory)\n"
+			" -installer (To compress and package an entire directory into an executable)\n"
+			" -diff (To diff an entire directory into a file)\n"
+			" -patch (To patch an entire directory from a patch file)\n"
 			"\n\n"
 		);
 	
 	// Command exists in command map, execute it
 	commandMap.at(argv[1])->execute(argc, argv);
+
+	// Output results and finish
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout << "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
 	system("pause");
-
 	exit(EXIT_SUCCESS);
 }

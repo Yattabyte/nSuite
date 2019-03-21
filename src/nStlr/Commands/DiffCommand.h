@@ -1,12 +1,8 @@
 #pragma once
-#ifndef DIFFDIRECTORY_H
-#define DIFFDIRECTORY_H
+#ifndef DIFFCOMMAND_H
+#define DIFFCOMMAND_H
 
 #include "Command.h"
-#include <atomic>
-#include <filesystem>
-#include <fstream>
-#include <string>
 
 
 /** Command to diff an entire directory, creating a patchfile. */
@@ -16,4 +12,4 @@ public:
 	virtual void execute(const int & argc, char * argv[]) const override;
 };
 
-#endif // DIFFDIRECTORY_H
+#endif // DIFFCOMMAND_H

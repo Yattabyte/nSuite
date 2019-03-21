@@ -1,6 +1,7 @@
 #pragma once
 #ifndef COMMON_H
 #define COMMON_H
+
 #include <cstddef>
 #include <direct.h>
 #include <filesystem>

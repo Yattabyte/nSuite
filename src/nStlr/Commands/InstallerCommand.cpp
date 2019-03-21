@@ -22,6 +22,9 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 				"        Help:       /\n"
 				" ~-----------------~\n"
 				"/\n"
+				" Arguments Expected:\n"
+				" -src=[path to the directory to compress]\n"
+				" -dst=[path to write the installer] (can omit filename)\n"
 				"\n\n"
 			);
 	}
@@ -29,6 +32,10 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory))
 		dstDirectory += "\\installer.exe";
+
+	// Ensure a file-extension is chosen
+	if (!std::filesystem::path(dstDirectory).has_extension())
+		dstDirectory += ".exe";
 
 	// Compress the directory specified
 	char * packBuffer(nullptr);
@@ -57,6 +64,7 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	std::cout
+		<< std::endl
 		<< "Files packaged: " << fileCount << "\n"
 		<< "Bytes packaged: " << packSize << "\n";
 }
