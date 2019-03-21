@@ -3,6 +3,7 @@
 #define BUFFER_TOOLS_H
 
 
+/** Namespace to keep buffer-related operations grouped together. */
 namespace BFT {
 	/** Compresses a source buffer into an equal or smaller sized destination buffer.
 	@param	sourceBuffer		the original buffer to read from.

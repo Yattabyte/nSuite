@@ -21,8 +21,8 @@ add_executable(${Module} 	${ROOT}
 							${CORE_DIR}/Instructions.cpp 	
 							${CORE_DIR}/BufferTools.h 
 							${CORE_DIR}/BufferTools.cpp
-							${CORE_DIR}/Archiver.h 
-							${CORE_DIR}/Archiver.cpp		)
+							${CORE_DIR}/DirectoryTools.h 
+							${CORE_DIR}/DirectoryTools.cpp)
 # This module requires the installer to be built first
 add_dependencies(nstlr installer)
 # Set working directory to the project directory

@@ -37,7 +37,6 @@ x32/
 Documentation/
 .vs/
 src/installer/installer.dir/
-src/installerMaker/installerMaker.dir/
 src/nstlr/nstlr.dir/
 app/
 

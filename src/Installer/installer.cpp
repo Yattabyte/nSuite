@@ -1,5 +1,5 @@
-#include "Archiver.h"
 #include "Common.h"
+#include "DirectoryTools.h"
 #include "Resource.h"
 #include <chrono>
 
@@ -12,7 +12,6 @@ static void display_help_and_exit()
 		" ~-----------------~\n"
 		"/\n"
 		" * if run without any arguments : uses application directory\n"
-		" * use command -ovrd to skip user-ready prompt.\n"
 		" * use command -dst=[path] to specify the installation directory.\n\n"
 	);
 }
@@ -21,14 +20,11 @@ static void display_help_and_exit()
 int main(int argc, char *argv[])
 {
 	// Check command line arguments
-	bool skipPrompt = false;
 	std::string dstDirectory(get_current_directory());
 	for (int x = 1; x < argc; ++x) {
 		std::string command(argv[x], 5);
 		std::transform(command.begin(), command.end(), command.begin(), ::tolower);
-		if (command == "-ovrd")
-			skipPrompt = true;
-		else if (command == "-dst=")
+		if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
 			display_help_and_exit();
@@ -38,13 +34,9 @@ int main(int argc, char *argv[])
 	// Report an overview of supplied procedure
 	std::cout
 		<< "Unpacking into:\t\"" << dstDirectory << "\"\n\n";
-
-	// See if we should skip the user-ready prompt
-	if (!skipPrompt) {
-		std::cout << "Ready to install?\n";
-		system("pause");
-		std::cout << std::endl;
-	}
+	std::cout << "Ready to install?\n";
+	system("pause");
+	std::cout << std::endl;	
 	
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
@@ -54,8 +46,7 @@ int main(int argc, char *argv[])
 		exit_program("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\n");
 	
 	// Unpackage using the resource file
-	if (!Archiver::Unpack(dstDirectory, fileCount, byteCount, reinterpret_cast<char*>(archive.getPtr()), archive.getSize()))
-		exit_program("Unpackaging failed, aborting...\n");
+	DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount);
 
 	// Success, report results
 	const auto end = std::chrono::system_clock::now();

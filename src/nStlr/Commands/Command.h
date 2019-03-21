@@ -5,6 +5,7 @@
 
 /** An interface for specific commands used in the nStlr application.*/
 struct Command {
+	// Public Interface
 	/** Virtual method for executing a command.
 	@param		argc		the number of arguments.
 	@param		argv		array of arguments. */

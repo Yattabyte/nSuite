@@ -5,12 +5,6 @@
 #include <variant>
 
 
-/****************************************************************************************************************
-We store instructions in a vector as std::variant's, and preallocate a huge size of the array, 
-this way they're not stored on the heap.
-They're not polymorphic b/c afaik I can't access their base type as a variant - can't benefit from indirection.
-*****************************************************************************************************************/
-
 /** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */
 class Copy_Instruction {
 public:
