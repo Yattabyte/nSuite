@@ -316,7 +316,7 @@ void DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	
 	// Start reading diff file
 	void * ptr = diffBuffer;
-	size_t bytesRead(0ull), instructionCount(0ull);
+	size_t bytesRead(0ull);
 	while (bytesRead < diffSize) {
 		// Read file path length
 		std::string path;

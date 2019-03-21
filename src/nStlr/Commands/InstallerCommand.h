@@ -5,7 +5,7 @@
 #include "Command.h"
 
 
-/** Command to compress an entire directory, creating a patchfile. */
+/** Command to compress an entire directory into a portable installer. */
 class InstallerCommand : public Command {
 public:
 	// Public interface

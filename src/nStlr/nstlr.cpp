@@ -6,6 +6,7 @@
 #include "Commands/InstallerCommand.h"
 #include "Commands/DiffCommand.h"
 #include "Commands/PatchCommand.h"
+#include "Commands/SnapshotCommand.h"
 
 
 /** Entry point. */
@@ -17,7 +18,8 @@ int main(int argc, char *argv[])
 	const std::map<const char *, Command*, compare_string> commandMap{ 
 		{	"-installer"	,	new InstallerCommand()	},
 		{	"-diff"			,	new DiffCommand()		},
-		{	"-patch"		,	new PatchCommand()		}
+		{	"-patch"		,	new PatchCommand()		},
+		{	"-snap"			,	new SnapshotCommand()	}
 	};
 
 	// Check for valid arguments
