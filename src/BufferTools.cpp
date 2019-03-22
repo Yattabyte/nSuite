@@ -179,41 +179,59 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 		continue;
 
 	// Replace insertions with some repeat instructions
-	for (size_t i = 0; i < instructions.size(); ++i) {
+	for (size_t i = 0, mi = instructions.size(); i < mi; ++i) {
 		threader.addJob([i, &instructions, &instructionMutex]() {
 			auto & instruction = instructions[i];
 			if (const auto inst(std::get_if<Insert_Instruction>(&instruction)); inst) {
-				for (size_t x = 0ull, mx = inst->newData.size(); x < mx; ++x) {
-					const auto & value_at_x = inst->newData[x];
-					for (size_t y = x + 1, my = inst->newData.size(); y < my; ++y) {
-						if (value_at_x != inst->newData[y]) {
-							const auto length = y - x;
-							if (length > 36ull) {
-								// Worthwhile to insert a new instruction
-								// Keep data up-until region where repeats occur
-								std::unique_lock<std::mutex> writeGuard(instructionMutex);
-								Insert_Instruction instBefore;
-								instBefore.index = inst->index;
-								instBefore.newData.resize(x);
-								std::memcpy(instBefore.newData.data(), inst->newData.data(), x);
-								instructions.push_back(instBefore);
-								// Generate new Repeat Instruction
-								Repeat_Instruction instRepeat;
-								instRepeat.index = inst->index + x;
-								instRepeat.value = value_at_x;
-								instRepeat.amount = length;
-								instructions.push_back(instRepeat);
-								// Modify original insert-instruction to contain remainder of the data
-								inst->index = inst->index + x + length;
-								std::memmove(&inst->newData[0], &inst->newData[y], inst->newData.size() - y);
-								inst->newData.resize(inst->newData.size() - y);
-								x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
-								mx = inst->newData.size();
+				// We only care about repeats larger than 36 bytes.
+				if (inst->newData.size() > 36ull) {
+					// Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
+					size_t max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
+					for (size_t x = 0ull; x < max; ++x) {
+						const auto & value_at_x = inst->newData[x];
+						if (inst->newData[x + 36ull] != value_at_x)
+							continue; // quit early if the value 36 units away isn't the same as this index
+
+						size_t y = x + 1;
+						while (y < max) {
+							if (value_at_x == inst->newData[y])
+								y++;
+							else
 								break;
-							}
-							x = y - 1;
+						}
+
+						const auto length = y - x;
+						if (length > 36ull) {
+							// Worthwhile to insert a new instruction
+							// Keep data up-until region where repeats occur
+							Insert_Instruction instBefore;
+							instBefore.index = inst->index;
+							instBefore.newData.resize(x);
+							std::memcpy(instBefore.newData.data(), inst->newData.data(), x);
+
+							// Generate new Repeat Instruction
+							Repeat_Instruction instRepeat;
+							instRepeat.index = inst->index + x;
+							instRepeat.value = value_at_x;
+							instRepeat.amount = length;
+
+							// Modifying instructions vector
+							std::unique_lock<std::mutex> writeGuard(instructionMutex);
+							instructions.push_back(instBefore);
+							instructions.push_back(instRepeat);
+							// Modify original insert-instruction to contain remainder of the data
+							inst->index = inst->index + x + length;
+							std::memmove(&inst->newData[0], &inst->newData[y], inst->newData.size() - y);
+							inst->newData.resize(inst->newData.size() - y);
+							writeGuard.unlock();
+							writeGuard.release();
+
+							x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
+							max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
 							break;
 						}
+						x = y - 1;
+						break;			
 					}
 				}
 			}
@@ -221,6 +239,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	}
 
 	// Wait for jobs to finish
+	threader.prepareForShutdown();
 	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
@@ -279,6 +298,7 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		}
 
 		// Wait for jobs to finish, then prepare to end
+		threader.prepareForShutdown();
 		while (!threader.isFinished())
 			continue;
 		threader.shutdown();

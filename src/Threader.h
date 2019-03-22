@@ -36,6 +36,8 @@ public:
 						job();
 						m_jobsFinished++;
 					}
+					else if (!m_keepOpen)
+						break;
 				}
 				m_threadsActive--;
 			});
@@ -57,6 +59,9 @@ public:
 	inline bool isFinished() const {
 		return m_jobsStarted == m_jobsFinished;
 	}
+	inline void prepareForShutdown() {
+		m_keepOpen = false;
+	}
 	inline void shutdown() {
 		m_alive = false;
 		for (size_t x = 0; x < std::thread::hardware_concurrency() && x < m_threads.size(); ++x) {
@@ -72,7 +77,7 @@ public:
 private:
 	// Private Attributes
 	std::shared_mutex m_mutex;
-	std::atomic_bool m_alive = true;
+	std::atomic_bool m_alive = true, m_keepOpen = true;
 	std::vector<std::thread> m_threads;
 	std::deque<std::function<void()>> m_jobs;
 	std::atomic_size_t m_threadsActive = 0ull, m_jobsStarted = 0ull, m_jobsFinished = 0ull;

@@ -72,6 +72,7 @@ void DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	}
 
 	// Wait for threaded operations to complete
+	threader.prepareForShutdown();
 	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
@@ -128,6 +129,7 @@ void DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	}
 
 	// Wait for threaded operations to complete
+	threader.prepareForShutdown();
 	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
@@ -140,45 +142,107 @@ void DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount)
 {
-	// Declarations that will only be used here
-	typedef std::vector<std::filesystem::directory_entry> PathList;
-	typedef std::vector<std::pair<std::filesystem::directory_entry, std::filesystem::directory_entry>> PathPairList;
-	std::vector<char> vecBuffer;
-
-	// Some helper lambda's that will only be used here
-	static constexpr auto getRelativePath = [](const std::filesystem::directory_entry & file, const std::string & directory) -> std::string {
-		const auto path = file.path().string();
-		return path.substr(directory.length(), path.length() - directory.length());
+	// Declarations that will only be used here	
+	struct File {
+		std::string path = "", relative = "";
+		size_t size = 0ull;
+		inline File(const std::string & p, const std::string & r, const size_t & s) : path(p), relative(r), size(s) {}
+		inline virtual bool open(char ** buffer, size_t & hash) const {
+			std::ifstream f(path, std::ios::binary | std::ios::beg);
+			if (f.is_open()) {
+				*buffer = new char[size];
+				f.read(*buffer, std::streamsize(size));
+				f.close();
+				hash = BFT::HashBuffer(*buffer, size);
+				return true;
+			}
+			return false;
+		}
 	};
-	static constexpr auto readFile = [](const std::filesystem::directory_entry & file, const std::string & directory, std::string & relativePath, char ** buffer, size_t & hash) -> bool {
-		relativePath = getRelativePath(file, directory);
-		std::ifstream f(file, std::ios::binary | std::ios::beg);
-		if (f.is_open()) {
-			*buffer = new char[file.file_size()];
-			f.read(*buffer, std::streamsize(file.file_size()));
-			f.close();
-			hash = BFT::HashBuffer(*buffer, file.file_size());
+	struct FileMem : File {
+		void * ptr = nullptr;
+		inline FileMem(const std::string & p, const std::string & r, const size_t & s, void * b) : File(p, r, s), ptr(b) {}
+		inline virtual bool open(char ** buffer, size_t & hash) const override {
+			*buffer = new char[size];
+			std::memcpy(*buffer, ptr, size);
+			hash = BFT::HashBuffer(*buffer, size);
 			return true;
 		}
-		return false;
 	};
-	static constexpr auto getFileLists = [](const std::string & oldDirectory, const std::string & newDirectory, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
-		auto oldFiles = get_file_paths(oldDirectory);
-		const auto newFiles = get_file_paths(newDirectory);
+	typedef std::vector<File*> PathList;
+	typedef std::vector<std::pair<File*, File*>> PathPairList;
+	static constexpr auto getRelativePath = [](const std::string & filePath, const std::string & directory) -> std::string {
+		return filePath.substr(directory.length(), filePath.length() - directory.length());
+	};
+	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, size_t & size) -> std::vector<File*> {
+		std::vector<File*> files;
+		if (std::filesystem::is_directory(directory)) {
+			for each (const auto & srcFile in get_file_paths(directory)) {
+				const std::string path = srcFile.path().string();
+				size += srcFile.file_size();
+				files.push_back(new File(path, getRelativePath(path, directory), srcFile.file_size()));
+			}
+		}
+		else {
+			// Treat as a snapshot file if it isn't a directory
+			// Open diff file
+			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
+			const size_t packSize = std::filesystem::file_size(directory);
+			if (!packFile.is_open())
+				exit_program("Cannot read snapshot file, aborting...\n");
+			char * compBuffer = new char[packSize];
+			packFile.read(compBuffer, std::streamsize(packSize));
+			packFile.close();
+
+			// Decompress
+			size_t snapSize(0ull);
+			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize))
+				exit_program("Cannot decompress snapshot file, aborting...\n");
+			delete[] compBuffer;
+
+			// Get lists of all files involved
+			size_t bytesRead(0ull);
+			void * ptr = *snapshot;
+			while (bytesRead < snapSize) {
+				// Read the total number of characters from the path string, from the archive
+				const auto pathSize = *reinterpret_cast<size_t*>(ptr);
+				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+				// Read the file path string, from the archive
+				const char * path_array = reinterpret_cast<char*>(ptr);
+				const auto path = std::string(path_array, pathSize);
+				ptr = PTR_ADD(ptr, pathSize);
+
+				// Read the file size in bytes, from the archive 
+				const auto fileSize = *reinterpret_cast<size_t*>(ptr);
+				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+				files.push_back(new FileMem(path, path, fileSize, ptr));
+				ptr = PTR_ADD(ptr, fileSize);
+				bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
+				size += fileSize;
+			}
+		}
+		return files;
+	};
+	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, size_t & reserveSize, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
+		// Get files
+		size_t size1(0ull), size2(0ull);
+		auto srcOld_Files = getFiles(oldDirectory, oldSnapshot, size1);
+		auto srcNew_Files = getFiles(newDirectory, newSnapshot, size2);
+		reserveSize = std::max<size_t>(size1, size2);
 
 		// Find all common and new files first
-		for each (const auto & nFile in newFiles) {
-			std::string newRelativePath = getRelativePath(nFile, newDirectory);
+		for each (const auto & nFile in srcNew_Files) {
 			bool found = false;
 			size_t oIndex(0ull);
-			for each (const auto & oFile in oldFiles) {
-				auto oldRelativePath = getRelativePath(oFile, oldDirectory);
-				if (oldRelativePath == newRelativePath) {
+			for each (const auto & oFile in srcOld_Files) {
+				if (nFile->relative == oFile->relative) {
 					// Common file found		
 					commonFiles.push_back(std::make_pair(oFile, nFile));
 
 					// Remove old file from list (so we can use all that remain)
-					oldFiles.erase(oldFiles.begin() + oIndex);
+					srcOld_Files.erase(srcOld_Files.begin() + oIndex);
 					found = true;
 					break;
 				}
@@ -190,7 +254,7 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		}
 
 		// All 'old files' that remain didn't exist in the 'new file' set
-		delFiles = oldFiles;
+		delFiles = srcOld_Files;
 	};
 	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, char * buffer, const size_t & bufferSize, const char & flag, std::vector<char> & vecBuffer) {
 		auto pathLength = path.length();
@@ -231,64 +295,70 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	// Retrieve all common, added, and removed files
 	PathPairList commonFiles;
 	PathList addedFiles, removedFiles;
-	getFileLists(oldDirectory, newDirectory, commonFiles, addedFiles, removedFiles);
+	char * oldSnap(nullptr), * newSnap(nullptr);
+	size_t reserveSize(0ull);
+	getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, reserveSize, commonFiles, addedFiles, removedFiles);
 
-	// Generate Instructions from file lists
+	// Generate Instructions from file lists, store them in this expanding buffer
+	std::vector<char> vecBuffer;
+	vecBuffer.reserve(reserveSize);
+
+	// These files are common, maybe some have changed
 	for each (const auto & cFiles in commonFiles) {
-		std::string  oldRelativePath(""), newRelativePath("");
-		char *oldBuffer(nullptr), *newBuffer(nullptr);
+		char * oldBuffer(nullptr), * newBuffer(nullptr);
 		size_t oldHash(0ull), newHash(0ull);
-		if (
-			readFile(cFiles.first, oldDirectory, oldRelativePath, &oldBuffer, oldHash)
-			&&
-			readFile(cFiles.second, newDirectory, newRelativePath, &newBuffer, newHash)
-			)
-		{
-			// Successfully opened both files
+		if (cFiles.first->open(&oldBuffer, oldHash) && cFiles.second->open(&newBuffer, newHash)) {
 			if (oldHash != newHash) {
 				// Files are different versions
 				char * buffer(nullptr);
 				size_t size(0ull);
-				if (BFT::DiffBuffers(oldBuffer, cFiles.first.file_size(), newBuffer, cFiles.second.file_size(), &buffer, size, &instructionCount)) {
-					std::cout << "diffing file \"" << oldRelativePath << "\"\n";
-					writeInstructions(newRelativePath, oldHash, newHash, buffer, size, 'U', vecBuffer);
-					delete[] buffer;
+				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionCount)) {
+					std::cout << "diffing file \"" << cFiles.first->relative << "\"\n";
+					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', vecBuffer);
 				}
-			}
-		}
-		delete[] oldBuffer;
-		delete[] newBuffer;
-	}
-	for each (const auto & nFile in addedFiles) {
-		std::string newRelativePath("");
-		char *newBuffer(nullptr);
-		size_t newHash(0ull);
-		if (readFile(nFile, newDirectory, newRelativePath, &newBuffer, newHash)) {
-			// Successfully opened file
-			// This file is new
-			char * buffer(nullptr);
-			size_t size(0ull);
-			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile.file_size(), &buffer, size, &instructionCount)) {
-				std::cout << "adding file \"" << newRelativePath << "\"\n";
-				writeInstructions(newRelativePath, 0ull, newHash, buffer, size, 'N', vecBuffer);
 				delete[] buffer;
 			}
 		}
+		delete[] oldBuffer;
 		delete[] newBuffer;
+		delete cFiles.first;
+		delete cFiles.second;
 	}
+	commonFiles.clear();
+
+	// These files are brand new
+	for each (const auto & nFile in addedFiles) {
+		char * newBuffer(nullptr);
+		size_t newHash(0ull);
+		if (nFile->open(&newBuffer, newHash)) {
+			char * buffer(nullptr);
+			size_t size(0ull);
+			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionCount)) {
+				std::cout << "adding file \"" << nFile->relative << "\"\n";
+				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', vecBuffer);
+			}
+			delete[] buffer;
+		}
+		delete[] newBuffer;
+		delete nFile;
+	}
+	addedFiles.clear();
+	delete[] newSnap;
+
+	// These files are deprecated
 	for each (const auto & oFile in removedFiles) {
-		std::string oldRelativePath("");
-		char *oldBuffer(nullptr);
+		char * oldBuffer(nullptr);
 		size_t oldHash(0ull);
-		if (readFile(oFile, oldDirectory, oldRelativePath, &oldBuffer, oldHash)) {
-			// Successfully opened file
-			// This file is no longer used
+		if (oFile->open(&oldBuffer, oldHash)) {
 			instructionCount++;
-			std::cout << "removing file \"" << oldRelativePath << "\"\n";
-			writeInstructions(oldRelativePath, oldHash, 0ull, nullptr, 0ull, 'D', vecBuffer);
+			std::cout << "removing file \"" << oFile->relative << "\"\n";
+			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', vecBuffer);
 		}
 		delete[] oldBuffer;
+		delete oFile;
 	}
+	removedFiles.clear();
+	delete[] oldSnap;
 
 	// Compress final buffer
 	if (!BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), diffBuffer, diffSize))
