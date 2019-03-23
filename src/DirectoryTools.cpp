@@ -189,7 +189,7 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
 			const size_t packSize = std::filesystem::file_size(directory);
 			if (!packFile.is_open())
-				exit_program("Cannot read snapshot file, aborting...\n");
+				exit_program("Cannot read package file, aborting...\n");
 			char * compBuffer = new char[packSize];
 			packFile.read(compBuffer, std::streamsize(packSize));
 			packFile.close();
@@ -197,7 +197,7 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 			// Decompress
 			size_t snapSize(0ull);
 			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize))
-				exit_program("Cannot decompress snapshot file, aborting...\n");
+				exit_program("Cannot decompress package file, aborting...\n");
 			delete[] compBuffer;
 
 			// Get lists of all files involved

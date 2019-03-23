@@ -6,7 +6,8 @@
 #include "Commands/InstallerCommand.h"
 #include "Commands/DiffCommand.h"
 #include "Commands/PatchCommand.h"
-#include "Commands/SnapshotCommand.h"
+#include "Commands/PackCommand.h"
+#include "Commands/UnpackCommand.h"
 
 
 /** Entry point. */
@@ -19,7 +20,8 @@ int main(int argc, char *argv[])
 		{	"-installer"	,	new InstallerCommand()	},
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		},
-		{	"-snap"			,	new SnapshotCommand()	}
+		{	"-pack"			,	new PackCommand()		},
+		{	"-unpack"		,	new UnpackCommand()		}
 	};
 
 	// Check for valid arguments
@@ -30,8 +32,10 @@ int main(int argc, char *argv[])
 			"/\n"
 			" Operations Supported:\n"
 			" -installer (To compress and package an entire directory into an executable)\n"
-			" -diff (To diff an entire directory into a file)\n"
-			" -patch (To patch an entire directory from a patch file)\n"
+			" -diff		(To diff an entire directory into a file)\n"
+			" -patch	(To patch an entire directory from a patch file)\n"
+			" -pack		(To compress an entire directory into a single file)\n"
+			" -unpack	(To decompress an entire directory from a pack file)\n"
 			"\n\n"
 		);
 	
