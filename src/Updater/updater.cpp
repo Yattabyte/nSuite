@@ -62,7 +62,6 @@ int main(int argc, char *argv[])
 		const std::chrono::duration<double> elapsed_seconds = end - start;
 		std::cout
 			<< "Patches used:   " << patchesApplied << " out of " << patches.size() << "\n"
-			<< "Instruction(s): " << instructionsUsed << "\n"
 			<< "Bytes written:  " << bytesWritten << "\n"
 			<< "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
 	}

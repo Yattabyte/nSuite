@@ -452,12 +452,18 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	
 		// Try to read source file
 		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash)) {
-			std::cout << "Cannot read source file from disk.\n";
+			std::cout << "Critical failure: Cannot read source file from disk.\n";
 			return false;
 		}
 
 		// Patch if this source file hasn't been patched yet
-		if (oldHash != file.diff_newHash) {
+		if (oldHash == file.diff_newHash)
+			std::cout << "The file \"" << file.path << "\" is already up to date, skipping...\n";
+		else if (oldHash != file.diff_oldHash) {
+			std::cout << "Critical failure: the file \"" << file.path << "\" is of an unexpected version. \n";
+			return false;
+		}
+		else {
 			// Patch buffer
 			std::cout << "patching file \"" << file.path << "\"\n";
 			size_t newSize(0ull);
@@ -473,15 +479,13 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 			// Write patched buffer to disk
 			std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 			if (!newFile.is_open()) {
-				std::cout << "Cannot write patched file to disk.\n";
+				std::cout << "Critical failure: cannot write patched file to disk.\n";
 				return false;
 			}
 			newFile.write(newBuffer, std::streamsize(newSize));
 			newFile.close();
 			bytesWritten += newSize;
 		}
-		else
-			std::cout << "The file \"" << file.path << "\" is already up to date, skipping...\n";
 
 		// Cleanup and finish
 		delete[] file.instructionSet;
@@ -510,7 +514,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		// Write new file to disk
 		std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 		if (!newFile.is_open()) {
-			std::cout << "Cannot write new file to disk.\n";
+			std::cout << "Critical failure: cannot write new file to disk.\n";
 			return false;
 		}
 		newFile.write(newBuffer, std::streamsize(newSize));
