@@ -16,6 +16,7 @@ link_libraries 	(	debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
 					
 # add all sub-projects and plugins here
 add_subdirectory( "src/installer" )
+add_subdirectory( "src/updater" )
 add_subdirectory( "src/nstlr" )
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nstlr)
  

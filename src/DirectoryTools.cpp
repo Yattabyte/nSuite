@@ -365,16 +365,19 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		exit_program("Critical failure: cannot compress diff file, aborting...\n");
 }
 
-void DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t & bytesWritten, size_t & instructionsUsed)
+bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t & bytesWritten, size_t & instructionsUsed)
 {
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull);
-	if (!BFT::DecompressBuffer(diffBufferCompressed, diffSizeCompressed, &diffBuffer, diffSize))
-		exit_program("Critical failure: cannot decompress diff file, aborting...\n");
+	if (!BFT::DecompressBuffer(diffBufferCompressed, diffSizeCompressed, &diffBuffer, diffSize)) {
+		std::cout << "Critical failure: cannot decompress diff file.\n";
+		return false;
+	}
 
-	static constexpr auto readFile = [](const std::string & path, const size_t & size, char ** buffer, size_t & hash) -> bool {
+	static constexpr auto readFile = [](const std::string & path, size_t & size, char ** buffer, size_t & hash) -> bool {
 		std::ifstream f(path, std::ios::binary | std::ios::beg);
 		if (f.is_open()) {
+			size = std::filesystem::file_size(path);
 			*buffer = new char[size];
 			f.read(*buffer, std::streamsize(size));
 			f.close();
@@ -385,20 +388,27 @@ void DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	};
 	
 	// Start reading diff file
+	struct FileInstruction {
+		std::string path = "", fullPath = "";
+		char * instructionSet = nullptr;
+		size_t instructionSize = 0ull, diff_oldHash = 0ull, diff_newHash = 0ull;
+	};
+	std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
 	void * ptr = diffBuffer;
 	size_t bytesRead(0ull);
 	while (bytesRead < diffSize) {
+		FileInstruction FI;
+
 		// Read file path length
-		std::string path;
 		size_t pathLength(0ull);
 		std::memcpy(reinterpret_cast<char*>(&pathLength), ptr, size_t(sizeof(size_t)));
 		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
-		path.resize(pathLength);	
+		FI.path.resize(pathLength);
 
 		// Read file path
-		std::memcpy(path.data(), ptr, pathLength);
+		std::memcpy(FI.path.data(), ptr, pathLength);
 		ptr = PTR_ADD(ptr, pathLength);
-		const auto fullPath = dstDirectory + path;
+		FI.fullPath = dstDirectory + FI.path;
 
 		// Read operation flag
 		char flag;
@@ -406,83 +416,134 @@ void DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		ptr = PTR_ADD(ptr, size_t(sizeof(char)));
 
 		// Read old hash
-		size_t diff_oldHash(0ull), diff_newHash(0ull);
-		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&diff_oldHash)), ptr, size_t(sizeof(size_t)));
+		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.diff_oldHash)), ptr, size_t(sizeof(size_t)));
 		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read new hash
-		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&diff_newHash)), ptr, size_t(sizeof(size_t)));
+		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.diff_newHash)), ptr, size_t(sizeof(size_t)));
 		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer size
-		size_t instructionSize(0ull);
-		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&instructionSize)), ptr, size_t(sizeof(size_t)));
+		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.instructionSize)), ptr, size_t(sizeof(size_t)));
 		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer
-		char * instructionSet = new char[instructionSize];
-		std::memcpy(instructionSet, ptr, instructionSize);
-		ptr = PTR_ADD(ptr, instructionSize);
+		FI.instructionSet = new char[FI.instructionSize];
+		std::memcpy(FI.instructionSet, ptr, FI.instructionSize);
+		ptr = PTR_ADD(ptr, FI.instructionSize);
 
 		// Update range of memory read
-		bytesRead += (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + instructionSize;
+		bytesRead += (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + FI.instructionSize;
 
-		// Process instruction set
+		// Sort instructions
+		if (flag == 'U')
+			diffFiles.push_back(FI);
+		else if (flag == 'N')
+			addedFiles.push_back(FI);
+		else if (flag == 'D')
+			removedFiles.push_back(FI);
+	}
+
+	// Patch all files first
+	for each (const auto & file in diffFiles) {
+		// Try to read the target file
+		char *oldBuffer(nullptr), *newBuffer(nullptr);
+		size_t oldSize(0ull), oldHash(0ull);
+	
+		// Try to read source file
+		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash)) {
+			std::cout << "Cannot read source file from disk.\n";
+			return false;
+		}
+
+		// Patch if this source file hasn't been patched yet
+		if (oldHash != file.diff_newHash) {
+			// Patch buffer
+			std::cout << "patching file \"" << file.path << "\"\n";
+			size_t newSize(0ull);
+			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
+			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+
+			// Confirm new hashes match
+			if (newHash != file.diff_newHash) {
+				std::cout << "Critical failure: patched file is corrupted (hash mismatch).\n";
+				return false;
+			}
+
+			// Write patched buffer to disk
+			std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
+			if (!newFile.is_open()) {
+				std::cout << "Cannot write patched file to disk.\n";
+				return false;
+			}
+			newFile.write(newBuffer, std::streamsize(newSize));
+			newFile.close();
+			bytesWritten += newSize;
+		}
+		else
+			std::cout << "The file \"" << file.path << "\" is already up to date, skipping...\n";
+
+		// Cleanup and finish
+		delete[] file.instructionSet;
+		delete[] newBuffer;
+		delete[] oldBuffer;
+	}
+
+	// By this point all files matched, safe to add new ones
+	for each (const auto & file in addedFiles) {
+		std::filesystem::create_directories(std::filesystem::path(file.fullPath).parent_path());
+		std::cout << "adding file \"" << file.path << "\"\n";
+		
+		// Write the 'insert' instructions
+		// Remember that we use the diff/patch function to add new files too
+		char * newBuffer(nullptr);
+		size_t newSize(0ull);
+		BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
+		const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+
+		// Confirm new hashes match
+		if (newHash != file.diff_newHash) {
+			std::cout << "Critical failure: new file is corrupted (hash mismatch).\n";
+			return false;
+		}
+
+		// Write new file to disk
+		std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
+		if (!newFile.is_open()) {
+			std::cout << "Cannot write new file to disk.\n";
+			return false;
+		}
+		newFile.write(newBuffer, std::streamsize(newSize));
+		newFile.close();
+		bytesWritten += newSize;
+
+		// Cleanup and finish
+		delete[] file.instructionSet;
+		delete[] newBuffer;		
+	}
+
+	// If we made it this far, it should be safe to delete all files
+	for each (const auto & file in removedFiles) {
 		// Try to read the target file (may not exist)
 		char *oldBuffer(nullptr);
 		size_t oldSize(0ull), oldHash(0ull);
-		if (std::filesystem::exists(fullPath))
-			oldSize = std::filesystem::file_size(fullPath);
-		const bool srcRead = readFile(fullPath, oldSize, &oldBuffer, oldHash);
 
-		switch (flag) {
-		case 'D': // Delete source file
+		// Try to read source file
+		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash))
+			std::cout << "The file \"" << file.path << "\" has already been removed, skipping...\n";
+		else {
 			// Only remove source files if they match entirely
-			if (srcRead && oldHash == diff_oldHash)
-				if (!std::filesystem::remove(fullPath))
-					exit_program("Critical failure: cannot delete file from disk, aborting...\n");
-			std::cout << "removing file \"" << path << "\"\n";
-			break; // Done deletion procedure
-
-		case 'N': // Create source file
-			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-			if (!srcRead)
-				std::cout << "adding file \"" << path << "\"\n";
-		case 'U': // Update source file
-		default:
-			if (flag == 'U') {
-				if (!srcRead)
-					exit_program("Cannot read source file from disk, aborting...\n");
-				if (oldHash == diff_newHash) {
-					std::cout << "The file \"" << path << "\" is already up to date, skipping...\n";
-					break;
-				}
+			if (oldHash == file.diff_oldHash)
+				if (!std::filesystem::remove(file.fullPath))
+					std::cout << "Critical failure: cannot delete file \"" << file.path << "\" from disk\n";
 				else
-					std::cout << "diffing file \"" << path << "\"\n";
-			}
-
-			// Patch buffer
-			char * newBuffer(nullptr);
-			size_t newSize(0ull);
-			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, instructionSet, instructionSize, &instructionsUsed);
-			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
-			delete[] instructionSet;
-
-			// Confirm new hashes match
-			if (newHash != diff_newHash)
-				exit_program("Critical failure: patched file is corrupted (hash mismatch), aborting...\n");
-
-			// Write patched buffer to disk
-			std::ofstream newFile(fullPath, std::ios::binary | std::ios::out);
-			if (!newFile.is_open())
-				exit_program("Cannot write updated file to disk, aborting...\n");
-			newFile.write(newBuffer, std::streamsize(newSize));
-			newFile.close();
-			delete[] newBuffer;
-			bytesWritten += newSize;
-
-			// Cleanup and finish
-			delete[] oldBuffer;
+					std::cout << "removing file \"" << file.path << "\"\n";
 		}
+
+		// Cleanup and finish
+		delete[] file.instructionSet;
+		delete[] oldBuffer;
 	}
+
+	return true;
 }

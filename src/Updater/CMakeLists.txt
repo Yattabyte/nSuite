@@ -11,11 +11,10 @@ endforeach()
 ############
 #   EXEC   #
 ############
-set (Module installer)
+set (Module updater)
 # Create a library using those source files	
 add_executable(${Module} 	${ROOT} 
 							${CORE_DIR}/Common.h	
-							${CORE_DIR}/Resource.h
 							${CORE_DIR}/Threader.h 					
 							${CORE_DIR}/Instructions.h 							
 							${CORE_DIR}/Instructions.cpp 	
@@ -23,8 +22,6 @@ add_executable(${Module} 	${ROOT}
 							${CORE_DIR}/BufferTools.cpp
 							${CORE_DIR}/DirectoryTools.h 
 							${CORE_DIR}/DirectoryTools.cpp	)
-# This module requires the updater to be built first
-add_dependencies(installer updater)
 # Set working directory to the project directory
 set_target_properties 	(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 												LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}

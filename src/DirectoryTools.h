@@ -34,8 +34,9 @@ namespace DRT {
 	@param	diffBufferComp		the buffer containing the compressed diff instructions.
 	@param	diffSizeComp		the size in bytes of the compressed diff buffer.
 	@param	bytesWritten		reference updated with the number of bytes written to disk.
-	@param	instructionsUsed	reference updated with the number of instructions executed. */
-	void PatchDirectory(const std::string & dstDirectory, char * diffBufferComp, const size_t & diffSizeComp, size_t & bytesWritten, size_t & instructionsUsed);
+	@param	instructionsUsed	reference updated with the number of instructions executed. 
+	@return						true if patch success, false otherwise. */
+	bool PatchDirectory(const std::string & dstDirectory, char * diffBufferComp, const size_t & diffSizeComp, size_t & bytesWritten, size_t & instructionsUsed);
 };
 
 #endif // DIRECTORY_TOOLS_H
