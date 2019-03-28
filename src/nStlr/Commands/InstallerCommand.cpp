@@ -56,7 +56,7 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	file.close();
 
 	// Update installer's resource
-	auto handle = BeginUpdateResource(dstDirectory.c_str(), true);
+	auto handle = BeginUpdateResource(dstDirectory.c_str(), false);
 	if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
 		exit_program("Cannot write archive contents to the installer, aborting...\n");
 	EndUpdateResource(handle, FALSE);	

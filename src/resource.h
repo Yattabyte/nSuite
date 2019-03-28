@@ -2,12 +2,12 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-// Used by installer.rc
-#define IDR_ARCHIVE						101
-// Used by installerMaker.rc
-#define IDR_INSTALLER					102
 // Used for icons
-#define IDI_ICON1                       103
+#define IDI_ICON1                       101
+// Used by installer.rc
+#define IDR_ARCHIVE						102
+// Used by installerMaker.rc
+#define IDR_INSTALLER					103
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        104
