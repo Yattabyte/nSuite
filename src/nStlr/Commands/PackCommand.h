@@ -8,7 +8,7 @@
 /** Command to compress an entire directory into a single .npack file. */
 class PackCommand : public Command {
 public:
-	// Public interface
+	// Public interface implementation
 	virtual void execute(const int & argc, char * argv[]) const override;
 };
 

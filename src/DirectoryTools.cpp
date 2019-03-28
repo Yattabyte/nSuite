@@ -140,7 +140,7 @@ void DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	delete[] decompressedBuffer;
 }
 
-void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount)
+bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount)
 {
 	// Declarations that will only be used here	
 	struct File {
@@ -174,8 +174,7 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	static constexpr auto getRelativePath = [](const std::string & filePath, const std::string & directory) -> std::string {
 		return filePath.substr(directory.length(), filePath.length() - directory.length());
 	};
-	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, size_t & size) -> std::vector<File*> {
-		std::vector<File*> files;
+	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, size_t & size, std::vector<File*> & files) -> bool {		
 		if (std::filesystem::is_directory(directory)) {
 			for each (const auto & srcFile in get_file_paths(directory)) {
 				const std::string path = srcFile.path().string();
@@ -188,16 +187,20 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 			// Open diff file
 			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
 			const size_t packSize = std::filesystem::file_size(directory);
-			if (!packFile.is_open())
-				exit_program("Cannot read package file, aborting...\n");
+			if (!packFile.is_open()) {
+				std::cout << "Critical failure: cannot read package file.\n";
+				return false;
+			}
 			char * compBuffer = new char[packSize];
 			packFile.read(compBuffer, std::streamsize(packSize));
 			packFile.close();
 
 			// Decompress
 			size_t snapSize(0ull);
-			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize))
-				exit_program("Cannot decompress package file, aborting...\n");
+			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize)) {
+				exit_program("Critical failure: cannot decompress package file.\n");
+				return false;
+			}
 			delete[] compBuffer;
 
 			// Get lists of all files involved
@@ -223,13 +226,14 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 				size += fileSize;
 			}
 		}
-		return files;
+		return true;
 	};
 	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, size_t & reserveSize, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
 		// Get files
 		size_t size1(0ull), size2(0ull);
-		auto srcOld_Files = getFiles(oldDirectory, oldSnapshot, size1);
-		auto srcNew_Files = getFiles(newDirectory, newSnapshot, size2);
+		std::vector<File*> srcOld_Files, srcNew_Files;
+		if (!getFiles(oldDirectory, oldSnapshot, size1, srcOld_Files) || !getFiles(newDirectory, newSnapshot, size2, srcNew_Files))
+			return false;
 		reserveSize = std::max<size_t>(size1, size2);
 
 		// Find all common and new files first
@@ -255,6 +259,7 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 
 		// All 'old files' that remain didn't exist in the 'new file' set
 		delFiles = srcOld_Files;
+		return true;
 	};
 	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, char * buffer, const size_t & bufferSize, const char & flag, std::vector<char> & vecBuffer) {
 		auto pathLength = path.length();
@@ -297,7 +302,8 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	PathList addedFiles, removedFiles;
 	char * oldSnap(nullptr), * newSnap(nullptr);
 	size_t reserveSize(0ull);
-	getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, reserveSize, commonFiles, addedFiles, removedFiles);
+	if (!getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, reserveSize, commonFiles, addedFiles, removedFiles))
+		return false;
 
 	// Generate Instructions from file lists, store them in this expanding buffer
 	std::vector<char> vecBuffer;
@@ -361,8 +367,11 @@ void DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	delete[] oldSnap;
 
 	// Compress final buffer
-	if (!BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), diffBuffer, diffSize))
-		exit_program("Critical failure: cannot compress diff file, aborting...\n");
+	if (!BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), diffBuffer, diffSize)) {
+		std::cout << "Critical failure: cannot compress diff file.\n";
+		return false;
+	}
+	return true;
 }
 
 bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t & bytesWritten, size_t & instructionsUsed)
@@ -539,7 +548,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 			// Only remove source files if they match entirely
 			if (oldHash == file.diff_oldHash)
 				if (!std::filesystem::remove(file.fullPath))
-					std::cout << "Critical failure: cannot delete file \"" << file.path << "\" from disk\n";
+					std::cout << "Error: cannot delete file \"" << file.path << "\" from disk, delete this file manually if you can. \n";
 				else
 					std::cout << "removing file \"" << file.path << "\"\n";
 		}

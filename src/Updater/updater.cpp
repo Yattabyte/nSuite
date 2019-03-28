@@ -14,7 +14,7 @@ static std::vector<std::filesystem::directory_entry> get_patches(const std::stri
 }
 
 /** Entry point. */
-int main(int argc, char *argv[])
+int main()
 {
 	// Find all patch files?
 	const auto dstDirectory(get_current_directory());

@@ -5,25 +5,10 @@
 
 
 /** Entry point. */
-int main(int argc, char *argv[])
+int main()
 {
 	// Check command line arguments
 	std::string dstDirectory(get_current_directory());
-	for (int x = 1; x < argc; ++x) {
-		std::string command(argv[x], 5);
-		std::transform(command.begin(), command.end(), command.begin(), ::tolower);
-		if (command == "-dst=")
-			dstDirectory = std::string(&argv[x][5]);
-		else
-			exit_program(
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
-				" * if run without any arguments : uses application directory\n"
-				" * use command -dst=[path] to specify the installation directory.\n\n"
-			);
-	}
-	sanitize_path(dstDirectory);
 
 	// Report an overview of supplied procedure
 	std::cout

@@ -15,6 +15,7 @@ set (Module updater)
 # Create a library using those source files	
 add_executable(${Module} 	${ROOT} 
 							${CORE_DIR}/Common.h	
+							${CORE_DIR}/Resource.h
 							${CORE_DIR}/Threader.h 					
 							${CORE_DIR}/Instructions.h 							
 							${CORE_DIR}/Instructions.cpp 	

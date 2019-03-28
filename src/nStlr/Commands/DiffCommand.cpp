@@ -49,7 +49,8 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	// Diff the 2 directories specified
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull), instructionCount(0ull);
-	DRT::DiffDirectory(oldDirectory, newDirectory, &diffBuffer, diffSize, instructionCount);
+	if (!DRT::DiffDirectory(oldDirectory, newDirectory, &diffBuffer, diffSize, instructionCount))
+		exit_program("aborting...\n");
 	
 	// Create diff file
 	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());

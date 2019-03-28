@@ -19,7 +19,8 @@ inline static void * PTR_ADD(void *const ptr, const size_t & offset)
 	return static_cast<std::byte*>(ptr) + offset;
 };
 
-/** Cleans up a target string representing a file path, removing leading and trailing quotes*/
+/** Cleans up a target string representing a file path, removing leading and trailing quotes.
+@param	path		reference to the path to be sanitized. */
 inline static void sanitize_path(std::string & path)
 {
 	if (path.front() == '"' || path.front() == '\'')

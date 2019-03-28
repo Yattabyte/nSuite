@@ -8,7 +8,7 @@
 /** Command to diff an entire directory, creating a patchfile. */
 class DiffCommand : public Command {
 public:
-	// Public interface
+	// Public interface implementation
 	virtual void execute(const int & argc, char * argv[]) const override;
 };
 

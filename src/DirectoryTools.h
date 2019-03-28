@@ -27,8 +27,9 @@ namespace DRT {
 	@param	newDirectory		the newer directory.
 	@param	diffBuffer			pointer to the diff buffer, which will hold compressed diff instructions.
 	@param	diffSize			reference updated with the size in bytes of the diff buffer.
-	@param	instructionCount	reference updated with the number of instructions compressed into the diff buffer. */
-	void DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount);
+	@param	instructionCount	reference updated with the number of instructions compressed into the diff buffer. 
+	@return						true if patch success, false otherwise. */
+	bool DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount);
 	/** Using a previously-generated diff file, applies the patching procedure to transform an input directory to the 'newer' state.
 	@param	dstDirectory		the destination directory to transform.
 	@param	diffBufferComp		the buffer containing the compressed diff instructions.

@@ -8,7 +8,7 @@
 /** Command to patch an entire directory, reading a patchfile. */
 class PatchCommand : public Command {
 public:
-	// Public interface
+	// Public interface implementation
 	virtual void execute(const int & argc, char * argv[]) const override;
 };
 
