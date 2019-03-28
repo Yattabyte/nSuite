@@ -61,4 +61,13 @@ inline static void exit_program(const char * message)
 	exit(EXIT_FAILURE);
 }
 
+/** Print a message to the console, and pause the program until the user presses any key.
+@param	message		pause message to show the user. */
+inline static void pause_program(const char * message)
+{
+	std::cout << message << std::endl;
+	system("pause");
+	std::printf("\033[A\33[2K\r");
+}
+
 #endif // COMMON_H

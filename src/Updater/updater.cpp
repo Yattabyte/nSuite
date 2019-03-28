@@ -4,7 +4,10 @@
 #include <fstream>
 
 
-static std::vector<std::filesystem::directory_entry> get_patches(const std::string & srcDirectory)
+/** Fetch all patch files from the directory supplied.
+@param	srcDirectory	the directory to find patch files.
+@return					list of all patch files within the directory supplied. */
+static auto get_patches(const std::string & srcDirectory)
 {
 	std::vector<std::filesystem::directory_entry> patches;
 	for (const auto & entry : std::filesystem::recursive_directory_iterator(srcDirectory))
@@ -23,9 +26,7 @@ int main()
 	// Report an overview of supplied procedure
 	std::cout << patches.size() << " updates found.\n";
 	if (patches.size()) {
-		std::cout << "Ready to update?\n";
-		system("pause");
-		std::cout << std::endl;
+		pause_program("Ready to update?\n");
 
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();

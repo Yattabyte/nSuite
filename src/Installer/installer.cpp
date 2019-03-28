@@ -11,11 +11,8 @@ int main()
 	std::string dstDirectory(get_current_directory());
 
 	// Report an overview of supplied procedure
-	std::cout
-		<< "Unpacking into:\t\"" << dstDirectory << "\"\n\n";
-	std::cout << "Ready to install?\n";
-	system("pause");
-	std::cout << std::endl;	
+	std::cout << "Unpacking into:\t\"" << dstDirectory << "\"\n\n";
+	pause_program("Ready to install?\n");
 	
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();

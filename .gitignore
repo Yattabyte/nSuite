@@ -37,6 +37,7 @@ x32/
 Documentation/
 .vs/
 src/installer/installer.dir/
+src/updater/updater.dir/
 src/nstlr/nstlr.dir/
 app/
 
