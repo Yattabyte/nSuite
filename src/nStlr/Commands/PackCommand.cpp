@@ -7,6 +7,14 @@
 
 void PackCommand::execute(const int & argc, char * argv[]) const
 {
+	// Supply command header to console
+	std::cout << 
+		"                      ~\n"
+		"    Packager         /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n";
+
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
@@ -17,16 +25,13 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 		else if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			exit_program("\n"
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
+			exit_program(
 				" Arguments Expected:\n"
 				" -src=[path to the directory to compress]\n"
 				" -dst=[path to write the package] (can omit filename)\n"
-				"\n\n"
+				"\n"
 			);
-	}
+	}	
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) 
@@ -39,7 +44,8 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 	// Compress the directory specified
 	char * packBuffer(nullptr);
 	size_t packSize(0ull), fileCount(0ull);
-	DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount);
+	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount))
+		exit_program("Cannot create package from the directory specified, aborting...\n");
 	
 	// Write package to disk
 	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
@@ -52,7 +58,6 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	std::cout
-		<< std::endl
 		<< "Files packaged: " << fileCount << "\n"
 		<< "Bytes packaged: " << packSize << "\n";
 }

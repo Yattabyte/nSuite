@@ -7,6 +7,14 @@
 
 void PatchCommand::execute(const int & argc, char * argv[]) const
 {
+	// Supply command header to console
+	std::cout << 
+		"                      ~\n"
+		"    Patcher          /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n";
+
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
@@ -17,14 +25,11 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 		else if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			exit_program("\n"
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
+			exit_program(
 				" Arguments Expected:\n"
 				" -src=[path to the .ndiff file]\n"
 				" -dst=[path to the directory to patch]\n"
-				"\n\n"
+				"\n"
 			);
 	}
 
@@ -45,7 +50,6 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	std::cout
-		<< std::endl
 		<< "Instruction(s): " << instructionsUsed << "\n"
 		<< "Bytes written:  " << bytesWritten << "\n";
 }

@@ -24,9 +24,16 @@ int main()
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	std::cout << patches.size() << " updates found.\n";
+	std::cout <<
+		"                      ~\n"
+		"    Updater          /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n"
+		"There are " << patches.size() << "  patches(s) found.\n"
+		"\n";
 	if (patches.size()) {
-		pause_program("Ready to update?\n");
+		pause_program("Ready to update?");
 
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();

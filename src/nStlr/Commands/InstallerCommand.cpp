@@ -8,6 +8,14 @@
 
 void InstallerCommand::execute(const int & argc, char * argv[]) const
 {
+	// Supply command header to console
+	std::cout <<
+		"                      ~\n"
+		"    Installer Maker  /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n";
+
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
@@ -18,14 +26,11 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 		else if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			exit_program("\n"
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
+			exit_program(
 				" Arguments Expected:\n"
 				" -src=[path to the directory to compress]\n"
 				" -dst=[path to write the installer] (can omit filename)\n"
-				"\n\n"
+				"\n"
 			);
 	}
 
@@ -40,7 +45,8 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	// Compress the directory specified
 	char * packBuffer(nullptr);
 	size_t packSize(0ull), fileCount(0ull);
-	DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount);
+	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount))
+		exit_program("Cannot create installer from the directory specified, aborting...\n");
 
 	// Acquire installer resource
 	Resource installer(IDR_INSTALLER, "INSTALLER");
@@ -64,7 +70,6 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	std::cout
-		<< std::endl
 		<< "Files packaged: " << fileCount << "\n"
 		<< "Bytes packaged: " << packSize << "\n";
 }

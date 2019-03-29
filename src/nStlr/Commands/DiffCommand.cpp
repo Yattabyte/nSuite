@@ -7,6 +7,14 @@
 
 void DiffCommand::execute(const int & argc, char * argv[]) const 
 {
+	// Supply command header to console
+	std::cout <<
+		"                      ~\n"
+		"    Patch Maker      /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n";
+
 	// Check command line arguments
 	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
@@ -19,17 +27,14 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 		else if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			exit_program("\n"
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
+			exit_program(
 				" Arguments Expected:\n"
 				" -old=[path to the older directory]\n"
 				" -new=[path to the newer directory]\n"
 				" -dst=[path to write the diff file] (can omit filename)\n"
-				"\n\n"
+				"\n"
 			);
-	}
+	}	
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) {
@@ -65,7 +70,6 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	std::cout 
-		<< std::endl
 		<< "Instruction(s): " << instructionCount << "\n"
 		<< "Bytes written:  " << diffSize << "\n";
 }

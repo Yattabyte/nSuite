@@ -65,9 +65,10 @@ inline static void exit_program(const char * message)
 @param	message		pause message to show the user. */
 inline static void pause_program(const char * message)
 {
-	std::cout << message << std::endl;
+	std::cout << message << " ";
 	system("pause");
 	std::printf("\033[A\33[2K\r");
+	std::printf("\033[A\33[2K\r\n");
 }
 
 #endif // COMMON_H

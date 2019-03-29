@@ -7,6 +7,14 @@
 
 void UnpackCommand::execute(const int & argc, char * argv[]) const
 {
+	// Supply command header to console
+	std::cout << 
+		"                      ~\n"
+		"    Unpacker         /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n";
+
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
@@ -17,14 +25,11 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 		else if (command == "-dst=")
 			dstDirectory = std::string(&argv[x][5]);
 		else
-			exit_program("\n"
-				"        Help:       /\n"
-				" ~-----------------~\n"
-				"/\n"
+			exit_program(
 				" Arguments Expected:\n"
 				" -src=[path to the package file]\n"
 				" -dst=[directory to write package contents]\n"
-				"\n\n"
+				"\n"
 			);
 	}
 
@@ -41,11 +46,11 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 
 	// Unpackage using the resource file
 	size_t fileCount(0ull), byteCount(0ull);
-	DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, byteCount, fileCount);
+	if (!DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, byteCount, fileCount))
+		exit_program("Cannot decompress package file, aborting...\n");
 
 	// Output results
 	std::cout
-		<< std::endl
 		<< "Files written:  " << fileCount << "\n"
 		<< "Bytes written:  " << byteCount << "\n";
 }

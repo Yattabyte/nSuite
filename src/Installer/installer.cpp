@@ -11,8 +11,16 @@ int main()
 	std::string dstDirectory(get_current_directory());
 
 	// Report an overview of supplied procedure
-	std::cout << "Unpacking into:\t\"" << dstDirectory << "\"\n\n";
-	pause_program("Ready to install?\n");
+	std::cout << 
+		"                      ~\n"
+		"    Installer        /\n"
+		"  ~-----------------~\n"
+		" /\n"
+		"~\n\n"
+		"Installing to the following directory:\n"
+		"\t> " + dstDirectory + "\\<package name>\n"
+		"\n";
+	pause_program("Ready to install?");
 	
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
@@ -22,7 +30,8 @@ int main()
 		exit_program("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\n");
 	
 	// Unpackage using the resource file
-	DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount);
+	if (!DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount))
+		exit_program("Cannot decompress embedded package resource, aborting...\n");
 
 	// Success, report results
 	const auto end = std::chrono::system_clock::now();
