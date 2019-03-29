@@ -30,7 +30,7 @@ int main()
 		"  ~-----------------~\n"
 		" /\n"
 		"~\n\n"
-		"There are " << patches.size() << "  patches(s) found.\n"
+		"There are " << patches.size() << " patches(s) found.\n"
 		"\n";
 	if (patches.size()) {
 		pause_program("Ready to update?");

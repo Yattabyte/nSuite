@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(nStallr)
+project(nStallerTools)
 
 # Get dependency directory locations from the user
 set (LZ4_DIR "" CACHE PATH "LZ4 root directory")
@@ -15,10 +15,10 @@ link_libraries 	(	debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
 					optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	)
 					
 # add all sub-projects and plugins here
-add_subdirectory( "src/installer" )
-add_subdirectory( "src/updater" )
-add_subdirectory( "src/nstlr" )
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nstlr)
+add_subdirectory( "src/nStaller" )
+add_subdirectory( "src/nUpdater" )
+add_subdirectory( "src/nSuite" )
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nSuite)
  
 # Enable folder structure
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)

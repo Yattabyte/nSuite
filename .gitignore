@@ -36,9 +36,9 @@ x64/
 x32/
 Documentation/
 .vs/
-src/installer/installer.dir/
-src/updater/updater.dir/
-src/nstlr/nstlr.dir/
+src/nStaller/nStaller.dir/
+src/nUpdater/nUpdater.dir/
+src/nSuite/nSuite.dir/
 app/
 
 # Other
@@ -68,3 +68,7 @@ CMakeDoxyfile.tpl.bak
 CMakeDoxyfile.in
 PredictedInputCache_Debug_x64.dat
 PredictedInputCache_Release_x64.dat
+
+# Exceptions
+!Dist x64/nSuite.exe
+!Dist x64/nUpdater.exe

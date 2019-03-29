@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
 	struct compare_string { bool operator()(const char * a, const char * b) const { return strcmp(a, b) < 0; } };
 	const std::map<const char *, Command*, compare_string> commandMap{ 
 		{	"-installer"	,	new InstallerCommand()	},
-		{	"-diff"			,	new DiffCommand()		},
-		{	"-patch"		,	new PatchCommand()		},
 		{	"-pack"			,	new PackCommand()		},
-		{	"-unpack"		,	new UnpackCommand()		}
+		{	"-unpack"		,	new UnpackCommand()		},
+		{	"-diff"			,	new DiffCommand()		},
+		{	"-patch"		,	new PatchCommand()		}
 	};
 
 	// Check for valid arguments
@@ -33,11 +33,11 @@ int main(int argc, char *argv[])
 			" /\n"
 			"~\n\n"
 			" Operations Supported:\n"
-			" -installer (To compress and package an entire directory into an executable)\n"
-			" -diff		(To diff an entire directory into a file)\n"
-			" -patch	(To patch an entire directory from a patch file)\n"
-			" -pack		(To compress an entire directory into a single file)\n"
-			" -unpack	(To decompress an entire directory from a pack file)\n"
+			" -installer	(To package and compress an entire directory into an executable file)\n"
+			" -pack			(To compress an entire directory into a single .npack file)\n"
+			" -unpack		(To decompress an entire directory from a .npack file)\n"
+			" -diff			(To diff an entire directory into a single .ndiff file)\n"
+			" -patch		(To patch an entire directory from a .ndiff file)\n"
 			"\n\n"
 		);
 	

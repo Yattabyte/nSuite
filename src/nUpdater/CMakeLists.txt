@@ -11,7 +11,7 @@ endforeach()
 ############
 #   EXEC   #
 ############
-set (Module updater)
+set (Module nUpdater)
 # Create a library using those source files	
 add_executable(${Module} 	${ROOT} 
 							${CORE_DIR}/Common.h	

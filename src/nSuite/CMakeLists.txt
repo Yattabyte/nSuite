@@ -11,7 +11,7 @@ endforeach()
 ############
 #   EXEC   #
 ############
-set (Module nstlr)
+set (Module nSuite)
 # Create a library using those source files	
 add_executable(${Module} 	${ROOT} 
 							${CORE_DIR}/Common.h	
@@ -24,7 +24,7 @@ add_executable(${Module} 	${ROOT}
 							${CORE_DIR}/DirectoryTools.h 
 							${CORE_DIR}/DirectoryTools.cpp)
 # This module requires the installer to be built first
-add_dependencies(nstlr installer)
+add_dependencies(nSuite nStaller)
 # Set working directory to the project directory
 set_target_properties(${Module} PROPERTIES 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 											LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
