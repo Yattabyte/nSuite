@@ -26,10 +26,12 @@ int main(int argc, char *argv[])
 
 	// Check for valid arguments
 	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end())
-		exit_program("\n"
-			"        Help:       /\n"
-			" ~-----------------~\n"
-			"/\n"
+		exit_program(
+			"                      ~\n"
+			"    nStallr Help:    /\n"
+			"  ~-----------------~\n"
+			" /\n"
+			"~\n\n"
 			" Operations Supported:\n"
 			" -installer (To compress and package an entire directory into an executable)\n"
 			" -diff		(To diff an entire directory into a file)\n"
