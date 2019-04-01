@@ -1,7 +1,8 @@
 # nStaller Tools
 
-This project allows developers to generate and distribute portable installers for a given input directory, as well as diff the contents of 2 input directories into a single patch file. 
-Provides means for users to install and update files managed by this set of tools.
+This project is both a library and a toolset that allows developers to generate and distribute portable installers for a given input directory, as well as diff the contents of 2 input directories into a single patch file.
+The library includes functions to compress/decompress and diff/patch both files and directoires.
+The toolset wraps this functionality into a few example programs.
 
 ## nSuite.exe
 The nSuite tool is intended to be used by developers or those who wish to package/diff/distribute one or many files. It is run by command-line, and requires one of the following sets of arguments to be fulfilled:
