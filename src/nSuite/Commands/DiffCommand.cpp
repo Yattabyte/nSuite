@@ -1,19 +1,21 @@
 #include "DiffCommand.h"
 #include "BufferTools.h"
-#include "DirectoryTools.h"
 #include "Common.h"
+#include "DirectoryTools.h"
+#include "TaskLogger.h"
 #include <fstream>
 
 
 void DiffCommand::execute(const int & argc, char * argv[]) const 
 {
 	// Supply command header to console
-	std::cout <<
-		"                      ~\n"
-		"    Patch Maker      /\n"
-		"  ~-----------------~\n"
-		" /\n"
-		"~\n\n";
+	auto & logger = TaskLogger::GetInstance();	
+	logger <<
+		"                      ~\r\n"
+		"    Patch Maker      /\r\n"
+		"  ~-----------------~\r\n"
+		" /\r\n"
+		"~\r\n\r\n";
 
 	// Check command line arguments
 	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
@@ -28,11 +30,11 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 			dstDirectory = std::string(&argv[x][5]);
 		else
 			exit_program(
-				" Arguments Expected:\n"
-				" -old=[path to the older directory]\n"
-				" -new=[path to the newer directory]\n"
-				" -dst=[path to write the diff file] (can omit filename)\n"
-				"\n"
+				" Arguments Expected:\r\n"
+				" -old=[path to the older directory]\r\n"
+				" -new=[path to the newer directory]\r\n"
+				" -dst=[path to write the diff file] (can omit filename)\r\n"
+				"\r\n"
 			);
 	}	
 
@@ -55,13 +57,13 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull), instructionCount(0ull);
 	if (!DRT::DiffDirectory(oldDirectory, newDirectory, &diffBuffer, diffSize, instructionCount))
-		exit_program("aborting...\n");
+		exit_program("aborting...\r\n");
 	
 	// Create diff file
 	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
 	std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
 	if (!file.is_open())
-		exit_program("Cannot write diff file to disk, aborting...\n");
+		exit_program("Cannot write diff file to disk, aborting...\r\n");
 
 	// Write the diff file to disk
 	file.write(diffBuffer, std::streamsize(diffSize));
@@ -69,7 +71,7 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	delete[] diffBuffer;
 
 	// Output results
-	std::cout 
-		<< "Instruction(s): " << instructionCount << "\n"
-		<< "Bytes written:  " << diffSize << "\n";
+	logger
+		<< "Instruction(s): " << std::to_string(instructionCount) << "\r\n"
+		<< "Bytes written:  " << std::to_string(diffSize) << "\r\n";
 }

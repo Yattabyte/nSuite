@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Instructions.h"
 #include "Threader.h"
+#include "TaskLogger.h"
 #include <atomic>
 #include <filesystem>
 #include <fstream>
@@ -13,6 +14,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 {
 	// Variables
 	Threader threader;
+	auto & logger = TaskLogger::GetInstance();
 	const auto absolute_path_length = srcDirectory.size();
 	const auto directoryArray = get_file_paths(srcDirectory);
 	struct FileData {
@@ -25,7 +27,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	// Get path name
 	const auto srcPath = std::filesystem::path(srcDirectory);
 	if (!std::filesystem::is_directory(srcPath) || !srcPath.has_stem()) {
-		std::cout << "Critical failure: the source path specified \"" << srcDirectory << "\" is not a (useable) directory.\n";
+		logger << "Critical failure: the source path specified \"" << srcDirectory << "\" is not a (useable) directory.\r\n";
 		return false;
 	}
 	const auto folderName = srcPath.stem().string();
@@ -96,7 +98,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 
 	// Compress the archive
 	if (!BFT::CompressBuffer(filebuffer, archiveSize, packBuffer, packSize)) {
-		std::cout << "Critical failure: cannot perform compression operation on the set of joined files.\n";
+		logger << "Critical failure: cannot perform compression operation on the set of joined files.\r\n";
 		return false;
 	}
 
@@ -108,10 +110,11 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t & byteCount, size_t & fileCount)
 {
 	Threader threader;
+	auto & log = TaskLogger::GetInstance();
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
 	if (!BFT::DecompressBuffer(packBuffer, packSize, &decompressedBuffer, decompressedSize)) {
-		std::cout << "Critical failure: cannot decompress package file.\n";
+		log << "Critical failure: cannot decompress package file.\r\n";
 		return false;
 	}
 
@@ -128,6 +131,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	// Read the archive
 	size_t bytesRead = sizeof(size_t) + folderSize;
 	std::atomic_size_t filesWritten(0ull), bytesWritten(0ull);
+	log.setRange(decompressedSize + 1);
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
@@ -157,13 +161,16 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		readingPtr = PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
+		log << "Writing file: " << std::string(path_array, pathSize) << "\r\n";
+		log.setProgress(bytesRead);
 	}
 
 	// Wait for threaded operations to complete
 	threader.prepareForShutdown();
 	while (!threader.isFinished())
-		continue;
+		continue;	
 	threader.shutdown();
+	log.setProgress(bytesRead + 1);
 
 	// Success
 	fileCount = filesWritten;
@@ -217,10 +224,11 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		else {
 			// Treat as a snapshot file if it isn't a directory
 			// Open diff file
+			auto & logger = TaskLogger::GetInstance();
 			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
 			const size_t packSize = std::filesystem::file_size(directory);
 			if (!packFile.is_open()) {
-				std::cout << "Critical failure: cannot read package file.\n";
+				logger << "Critical failure: cannot read package file.\r\n";
 				return false;
 			}
 			char * compBuffer = new char[packSize];
@@ -230,7 +238,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 			// Decompress
 			size_t snapSize(0ull);
 			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize)) {
-				std::cout << "Critical failure: cannot decompress package file.\n";
+				logger << "Critical failure: cannot decompress package file.\r\n";
 				return false;
 			}
 			delete[] compBuffer;
@@ -330,6 +338,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	};
 
 	// Retrieve all common, added, and removed files
+	auto & logger = TaskLogger::GetInstance();
 	PathPairList commonFiles;
 	PathList addedFiles, removedFiles;
 	char * oldSnap(nullptr), * newSnap(nullptr);
@@ -351,7 +360,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 				char * buffer(nullptr);
 				size_t size(0ull);
 				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionCount)) {
-					std::cout << "diffing file \"" << cFiles.first->relative << "\"\n";
+					logger << "diffing file \"" << cFiles.first->relative << "\"\r\n";
 					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', vecBuffer);
 				}
 				delete[] buffer;
@@ -372,7 +381,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 			char * buffer(nullptr);
 			size_t size(0ull);
 			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionCount)) {
-				std::cout << "adding file \"" << nFile->relative << "\"\n";
+				logger << "adding file \"" << nFile->relative << "\"\r\n";
 				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', vecBuffer);
 			}
 			delete[] buffer;
@@ -389,7 +398,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		size_t oldHash(0ull);
 		if (oFile->open(&oldBuffer, oldHash)) {
 			instructionCount++;
-			std::cout << "removing file \"" << oFile->relative << "\"\n";
+			logger << "removing file \"" << oFile->relative << "\"\r\n";
 			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', vecBuffer);
 		}
 		delete[] oldBuffer;
@@ -400,7 +409,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 
 	// Compress final buffer
 	if (!BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), diffBuffer, diffSize)) {
-		std::cout << "Critical failure: cannot compress diff file.\n";
+		logger << "Critical failure: cannot compress diff file.\r\n";
 		return false;
 	}
 	return true;
@@ -408,10 +417,11 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 
 bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t & bytesWritten, size_t & instructionsUsed)
 {
+	auto & logger = TaskLogger::GetInstance();
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull);
 	if (!BFT::DecompressBuffer(diffBufferCompressed, diffSizeCompressed, &diffBuffer, diffSize)) {
-		std::cout << "Critical failure: cannot decompress diff file.\n";
+		logger << "Critical failure: cannot decompress diff file.\r\n";
 		return false;
 	}
 
@@ -493,34 +503,34 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	
 		// Try to read source file
 		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash)) {
-			std::cout << "Critical failure: Cannot read source file from disk.\n";
+			logger << "Critical failure: Cannot read source file from disk.\r\n";
 			return false;
 		}
 
 		// Patch if this source file hasn't been patched yet
 		if (oldHash == file.diff_newHash)
-			std::cout << "The file \"" << file.path << "\" is already up to date, skipping...\n";
+			logger << "The file \"" << file.path << "\" is already up to date, skipping...\r\n";
 		else if (oldHash != file.diff_oldHash) {
-			std::cout << "Critical failure: the file \"" << file.path << "\" is of an unexpected version. \n";
+			logger << "Critical failure: the file \"" << file.path << "\" is of an unexpected version. \r\n";
 			return false;
 		}
 		else {
 			// Patch buffer
-			std::cout << "patching file \"" << file.path << "\"\n";
+			logger << "patching file \"" << file.path << "\"\r\n";
 			size_t newSize(0ull);
 			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
 			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
 
 			// Confirm new hashes match
 			if (newHash != file.diff_newHash) {
-				std::cout << "Critical failure: patched file is corrupted (hash mismatch).\n";
+				logger << "Critical failure: patched file is corrupted (hash mismatch).\r\n";
 				return false;
 			}
 
 			// Write patched buffer to disk
 			std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 			if (!newFile.is_open()) {
-				std::cout << "Critical failure: cannot write patched file to disk.\n";
+				logger << "Critical failure: cannot write patched file to disk.\r\n";
 				return false;
 			}
 			newFile.write(newBuffer, std::streamsize(newSize));
@@ -537,7 +547,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	// By this point all files matched, safe to add new ones
 	for each (const auto & file in addedFiles) {
 		std::filesystem::create_directories(std::filesystem::path(file.fullPath).parent_path());
-		std::cout << "adding file \"" << file.path << "\"\n";
+		logger << "adding file \"" << file.path << "\"\r\n";
 		
 		// Write the 'insert' instructions
 		// Remember that we use the diff/patch function to add new files too
@@ -548,14 +558,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 
 		// Confirm new hashes match
 		if (newHash != file.diff_newHash) {
-			std::cout << "Critical failure: new file is corrupted (hash mismatch).\n";
+			logger << "Critical failure: new file is corrupted (hash mismatch).\r\n";
 			return false;
 		}
 
 		// Write new file to disk
 		std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 		if (!newFile.is_open()) {
-			std::cout << "Critical failure: cannot write new file to disk.\n";
+			logger << "Critical failure: cannot write new file to disk.\r\n";
 			return false;
 		}
 		newFile.write(newBuffer, std::streamsize(newSize));
@@ -575,14 +585,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 
 		// Try to read source file
 		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash))
-			std::cout << "The file \"" << file.path << "\" has already been removed, skipping...\n";
+			logger << "The file \"" << file.path << "\" has already been removed, skipping...\r\n";
 		else {
 			// Only remove source files if they match entirely
 			if (oldHash == file.diff_oldHash)
 				if (!std::filesystem::remove(file.fullPath))
-					std::cout << "Error: cannot delete file \"" << file.path << "\" from disk, delete this file manually if you can. \n";
+					logger << "Error: cannot delete file \"" << file.path << "\" from disk, delete this file manually if you can. \r\n";
 				else
-					std::cout << "removing file \"" << file.path << "\"\n";
+					logger << "removing file \"" << file.path << "\"\r\n";
 		}
 
 		// Cleanup and finish

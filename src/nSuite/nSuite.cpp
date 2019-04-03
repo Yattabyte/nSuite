@@ -1,4 +1,5 @@
 #include "Common.h"
+#include "TaskLogger.h"
 #include <map>
 
 // Command inclusions
@@ -23,22 +24,26 @@ int main(int argc, char *argv[])
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		}
 	};
+	auto & logger = TaskLogger::GetInstance();
+	logger.addCallback_Text([&](const std::string & message) {
+		std::cout << message;
+	});
 
 	// Check for valid arguments
 	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end())
 		exit_program(
-			"                      ~\n"
-			"    nStallr Help:    /\n"
-			"  ~-----------------~\n"
-			" /\n"
-			"~\n\n"
-			" Operations Supported:\n"
-			" -installer	(To package and compress an entire directory into an executable file)\n"
-			" -pack			(To compress an entire directory into a single .npack file)\n"
-			" -unpack		(To decompress an entire directory from a .npack file)\n"
-			" -diff			(To diff an entire directory into a single .ndiff file)\n"
-			" -patch		(To patch an entire directory from a .ndiff file)\n"
-			"\n\n"
+			"                      ~\r\n"
+			"    nSuite Help:     /\r\n"
+			"  ~-----------------~\r\n"
+			" /\r\n"
+			"~\r\n\r\n"
+			" Operations Supported:\r\n"
+			" -installer	(To package and compress an entire directory into an executable file)\r\n"
+			" -pack			(To compress an entire directory into a single .npack file)\r\n"
+			" -unpack		(To decompress an entire directory from a .npack file)\r\n"
+			" -diff			(To diff an entire directory into a single .ndiff file)\r\n"
+			" -patch		(To patch an entire directory from a .ndiff file)\r\n"
+			"\r\n\r\n"
 		);
 	
 	// Command exists in command map, execute it
@@ -47,7 +52,7 @@ int main(int argc, char *argv[])
 	// Output results and finish
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
+	logger << "Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n";
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

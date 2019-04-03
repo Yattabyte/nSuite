@@ -1,5 +1,6 @@
 #include "Common.h"
 #include "DirectoryTools.h"
+#include "TaskLogger.h"
 #include <chrono>
 #include <fstream>
 
@@ -19,19 +20,24 @@ static auto get_patches(const std::string & srcDirectory)
 /** Entry point. */
 int main()
 {
+	auto & logger = TaskLogger::GetInstance();
+	logger.addCallback_Text([&](const std::string & message) {
+		std::cout << message;
+	});
+
 	// Find all patch files?
 	const auto dstDirectory(get_current_directory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	std::cout <<
-		"                      ~\n"
-		"    Updater          /\n"
-		"  ~-----------------~\n"
-		" /\n"
-		"~\n\n"
-		"There are " << patches.size() << " patches(s) found.\n"
-		"\n";
+	logger <<
+		"                      ~\r\n"
+		"    Updater          /\r\n"
+		"  ~-----------------~\r\n"
+		" /\r\n"
+		"~\r\n\r\n"
+		"There are " << std::to_string(patches.size()) << " patches(s) found.\r\n"
+		"\r\n";
 	if (patches.size()) {
 		pause_program("Ready to update?");
 
@@ -43,7 +49,7 @@ int main()
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
 			const size_t diffSize = std::filesystem::file_size(patch);
 			if (!diffFile.is_open()) {
-				std::cout << "Cannot read diff file, skipping...\n";
+				logger << "Cannot read diff file, skipping...\r\n";
 				continue;
 			}
 			else {
@@ -52,14 +58,14 @@ int main()
 				diffFile.read(diffBuffer, std::streamsize(diffSize));
 				diffFile.close();
 				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, bytesWritten, instructionsUsed)) {
-					std::cout << "skipping patch...\n";
+					logger << "skipping patch...\r\n";
 					delete[] diffBuffer;
 					continue;
 				}
 
 				// Delete patch file at very end
 				if (!std::filesystem::remove(patch))
-					std::cout << "Cannot delete diff file \"" << patch << "\" from disk, make sure to delete it manually.\n";
+					logger << "Cannot delete diff file \"" << patch.path().string() << "\" from disk, make sure to delete it manually.\r\n";
 				patchesApplied++;
 				delete[] diffBuffer;
 			}
@@ -68,10 +74,10 @@ int main()
 		// Success, report results
 		const auto end = std::chrono::system_clock::now();
 		const std::chrono::duration<double> elapsed_seconds = end - start;
-		std::cout
-			<< "Patches used:   " << patchesApplied << " out of " << patches.size() << "\n"
-			<< "Bytes written:  " << bytesWritten << "\n"
-			<< "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
+		logger
+			<< "Patches used:   " << std::to_string(patchesApplied) << " out of " << std::to_string(patches.size()) << "\r\n"
+			<< "Bytes written:  " << std::to_string(bytesWritten) << "\r\n"
+			<< "Total duration: " << std::to_string(elapsed_seconds.count()) << " seconds\r\n\r\n";
 	}
 
 	system("pause");
