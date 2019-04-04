@@ -1,33 +1,35 @@
 #include "BufferTools.h"
+#include "Common.h"
 #include "Instructions.h"
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
 
 
-bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize, const size_t & headerPadding)
 {
 	// Allocate enough room for the compressed buffer (2 size_t bigger than source buffer)
-	destinationSize = (sourceSize * 2ull) + size_t(sizeof(size_t));
+	destinationSize = (sourceSize * 2ull) + size_t(sizeof(size_t)) + headerPadding;
 	*destinationBuffer = new char[destinationSize];
 
+	// Offset pointer by the amount requested for header-space
+	char * pointer = reinterpret_cast<char*>(PTR_ADD(*destinationBuffer, headerPadding));
+
 	// First chunk of data = the total uncompressed size
-	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
+	*reinterpret_cast<size_t*>(pointer) = sourceSize;
 
 	// Increment pointer so that the compression works on the remaining part of the buffer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) + size_t(sizeof(size_t));
+	pointer = reinterpret_cast<char*>(pointer) + size_t(sizeof(size_t));
 
 	// Compress the buffer
 	auto result = LZ4_compress_default(
 		sourceBuffer,
-		*destinationBuffer,
+		pointer,
 		int(sourceSize),
-		int(destinationSize - size_t(sizeof(size_t)))
+		int(destinationSize - size_t(sizeof(size_t)) - headerPadding)
 	);
 
-	// Decrement pointer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) - size_t(sizeof(size_t));
-	destinationSize = size_t(result) + sizeof(size_t);
+	destinationSize = headerPadding + size_t(sizeof(size_t)) + size_t(result);
 	return (result > 0);
 }
 

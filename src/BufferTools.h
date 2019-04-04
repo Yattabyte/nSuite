@@ -11,7 +11,7 @@ namespace BFT {
 	@param	destinationBuffer	pointer to the destination buffer, which will hold compressed contents.
 	@param	destinationSize		reference updated with the size in bytes of the compressed destinationBuffer.
 	@return						true if compression success, false otherwise. */
-	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
+	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize, const size_t & headerPadding = 0ull);
 	/** Decompressess a source buffer into an equal or larger sized destination buffer.
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size in bytes of the source buffer.

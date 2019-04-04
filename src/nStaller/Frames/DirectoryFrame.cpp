@@ -40,6 +40,7 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInsta
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
 	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(m_directoryField, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 }
 
@@ -47,11 +48,6 @@ void DirectoryFrame::setDirectory(const std::string & dir)
 {
 	*m_directory = dir;
 	SetWindowText(m_directoryField, dir.c_str());
-}
-
-const HWND DirectoryFrame::getBrowseButton() const
-{
-	return m_browseButton;
 }
 
 static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
@@ -199,10 +195,18 @@ static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	else if (message == WM_COMMAND) {
 		if (HIWORD(wParam) == BN_CLICKED) {
 			auto hndl = LOWORD(lParam);
-			if (hndl == LOWORD(ptr->getBrowseButton())) {
+			if (hndl == LOWORD(ptr->m_browseButton)) {
 				std::string directory("");
 				if (SUCCEEDED(OpenFileDialog(directory)))
 					ptr->setDirectory(directory);					
+			}
+		}
+		else if (HIWORD(wParam) == EN_CHANGE) {
+			if (ptr != nullptr) {
+				int textLength = GetWindowTextLength(ptr->m_directoryField);
+				char * string = new char[textLength];
+				GetWindowText(ptr->m_directoryField, string, textLength);
+				*ptr->m_directory = std::string(string, textLength);
 			}
 		}
 	}

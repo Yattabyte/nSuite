@@ -34,7 +34,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 
 	// Calculate final file size using all the files in this directory,
 	// and make a list containing all relevant files and their attributes
-	size_t archiveSize = sizeof(size_t) + folderName.size();	// include size of the root folder name
+	size_t archiveSize(0ull);
 	for each (const auto & entry in directoryArray) {
 		auto path = entry.path().string();
 		path = path.substr(absolute_path_length, path.size() - absolute_path_length);
@@ -53,17 +53,8 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	// Create buffer for final file data
 	char * filebuffer = new char[archiveSize];
 
-	// Begin writing data into buffer
-	void * pointer = filebuffer;
-
-	// Write root folder name and size
-	auto pathSize = folderName.size();
-	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
-	memcpy(pointer, folderName.data(), pathSize);
-	pointer = PTR_ADD(pointer, pathSize);
-
 	// Write file data into the buffer
+	void * pointer = filebuffer;
 	for each (const auto & file in files) {
 		threader.addJob([file, pointer]() {
 			// Write the total number of characters in the path string, into the archive
@@ -96,14 +87,22 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		continue;
 	threader.shutdown();
 
-	// Compress the archive
-	if (!BFT::CompressBuffer(filebuffer, archiveSize, packBuffer, packSize)) {
+	// Compress the archive, pad the beginning with header-space
+	if (!BFT::CompressBuffer(filebuffer, archiveSize, packBuffer, packSize, sizeof(size_t) + folderName.size())) {
 		logger << "Critical failure: cannot perform compression operation on the set of joined files.\r\n";
 		return false;
 	}
+	delete[] filebuffer;
+
+	// Write root folder name and size
+	pointer = *packBuffer;
+	auto pathSize = folderName.size();	
+	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
+	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
+	memcpy(pointer, folderName.data(), pathSize);
+	pointer = PTR_ADD(pointer, pathSize);
 
 	// Clean up
-	delete[] filebuffer;
 	return true;
 }
 
@@ -120,18 +119,9 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 	// Begin reading the archive
 	void * readingPtr = decompressedBuffer;
-
-	// Read the root folder name and size
-	const auto folderSize = *reinterpret_cast<size_t*>(readingPtr);
-	readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
-	const char * folderArray = reinterpret_cast<char*>(readingPtr);
-	const auto finalDestionation = dstDirectory + "\\" + std::string(folderArray, folderSize);
-	readingPtr = PTR_ADD(readingPtr, folderSize);
-
-	// Read the archive
-	size_t bytesRead = sizeof(size_t) + folderSize;
-	std::atomic_size_t filesWritten(0ull), bytesWritten(0ull);
-	log.setRange(decompressedSize + 1);
+	size_t bytesRead(0ull);
+	std::atomic_size_t filesWritten(0ull);
+	log.setRange(decompressedSize + 100);
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
@@ -139,7 +129,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
-		const auto path = finalDestionation + std::string(path_array, pathSize);
+		const auto path = dstDirectory + std::string(path_array, pathSize);
 		readingPtr = PTR_ADD(readingPtr, pathSize);
 
 		// Read the file size in bytes, from the archive 
@@ -148,20 +138,19 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		// Write file out to disk, from the archive
 		void * ptrCopy = readingPtr; // needed for lambda, since readingPtr gets incremented
-		threader.addJob([ptrCopy, path, fileSize, &filesWritten, &bytesWritten]() {	
+		threader.addJob([ptrCopy, path, fileSize, &filesWritten]() {	
 			// Write-out the file if it doesn't exist yet, if the size is different, or if it's older
 			std::filesystem::create_directories(std::filesystem::path(path).parent_path());
 			std::ofstream file(path, std::ios::binary | std::ios::out);
 			if (file.is_open())
 				file.write(reinterpret_cast<char*>(ptrCopy), (std::streamsize)fileSize);
 			file.close();
-			bytesWritten += fileSize;
 			filesWritten++;			
 		});
 
 		readingPtr = PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
-		log << "Writing file: " << std::string(path_array, pathSize) << "\r\n";
+		log << "Writing file: " + std::string(path_array, pathSize) + "\r\n";
 		log.setProgress(bytesRead);
 	}
 
@@ -170,11 +159,11 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	while (!threader.isFinished())
 		continue;	
 	threader.shutdown();
-	log.setProgress(bytesRead + 1);
+	log.setProgress(bytesRead + 100);
 
 	// Success
 	fileCount = filesWritten;
-	byteCount = bytesWritten;
+	byteCount = bytesRead;
 	delete[] decompressedBuffer;
 	return true;
 }

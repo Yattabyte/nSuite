@@ -16,11 +16,9 @@ public:
 
 	// Public Methods
 	void setDirectory(const std::string & dir);
-	const HWND getBrowseButton() const;
 
 
-private:
-	// Private Attributes
+	// Public Attributes
 	std::string * m_directory = nullptr;
 	HWND m_directoryField = nullptr, m_browseButton = nullptr;
 };

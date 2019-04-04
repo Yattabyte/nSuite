@@ -48,7 +48,7 @@ InstallFrame::InstallFrame(const HINSTANCE & hInstance, const HWND & parent, con
 	m_taskIndex = logger.addCallback_Progress([&](const size_t & position, const size_t & range) {
 		SendMessage(m_hwndPrgsBar, PBM_SETRANGE32, 0, LPARAM(int_fast32_t(range)));
 		SendMessage(m_hwndPrgsBar, PBM_SETPOS, WPARAM(int_fast32_t(position)), 0);
-		std::string s = std::to_string(int((float(position) / float(range)) * 100.0f))+ "%";
+		std::string s = std::to_string( position == range ? 100 : int(std::floorf((float(position) / float(range)) * 100.0f)))+ "%";
 		SetWindowText(m_hwndPrgsText, s.c_str());
 	});
 

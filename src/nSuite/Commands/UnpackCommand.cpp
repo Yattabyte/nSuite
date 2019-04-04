@@ -46,13 +46,22 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 	packFile.read(packBuffer, std::streamsize(packSize));
 	packFile.close();
 
+	// Read the package header
+	char * packBufferOffset = packBuffer;
+	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
+	const auto finalDestionation = dstDirectory + "\\" + std::string(folderArray, folderSize);
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+
 	// Unpackage using the resource file
 	size_t fileCount(0ull), byteCount(0ull);
-	if (!DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, byteCount, fileCount))
+	if (!DRT::DecompressDirectory(finalDestionation, packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), byteCount, fileCount))
 		exit_program("Cannot decompress package file, aborting...\r\n");
+	delete[] packBuffer;
 
 	// Output results
 	logger
-		<< "Files written:  " << std::to_string(fileCount) << "\r\n"
-		<< "Bytes written:  " << std::to_string(byteCount) << "\r\n";
+		<< "Files written:   " << std::to_string(fileCount) << "\r\n"
+		<< "Bytes processed: " << std::to_string(byteCount) << "\r\n";
 }

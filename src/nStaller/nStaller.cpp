@@ -1,78 +1,117 @@
 #include "Common.h"
+#include "BufferTools.h"
 #include "DirectoryTools.h"
+#include "Threader.h"
 #include "Resource.h"
-#include <chrono>
-#include <functional>
-//
-//
-///** Entry point. */
-//int main()
-//{
-//	// Check command line arguments
-//	std::string dstDirectory(get_current_directory());
-//
-//	// Report an overview of supplied procedure
-//	std::cout << 
-//		"                      ~\r\n"
-//		"    Installer        /\r\n"
-//		"  ~-----------------~\r\n"
-//		" /\r\n"
-//		"~\r\n\r\n"
-//		"Installing to the following directory:\r\n"
-//		"\t> " + dstDirectory + "\\<package name>\r\n"
-//		"\r\n";
-//	pause_program("Ready to install?");
-//	
-//	// Acquire archive resource
-//	const auto start = std::chrono::system_clock::now();
-//	size_t fileCount(0ull), byteCount(0ull);
-//	Resource archive(IDR_ARCHIVE, "ARCHIVE");
-//	if (!archive.exists())
-//		exit_program("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");
-//	
-//	// Unpackage using the resource file
-//	if (!DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount))
-//		exit_program("Cannot decompress embedded package resource, aborting...\r\n");
-//
-//	// Success, report results
-//	const auto end = std::chrono::system_clock::now();
-//	const std::chrono::duration<double> elapsed_seconds = end - start;
-//	std::cout
-//		<< "Files written:  " << fileCount << "\r\n"
-//		<< "Bytes written:  " << byteCount << "\r\n"
-//		<< "Total duration: " << elapsed_seconds.count() << " seconds\r\n\r\n";
-//	system("pause");
-//	exit(EXIT_SUCCESS);	
-//}*/
-
 #include "Frames/WelcomeFrame.h"
 #include "Frames/DirectoryFrame.h"
 #include "Frames/InstallFrame.h"
 #include "Frames/FinishFrame.h"
-#include "Threader.h"
+#include <chrono>
+#include <functional>
+#include <stdlib.h>
+#include <Shlobj.h>
+#include <tchar.h>
 #include <windows.h>
 #include <windowsx.h>
-#include <stdlib.h>
-#include <tchar.h>
 #include <vector>
 
 
-constexpr static auto WINDOW_CLASS = "nStaller";
-constexpr static auto WINDOW_TITLE = "Installer";
-constexpr static auto HEADER_COLOR = RGB(240, 240, 240);
-constexpr static auto FOOTER_COLOR = RGB(220, 220, 220);
-constexpr static auto FOREGROUND_COLOR = RGB(230, 230, 230);
-constexpr static auto BACKGROUND_COLOR = RGB(200, 200, 200);
-static Threader threader = Threader(1ull);
-static std::string directory = "E:\\Test";
-static std::vector<Frame*> frames;
-static std::vector<std::function<void()>> frameOperations;
-static int FRAME_INDEX = 0;
-static Resource ARCHIVE(IDR_ARCHIVE, "ARCHIVE");
+static Threader threader(1ull);
+static std::vector<Frame*> Frames;
+static std::vector<std::function<void()>> FrameOperations;
+static int FrameIndex = 0;
 static HWND hwnd_window, hwnd_exitButton, hwnd_prevButton, hwnd_nextButton, hwnd_dialogue = NULL;
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-static bool CreateMainWindow(HINSTANCE hInstance)
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static bool CreateMainWindow(HINSTANCE, const std::string &);
+
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
+{
+	// Get user's program files directory
+	TCHAR pf[MAX_PATH];
+	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
+	std::string writeDirectory(pf), directoryName = "";
+
+	// Get installer's payload
+	Resource archive(IDR_ARCHIVE, "ARCHIVE");
+	size_t archiveOffset(0ull);
+	if (!archive.exists()) {
+		// Show error screen
+	}
+	else {
+		// Read the package header
+		const auto folderSize = *reinterpret_cast<size_t*>(archive.getPtr());
+		directoryName = std::string(reinterpret_cast<char*>(PTR_ADD(archive.getPtr(), size_t(sizeof(size_t)))), folderSize);
+		writeDirectory += "\\" + directoryName;
+		archiveOffset = size_t(sizeof(size_t)) + folderSize;
+	}
+
+	if (!CreateMainWindow(hInstance, directoryName))
+		exit(EXIT_FAILURE);
+
+	// Welcome Screen
+	Frames.emplace_back(new WelcomeFrame(hInstance, hwnd_window, 170, 0, 630, 450));
+	FrameOperations.emplace_back([&]() {
+		ShowWindow(hwnd_exitButton, true);
+		ShowWindow(hwnd_prevButton, false);
+		ShowWindow(hwnd_nextButton, true);
+		Frames[FrameIndex]->setVisible(true);
+	});
+	
+	// Directory Screen
+	Frames.emplace_back(new DirectoryFrame(&writeDirectory, hInstance, hwnd_window, 170, 0, 630, 450));
+	FrameOperations.emplace_back([&]() {
+		ShowWindow(hwnd_exitButton, true);
+		ShowWindow(hwnd_prevButton, true);
+		ShowWindow(hwnd_nextButton, true);
+		Frames[FrameIndex]->setVisible(true);
+	});
+
+	// Installation Screen
+	Frames.emplace_back(new InstallFrame(hInstance, hwnd_window, 170, 0, 630, 450));
+	FrameOperations.emplace_back([&]() {
+		EnableWindow(hwnd_exitButton, false);
+		EnableWindow(hwnd_prevButton, false);
+		EnableWindow(hwnd_nextButton, false);
+		Frames[FrameIndex]->setVisible(true);
+
+		// Acquire archive resource	
+		threader.addJob([&writeDirectory, &archive, &archiveOffset]() {
+			// Unpackage using the rest of the resource file
+			size_t byteCount(0ull), fileCount(0ull);
+			sanitize_path(writeDirectory);
+			if (!DRT::DecompressDirectory(writeDirectory, reinterpret_cast<char*>(PTR_ADD(archive.getPtr(), archiveOffset)), archive.getSize() - archiveOffset, byteCount, fileCount)) {
+				//	exit_program("Cannot decompress embedded package resource, aborting...\r\n");
+			}
+			EnableWindow(hwnd_nextButton, true);
+		});		
+	});
+
+	// Finish Screen
+	Frames.emplace_back(new FinishFrame(hInstance, hwnd_window, 170, 0, 630, 450));
+	FrameOperations.emplace_back([&]() {
+		EnableWindow(hwnd_exitButton, true);
+		ShowWindow(hwnd_exitButton, true);
+		ShowWindow(hwnd_prevButton, false);
+		ShowWindow(hwnd_nextButton, false);
+		Frames[FrameIndex]->setVisible(true);
+		SetWindowText(hwnd_exitButton, "Close");
+	});
+
+	// Begin first frame
+	FrameOperations[FrameIndex]();
+
+	// Main message loop:
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return (int)msg.wParam;
+}
+
+static bool CreateMainWindow(HINSTANCE hInstance, const std::string & windowName)
 {
 	// Try to create window class
 	WNDCLASSEX wcex;
@@ -86,14 +125,14 @@ static bool CreateMainWindow(HINSTANCE hInstance)
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = WINDOW_CLASS;
+	wcex.lpszClassName = "nStaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex))
 		return false;
 
 	// Try to create window object
 	hwnd_window = CreateWindow(
-		WINDOW_CLASS, WINDOW_TITLE,
+		"nStaller", std::string(windowName + " - installer").c_str(),
 		WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		800, 500,
@@ -112,78 +151,6 @@ static bool CreateMainWindow(HINSTANCE hInstance)
 	AdjustWindowRectEx(&rc, dwStyle, false, dwExStyle);
 	SetWindowPos(hwnd_window, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 	return true;
-}
-
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
-{
-	if (!CreateMainWindow(hInstance))
-		exit(EXIT_FAILURE);
-
-	// Welcome Screen
-	frames.emplace_back(new WelcomeFrame(hInstance, hwnd_window, 170, 0, 630, 450));
-	frameOperations.emplace_back([&]() {
-		ShowWindow(hwnd_exitButton, true);
-		ShowWindow(hwnd_prevButton, false);
-		ShowWindow(hwnd_nextButton, true);
-		frames[FRAME_INDEX]->setVisible(true);
-	});
-	
-	// Directory Screen
-	frames.emplace_back(new DirectoryFrame(&directory, hInstance, hwnd_window, 170, 0, 630, 450));
-	frameOperations.emplace_back([&]() {
-		ShowWindow(hwnd_exitButton, true);
-		ShowWindow(hwnd_prevButton, true);
-		ShowWindow(hwnd_nextButton, true);
-		frames[FRAME_INDEX]->setVisible(true);
-	});
-
-	// Installation Screen
-	frames.emplace_back(new InstallFrame(hInstance, hwnd_window, 170, 0, 630, 450));
-	frameOperations.emplace_back([&]() {
-		EnableWindow(hwnd_exitButton, false);
-		EnableWindow(hwnd_prevButton, false);
-		EnableWindow(hwnd_nextButton, false);
-		frames[FRAME_INDEX]->setVisible(true);
-
-		// Acquire archive resource	
-		threader.addJob([]() {
-			const auto start = std::chrono::system_clock::now();
-			size_t fileCount(0ull), byteCount(0ull);
-			Resource archive(IDR_ARCHIVE, "ARCHIVE");
-			if (!archive.exists()) {
-				//exit_program("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");
-			}
-
-			// Unpackage using the resource file
-			else if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount)) {
-			//	exit_program("Cannot decompress embedded package resource, aborting...\r\n");
-			}
-
-			EnableWindow(hwnd_nextButton, true);
-		});		
-	});
-
-	// Finish Screen
-	frames.emplace_back(new FinishFrame(hInstance, hwnd_window, 170, 0, 630, 450));
-	frameOperations.emplace_back([&]() {
-		EnableWindow(hwnd_exitButton, true);
-		ShowWindow(hwnd_exitButton, true);
-		ShowWindow(hwnd_prevButton, false);
-		ShowWindow(hwnd_nextButton, false);
-		frames[FRAME_INDEX]->setVisible(true);
-		SetWindowText(hwnd_exitButton, "Close");
-	});
-
-	// Begin first frame
-	frameOperations[FRAME_INDEX]();
-
-	// Main message loop:
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-	return (int)msg.wParam;
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -215,7 +182,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int vertical_offset = 15;
 		for (int x = 0; x < 4; ++x) {
 			// Draw Circle
-			auto color = x == FRAME_INDEX ? RGB(25, 225, 125) : x < FRAME_INDEX ? RGB(25, 125, 225) : RGB(255, 255, 255);
+			auto color = x == FrameIndex ? RGB(25, 225, 125) : x < FrameIndex ? RGB(25, 125, 225) : RGB(255, 255, 255);
 			SetDCBrushColor(hdc, color);
 			SetDCPenColor(hdc, color);
 			SetTextColor(hdc, color);
@@ -238,16 +205,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (HIWORD(wParam) == BN_CLICKED) {
 			auto hndl = LOWORD(lParam);
 			// A button has been clicked, so SOMETHING drastic is going to happen
-			frames[FRAME_INDEX]->setVisible(false);
+			Frames[FrameIndex]->setVisible(false);
 			// If exit
 			if (hndl == LOWORD(hwnd_exitButton))
 				PostQuitMessage(0);
 			// If previous
 			else if (hndl == LOWORD(hwnd_prevButton))
-				frameOperations[--FRAME_INDEX]();
+				FrameOperations[--FrameIndex]();
 			// If next
 			else if (hndl == LOWORD(hwnd_nextButton))
-				frameOperations[++FRAME_INDEX]();
+				FrameOperations[++FrameIndex]();
 			
 			RECT rc = { 0, 0, 160, 450 };
 			RedrawWindow(hwnd_window, &rc, NULL, RDW_INVALIDATE);
