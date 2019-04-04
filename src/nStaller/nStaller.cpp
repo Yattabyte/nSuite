@@ -32,6 +32,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
 	std::string writeDirectory(pf), directoryName = "";
+	bool openDirectoryOnClose = true;
 
 	// Get installer's payload
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
@@ -76,20 +77,20 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE hPrevInstance, _In
 		EnableWindow(hwnd_nextButton, false);
 		Frames[FrameIndex]->setVisible(true);
 
-		// Acquire archive resource	
+		
 		threader.addJob([&writeDirectory, &archive, &archiveOffset]() {
-			// Unpackage using the rest of the resource file
+			/*// Unpackage using the rest of the resource file
 			size_t byteCount(0ull), fileCount(0ull);
 			sanitize_path(writeDirectory);
 			if (!DRT::DecompressDirectory(writeDirectory, reinterpret_cast<char*>(PTR_ADD(archive.getPtr(), archiveOffset)), archive.getSize() - archiveOffset, byteCount, fileCount)) {
 				//	exit_program("Cannot decompress embedded package resource, aborting...\r\n");
-			}
+			}*/
 			EnableWindow(hwnd_nextButton, true);
 		});		
 	});
 
 	// Finish Screen
-	Frames.emplace_back(new FinishFrame(hInstance, hwnd_window, 170, 0, 630, 450));
+	Frames.emplace_back(new FinishFrame(&openDirectoryOnClose, hInstance, hwnd_window, 170, 0, 630, 450));
 	FrameOperations.emplace_back([&]() {
 		EnableWindow(hwnd_exitButton, true);
 		ShowWindow(hwnd_exitButton, true);

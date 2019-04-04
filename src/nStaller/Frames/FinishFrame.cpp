@@ -1,5 +1,7 @@
 #include "FinishFrame.h"
 #include <tchar.h>
+#include <shlobj.h>
+#include <shlwapi.h>
 
 
 constexpr static auto CLASS_NAME = "FINISH_FRAME";
@@ -12,9 +14,10 @@ FinishFrame::~FinishFrame()
 	DeleteObject(m_hwnd);
 }
 
-FinishFrame::FinishFrame(const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h)
+FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h)
 {
 	// Try to create window class
+	m_openDirOnClose = openDirOnClose;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -31,11 +34,16 @@ FinishFrame::FinishFrame(const HINSTANCE & hInstance, const HWND & parent, const
 	RegisterClassEx(&m_wcex);
 
 	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, x, y, w, h, parent, NULL, hInstance, NULL);
+	auto checkbox = CreateWindow("Button", "Open installation directory on close.", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, w-20, 25, m_hwnd, (HMENU)1, hInstance, NULL);
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(checkbox, GWLP_USERDATA, (LONG_PTR)this);
+	CheckDlgButton(m_hwnd, 1, *openDirOnClose ? BST_CHECKED : BST_UNCHECKED);
 	setVisible(false);
 }
 
 static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto ptr = (FinishFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		auto hdc = BeginPaint(hWnd, &ps);
@@ -61,6 +69,12 @@ static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		EndPaint(hWnd, &ps);
 		return 0;
+	}
+	else if (message == WM_COMMAND) {
+		if (HIWORD(wParam) == BN_CLICKED) {
+			BOOL checked = IsDlgButtonChecked(hWnd, 1);
+			*(ptr->m_openDirOnClose) = checked;
+		}
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }

@@ -43,6 +43,7 @@ set_target_properties(${Module} PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"
+	LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\""
 )
 
 # Force highest c++ version supported
