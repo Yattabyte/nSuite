@@ -5,7 +5,7 @@
 #include "State.h"
 
 
-/***/
+/** This state encapuslates the "Finished - Screen" state. */
 class FinishState: public State {
 public:
 	// Public (de)Constructors
@@ -13,7 +13,7 @@ public:
 	FinishState(Installer * installer);
 
 
-	// Public Methods
+	// Public Interface Implementations
 	virtual void enact();
 	virtual void pressPrevious();
 	virtual void pressNext();

@@ -1,18 +1,17 @@
 #include "WelcomeFrame.h"
 
 
-constexpr static auto CLASS_NAME = "WELCOME_FRAME";
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 WelcomeFrame::~WelcomeFrame()
 {
-	UnregisterClass(CLASS_NAME, m_hinstance);
+	UnregisterClass("WELCOME_FRAME", m_hinstance);
 	DestroyWindow(m_hwnd);
 }
 
-WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND & parent, const RECT & rc)
+WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
-	// Try to create window class
+	// Create window class
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -24,10 +23,10 @@ WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND & parent, const
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOWFRAME);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = CLASS_NAME;
+	m_wcex.lpszClassName = "WELCOME_FRAME";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);	
+	m_hwnd = CreateWindow("WELCOME_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
 	setVisible(false);
 }
 
@@ -71,7 +70,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		DeleteObject(reg_font_under);
 
 		EndPaint(hWnd, &ps);
-		return 0;
+		return S_OK;
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }

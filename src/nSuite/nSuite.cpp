@@ -24,8 +24,7 @@ int main(int argc, char *argv[])
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		}
 	};
-	auto & logger = TaskLogger::GetInstance();
-	logger.addCallback_Text([&](const std::string & message) {
+	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
 		std::cout << message;
 	});
 
@@ -52,7 +51,7 @@ int main(int argc, char *argv[])
 	// Output results and finish
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	logger << "Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n";
+	TaskLogger::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

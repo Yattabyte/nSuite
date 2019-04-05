@@ -11,7 +11,7 @@ class InstallFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~InstallFrame();
-	InstallFrame(const HINSTANCE & hInstance, const HWND & parent, const RECT & rc);
+	InstallFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 	
 
 private:

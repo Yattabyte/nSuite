@@ -9,13 +9,13 @@
 void DiffCommand::execute(const int & argc, char * argv[]) const 
 {
 	// Supply command header to console
-	auto & logger = TaskLogger::GetInstance();	
-	logger <<
+	TaskLogger::PushText(
 		"                      ~\r\n"
 		"    Patch Maker      /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
-		"~\r\n\r\n";
+		"~\r\n\r\n"
+	);
 
 	// Check command line arguments
 	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
@@ -71,7 +71,8 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	delete[] diffBuffer;
 
 	// Output results
-	logger
-		<< "Instruction(s): " << std::to_string(instructionCount) << "\r\n"
-		<< "Bytes written:  " << std::to_string(diffSize) << "\r\n";
+	TaskLogger::PushText(
+		"Instruction(s): " + std::to_string(instructionCount) + "\r\n" +
+		"Bytes written:  " + std::to_string(diffSize) + "\r\n"
+	);
 }

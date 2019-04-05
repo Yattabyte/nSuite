@@ -9,13 +9,13 @@
 void PatchCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	auto & logger = TaskLogger::GetInstance();
-	logger << 
+	TaskLogger::PushText(
 		"                      ~\r\n"
 		"    Patcher          /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
-		"~\r\n\r\n";
+		"~\r\n\r\n"
+	);
 
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
@@ -51,7 +51,8 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 	delete[] diffBuffer;
 
 	// Output results
-	logger
-		<< "Instruction(s): " << std::to_string(instructionsUsed) << "\r\n"
-		<< "Bytes written:  " << std::to_string(bytesWritten) << "\r\n";
+	TaskLogger::PushText(
+		"Instruction(s): " + std::to_string(instructionsUsed) + "\r\n" +
+		"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
+	);
 }

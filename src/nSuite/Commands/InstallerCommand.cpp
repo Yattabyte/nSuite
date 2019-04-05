@@ -10,13 +10,13 @@
 void InstallerCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	auto & logger = TaskLogger::GetInstance();
-	logger <<
+	TaskLogger::PushText(
 		"                      ~\r\n"
 		"    Installer Maker  /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
-		"~\r\n\r\n";
+		"~\r\n\r\n"
+	);
 
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
@@ -71,7 +71,8 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	delete[] packBuffer;
 
 	// Output results
-	logger
-		<< "Files packaged: " << std::to_string(fileCount) << "\r\n"
-		<< "Bytes packaged: " << std::to_string(packSize) << "\r\n";
+	TaskLogger::PushText(
+		"Files packaged: " + std::to_string(fileCount) + "\r\n" +
+		"Bytes packaged: " + std::to_string(packSize) + "\r\n"
+	);
 }

@@ -16,13 +16,11 @@ void DirectoryState::enact()
 void DirectoryState::pressPrevious()
 {
 	m_installer->setState(new WelcomeState(m_installer));
-	delete this;
 }
 
 void DirectoryState::pressNext()
 {
 	m_installer->setState(new InstallState(m_installer));
-	delete this;
 }
 
 void DirectoryState::pressClose()

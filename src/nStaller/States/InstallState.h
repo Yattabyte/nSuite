@@ -6,7 +6,7 @@
 #include <thread>
 
 
-/***/
+/** This state encapuslates the "Installing - Screen" state. */
 class InstallState : public State {
 public:
 	// Public (de)Constructors
@@ -14,7 +14,7 @@ public:
 	InstallState(Installer * installer);
 
 
-	// Public Methods
+	// Public Interface Implementations
 	virtual void enact();
 	virtual void pressPrevious();
 	virtual void pressNext();

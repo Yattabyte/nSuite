@@ -10,7 +10,7 @@ class FailFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~FailFrame();
-	FailFrame(const HINSTANCE & hInstance, const HWND & parent, const RECT & rc);
+	FailFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 private:

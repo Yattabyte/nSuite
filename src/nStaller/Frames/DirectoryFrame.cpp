@@ -5,20 +5,19 @@
 #include <shlwapi.h>
 
 
-constexpr static auto CLASS_NAME = "DIRECTORY_FRAME";
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 DirectoryFrame::~DirectoryFrame()
 {
-	UnregisterClass(CLASS_NAME, m_hinstance);
+	UnregisterClass("DIRECTORY_FRAME", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_directoryField);
 	DestroyWindow(m_browseButton);
 }
 
-DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInstance, const HWND & parent, const RECT & rc)
+DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
-	// Try to create window class
+	// Create window class
 	m_directory = directory;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
@@ -31,15 +30,16 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInsta
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = CLASS_NAME;
+	m_wcex.lpszClassName = "DIRECTORY_FRAME";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("DIRECTORY_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
 
-	// Create extra fields
+	// Create directory lookup fields
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
 	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
-	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(m_browseButton, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(m_directoryField, GWLP_USERDATA, (LONG_PTR)m_directory);
 	setVisible(false);
 }
 
@@ -160,13 +160,12 @@ HRESULT OpenFileDialog(std::string & directory)
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	auto ptr = (DirectoryFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		auto hdc = BeginPaint(hWnd, &ps);
 		auto big_font = CreateFont(35, 15, 0, 0, FW_ULTRABOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_ROMAN, "Segoe UI");
 		auto reg_font = CreateFont(17, 7, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_ROMAN, "Segoe UI");
-		
+
 		// Draw Text
 		constexpr static char* text[] = {
 			"Where would you like to install to?",
@@ -183,7 +182,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		TextOut(hdc, 10, 100, text[1], (int)strlen(text[1]));
 		TextOut(hdc, 10, 115, text[2], (int)strlen(text[2]));
 		TextOut(hdc, 10, 420, text[3], (int)strlen(text[3]));
-		
+
 		// Cleanup
 		DeleteObject(big_font);
 		DeleteObject(reg_font);
@@ -192,22 +191,24 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		return 0;
 	}
 	else if (message == WM_COMMAND) {
-		if (HIWORD(wParam) == BN_CLICKED) {
-			auto hndl = LOWORD(lParam);
-			if (hndl == LOWORD(ptr->m_browseButton)) {
+		const auto notification = HIWORD(wParam);
+		auto controlHandle = HWND(lParam);
+		if (notification == BN_CLICKED) {
+			auto dirFrame = (DirectoryFrame*)GetWindowLongPtr(controlHandle, GWLP_USERDATA);
+			if (dirFrame) {
 				std::string directory("");
 				if (SUCCEEDED(OpenFileDialog(directory)))
-					ptr->setDirectory(directory);					
+					dirFrame->setDirectory(directory);
 			}
 		}
-		else if (HIWORD(wParam) == EN_CHANGE) {
-			if (ptr != nullptr) {
-				int textLength = GetWindowTextLength(ptr->m_directoryField);
-				char * string = new char[textLength];
-				GetWindowText(ptr->m_directoryField, string, textLength);
-				*ptr->m_directory = std::string(string, textLength);
+		else if (notification == EN_CHANGE) {
+			auto dirPtr = (std::string*)GetWindowLongPtr(controlHandle, GWLP_USERDATA);
+			if (dirPtr) {
+				std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
+				GetWindowTextA(controlHandle, &data[0], (int)data.size());
+				*dirPtr = std::string(data.data());
 			}
 		}
-	}
+	}	
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }

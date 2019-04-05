@@ -5,7 +5,7 @@
 #include <windows.h>
 
 
-/** Encapsulation of a windows 'window' object.*/
+/** Encapsulation of a windows GDI 'window' object.*/
 class Frame {
 public:
 	// Public Methods

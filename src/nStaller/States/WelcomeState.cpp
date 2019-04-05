@@ -20,7 +20,6 @@ void WelcomeState::pressPrevious()
 void WelcomeState::pressNext()
 {
 	m_installer->setState(new DirectoryState(m_installer));
-	delete this;
 }
 
 void WelcomeState::pressClose()

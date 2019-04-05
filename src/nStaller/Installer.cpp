@@ -20,16 +20,16 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 Installer::Installer(const HINSTANCE hInstance)
 	: m_archive(IDR_ARCHIVE, "ARCHIVE")
 {
+	bool success = true;
 	// Get user's program files directory
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
 	m_directory = std::string(pf);
 	
 	// Check archive integrity
-	State * startingState = nullptr;
 	if (!m_archive.exists()) {
-		TaskLogger::GetInstance() << "Critical Failure: archive doesn't exist!\r\n";
-		startingState = new FailState(this);
+		TaskLogger::PushText("Critical failure: archive doesn't exist!\r\n");
+		success = false;
 	}
 	else {
 		const auto folderSize = *reinterpret_cast<size_t*>(m_archive.getPtr());
@@ -37,10 +37,8 @@ Installer::Installer(const HINSTANCE hInstance)
 		m_directory += "\\" + m_packageName;
 		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
 		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
-		startingState = new WelcomeState(this);
 	}
-
-	// Try to create window class
+	// Create window class
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -54,37 +52,52 @@ Installer::Installer(const HINSTANCE hInstance)
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = "nStaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-	RegisterClassEx(&wcex);
+	if (!RegisterClassEx(&wcex)) {
+		TaskLogger::PushText("Critical failure: could not create main window.\r\n");
+		success = false;
+	}
+	else {
+		m_window = CreateWindow(
+			"nStaller", std::string(m_packageName + " - installer").c_str(),
+			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+			CW_USEDEFAULT, CW_USEDEFAULT,
+			800, 500,
+			NULL, NULL, hInstance, NULL
+		);
 
-	// Try to create window object
-	m_window = CreateWindow(
-		"nStaller", std::string(m_packageName + " - installer").c_str(),
-		WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		800, 500,
-		NULL, NULL, hInstance, NULL
-	);
-	SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
-	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_prevBtn = CreateWindow("BUTTON", "< Back", BUTTON_STYLES, 510, 460, 85, 30, m_window, NULL, hInstance, NULL);
-	m_nextBtn = CreateWindow("BUTTON", "Next >", BUTTON_STYLES | BS_DEFPUSHBUTTON, 600, 460, 85, 30, m_window, NULL, hInstance, NULL);
-	m_exitBtn = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, 710, 460, 85, 30, m_window, NULL, hInstance, NULL);
+		// Create
+		SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
+		constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
+		m_prevBtn = CreateWindow("BUTTON", "< Back", BUTTON_STYLES, 510, 460, 85, 30, m_window, NULL, hInstance, NULL);
+		m_nextBtn = CreateWindow("BUTTON", "Next >", BUTTON_STYLES | BS_DEFPUSHBUTTON, 600, 460, 85, 30, m_window, NULL, hInstance, NULL);
+		m_exitBtn = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, 710, 460, 85, 30, m_window, NULL, hInstance, NULL);
 
-	auto dwStyle = (DWORD)GetWindowLongPtr(m_window, GWL_STYLE);
-	auto dwExStyle = (DWORD)GetWindowLongPtr(m_window, GWL_EXSTYLE);
-	RECT rc = { 0, 0, 800, 500 };
-	ShowWindow(m_window, true);
-	UpdateWindow(m_window);
-	AdjustWindowRectEx(&rc, dwStyle, false, dwExStyle);
-	SetWindowPos(m_window, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
+		auto dwStyle = (DWORD)GetWindowLongPtr(m_window, GWL_STYLE);
+		auto dwExStyle = (DWORD)GetWindowLongPtr(m_window, GWL_EXSTYLE);
+		RECT rc = { 0, 0, 800, 500 };
+		ShowWindow(m_window, true);
+		UpdateWindow(m_window);
+		AdjustWindowRectEx(&rc, dwStyle, false, dwExStyle);
+		SetWindowPos(m_window, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
-	// The portions of the screen that change based on input
-	m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
-	m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, hInstance, m_window, { 170,0,800,450 });
-	m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
-	m_frames[FINISH_FRAME] = new FinishFrame(&m_openDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
-	m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
-	setState(startingState);
+		// The portions of the screen that change based on input
+		m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
+		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, hInstance, m_window, { 170,0,800,450 });
+		m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
+		m_frames[FINISH_FRAME] = new FinishFrame(&m_openDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
+		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
+		setState(new WelcomeState(this));
+	}
+	if (!success)
+		invalidate();
+}
+
+void Installer::invalidate()
+{
+	setState(new FailState(this));
+	showButtons(false, false, true);
+	enableButtons(false, false, true);
+	m_valid = false;
 }
 
 void Installer::showFrame(const FrameEnums & newIndex)
@@ -96,13 +109,21 @@ void Installer::showFrame(const FrameEnums & newIndex)
 
 void Installer::setState(State * state)
 {
-	m_state = state;
-	m_state->enact();
+	if (!m_valid) 
+		delete state; // refuse new states
+	else {
+		if (m_state != nullptr)
+			delete m_state;
+		m_state = state;
+		m_state->enact();
+		RECT rc = { 0, 0, 160, 450 };
+		RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
+	}
 }
 
-int Installer::getCurrentIndex() const
+Installer::FrameEnums Installer::getCurrentIndex() const
 {
-	return (int)m_currentIndex;
+	return m_currentIndex;
 }
 
 std::string Installer::getDirectory() const
@@ -134,16 +155,20 @@ void Installer::updateButtons(const WORD btnHandle)
 
 void Installer::showButtons(const bool & prev, const bool & next, const bool & close)
 {
-	ShowWindow(m_prevBtn, prev);
-	ShowWindow(m_nextBtn, next);
-	ShowWindow(m_exitBtn, close);
+	if (m_valid) {
+		ShowWindow(m_prevBtn, prev);
+		ShowWindow(m_nextBtn, next);
+		ShowWindow(m_exitBtn, close);
+	}
 }
 
 void Installer::enableButtons(const bool & prev, const bool & next, const bool & close)
 {
-	EnableWindow(m_prevBtn, prev);
-	EnableWindow(m_nextBtn, next);
-	EnableWindow(m_exitBtn, close);
+	if (m_valid) {
+		EnableWindow(m_prevBtn, prev);
+		EnableWindow(m_nextBtn, next);
+		EnableWindow(m_exitBtn, close);
+	}
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -174,10 +199,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		SetDCPenColor(hdc, RGB(100, 100, 100));
 		Rectangle(hdc, 26, 0, 29, 450);
 		int vertical_offset = 15;
-		int frameIndex = ptr->getCurrentIndex();
+		int frameIndex = (int)ptr->getCurrentIndex();
 		for (int x = 0; x < 4; ++x) {
 			// Draw Circle
-			auto color = x == frameIndex ? RGB(25, 225, 125) : x < frameIndex ? RGB(25, 125, 225) : RGB(255, 255, 255);
+			auto color = x == frameIndex ? RGB(25, 225, 125) : RGB(255, 255, 255);
 			if (x == 3 && frameIndex == 4)
 				color = RGB(225, 25, 25);
 			SetDCBrushColor(hdc, color);
@@ -195,6 +220,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 		DeleteObject(font);
 		EndPaint(hWnd, &ps);
+		return S_OK;
 	}
 	else if (message == WM_DESTROY)
 		PostQuitMessage(0);

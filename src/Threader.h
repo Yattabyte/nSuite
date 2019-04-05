@@ -57,14 +57,19 @@ public:
 		m_jobs.emplace_back(func);
 		m_jobsStarted++;
 	}
+	/** Check if the threader has completed all its jobs.
+	@return			true if finished, false otherwise. */
 	inline bool isFinished() const {
 		return m_jobsStarted == m_jobsFinished;
 	}
+	/** Prepare the threader for shutdown, notifying threads to complete early. */
 	inline void prepareForShutdown() {
 		m_keepOpen = false;
 	}
+	/** Shutsdown the threader, forcing threads to close. */
 	inline void shutdown() {
 		m_alive = false;
+		m_keepOpen = false;
 		for (size_t x = 0; x < m_maxThreads && x < m_threads.size(); ++x) {
 			if (m_threads[x].joinable())
 				m_threads[x].join();

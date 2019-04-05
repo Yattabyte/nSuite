@@ -12,10 +12,14 @@ public:
 	State(Installer * installer) : m_installer(installer) {}
 
 
-	// Public Methods
+	// Public Interface Declarations
+	/** Trigger this state to perform its screen action. */
 	virtual void enact() = 0;
+	/** Cause this state to process the "previous" action. */
 	virtual void pressPrevious() = 0;
+	/** Cause this state to process the "next" action. */
 	virtual void pressNext() = 0;
+	/** Cause this state to process the "close" action. */
 	virtual void pressClose() = 0;
 
 

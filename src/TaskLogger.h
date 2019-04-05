@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+
 /*********** SINGLETON ***********/
 /*								 */		
 /*  Performs logging operations  */
@@ -13,63 +14,93 @@
 /*********** SINGLETON ***********/
 class TaskLogger {
 public:
-	// Public Methods
-	inline static TaskLogger & GetInstance() {
-		static TaskLogger instance;
-		return instance;
-	}
-	inline size_t addCallback_Text(std::function<void(const std::string &)> && func) {
-		auto index = m_textCallbacks.size();
-		m_textCallbacks.emplace_back(std::move(func));
+	// Public Methods	
+	/** Add a callback method which will be triggered when the log receives new text.
+	@param	func		the callback function. (only arg is a string)
+	@param	pullOld		if set to true, will immediately call the function, dumping all current log data into it. (optional, defaults true)
+	@return				index to callback in logger, used to remove callback. */
+	inline static size_t AddCallback_TextAdded(std::function<void(const std::string &)> && func, const bool & pullOld = true) {
+		auto & instance = GetInstance();
+
+		// Dump old text if this is true
+		if (pullOld)
+			func(instance.PullText());
+
+		auto index = instance.m_textCallbacks.size();
+		instance.m_textCallbacks.emplace_back(std::move(func));
 		return index;
-	}inline size_t addCallback_Progress(std::function<void(const size_t &, const size_t & size_t)> && func) {
-		auto index = m_progressCallbacks.size();
-		m_progressCallbacks.emplace_back(std::move(func));
+	}
+	/** Remove a callback method used for when text is added to the log.
+	@param	index		the index for the callback within the logger. */
+	inline static void RemoveCallback_TextAdded(const size_t & index) {
+		auto & instance = GetInstance();
+		instance.m_textCallbacks.erase(instance.m_textCallbacks.begin() + index);
+	}
+	/** Add a callback method which will be triggered when the task progress changes.
+	@param	func		the callback function. (args: progress, range)aults true)
+	@return				index to callback in logger, used to remove callback. */
+	inline static size_t AddCallback_ProgressUpdated(std::function<void(const size_t &, const size_t & size_t)> && func) {
+		auto & instance = GetInstance();
+		auto index = instance.m_progressCallbacks.size();
+		instance.m_progressCallbacks.emplace_back(std::move(func));
 		return index;
 	}
-	inline void removeCallback_Text(const size_t & index) {
-		m_textCallbacks.erase(m_textCallbacks.begin() + index);
+	/** Remove a callback method used for when the log progress changes.
+	@param	index		the index for the callback within the logger. */
+	inline static void RemoveCallback_ProgressUpdated(const size_t & index) {
+		auto & instance = GetInstance();
+		instance.m_progressCallbacks.erase(instance.m_progressCallbacks.begin() + index);
 	}
-	inline void removeCallback_Progress(const size_t & index) {
-		m_progressCallbacks.erase(m_progressCallbacks.begin() + index);
-	}
-	inline TaskLogger& operator <<(const std::string & message) {
+	/** Push new text into the logger.
+	@param	text		the new text to add. */
+	inline static void PushText(const std::string & text) {
+		auto & instance = GetInstance();
+
 		// Add the message to the log
-		m_log += message;
+		instance.m_log += text;
 
 		// Notify all observers that the log has been updated
-		for each (const auto & callback in m_textCallbacks)
-			callback(message);
-
-		// Returning a reference so we can chain values like
-		// log << value << value << value
-		return *this;
+		for each (const auto & callback in instance.m_textCallbacks)
+			callback(text);
 	}
-	inline std::string getLog() const {
-		return m_log;
+	/** Retrieve all text from the logger.
+	@return				the entire message log. */
+	inline static std::string PullText() {
+		return GetInstance().m_log;
 	}
-	inline void setRange(const size_t & value) {
-		m_range = value;
+	/** Set the progress range for the logger. 
+	@param	value		the upper range value. */
+	inline static void SetRange(const size_t & value) {
+		GetInstance().m_range = value;
 	}
-	inline size_t getRange() const {
-		return m_range;
+	/** Get the progress range for the logger.
+	@return				the upper range value. */
+	inline static size_t GetRange() {
+		return GetInstance().m_range;
 	}
-	inline void setProgress(const size_t & amount) {
-		m_pos = amount;
+	/** Set the current progress value for the logger, <= the upper range.
+	@param	amount		the progress value to use. */
+	inline static void SetProgress(const size_t & amount) {
+		auto & instance = GetInstance();
+		instance.m_pos = amount > instance.m_range ? instance.m_range : amount;
 
 		// Notify all observers that the task has updated
-		for each (const auto & callback in m_progressCallbacks)
-			callback(m_pos, m_range);
+		for each (const auto & callback in instance.m_progressCallbacks)
+			callback(instance.m_pos, instance.m_range);
 	}
 
 
 private:
 	// Private (de)constructors
-	~TaskLogger() = default;
-	TaskLogger() = default;
-	TaskLogger(TaskLogger const&) = delete;
-	void operator=(TaskLogger const&) = delete;
-
+	inline ~TaskLogger() = default;
+	inline TaskLogger() = default;
+	inline TaskLogger(TaskLogger const&) = delete;
+	inline void operator=(TaskLogger const&) = delete;
+	inline static TaskLogger & GetInstance() {
+		static TaskLogger instance;
+		return instance;
+	}
+	
 
 	// Private Attributes
 	std::string m_log;

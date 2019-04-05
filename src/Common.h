@@ -2,6 +2,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "TaskLogger.h"
 #include <cstddef>
 #include <direct.h>
 #include <filesystem>
@@ -56,7 +57,7 @@ inline static std::string get_current_directory()
 @param	message		the message to write-out.*/
 inline static void exit_program(const char * message)
 {
-	std::cout << message;
+	TaskLogger::PushText(message);
 	system("pause");
 	exit(EXIT_FAILURE);
 }
@@ -65,7 +66,7 @@ inline static void exit_program(const char * message)
 @param	message		pause message to show the user. */
 inline static void pause_program(const char * message)
 {
-	std::cout << message << " ";
+	TaskLogger::PushText(message + ' ');
 	system("pause");
 	std::printf("\033[A\33[2K\r");
 	std::printf("\033[A\33[2K\r\n");

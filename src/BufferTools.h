@@ -10,6 +10,7 @@ namespace BFT {
 	@param	sourceSize			the size in bytes of the source buffer.
 	@param	destinationBuffer	pointer to the destination buffer, which will hold compressed contents.
 	@param	destinationSize		reference updated with the size in bytes of the compressed destinationBuffer.
+	@param	headerPadding		amount of headroom to allocate for a header on top of the final compressed buffer. (optional, defaults to 0)
 	@return						true if compression success, false otherwise. */
 	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize, const size_t & headerPadding = 0ull);
 	/** Decompressess a source buffer into an equal or larger sized destination buffer.
@@ -27,7 +28,7 @@ namespace BFT {
 	@param	size_new			the size of the new buffer.
 	@param	buffer_diff			pointer to store the diff buffer at.
 	@param	size_diff			reference updated with the size of the compressed diff buffer.
-	@param	instructionCount	optional pointer to update with the number of instructions processed.
+	@param	instructionCount	pointer to update with the number of instructions processed. (optional)
 	@return						true if diff success, false otherwise. */
 	bool DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount = nullptr);
 	/** Uses a compressed diff buffer to patch a source buffer into an updated destination buffer
@@ -38,7 +39,7 @@ namespace BFT {
 	@param	size_new			reference updated with the size of the new buffer.
 	@param	buffer_diff			the compressed diff buffer.
 	@param	size_diff			the size of the compressed diff buffer.
-	@param	instructionCount	optional pointer to update with the number of instructions processed.
+	@param	instructionCount	pointer to update with the number of instructions processed. (optional)
 	@return						true if patch success, false otherwise. */
 	bool PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount = nullptr);
 	/** Generate a hash value for the buffer provided. 

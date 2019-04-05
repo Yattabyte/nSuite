@@ -20,8 +20,7 @@ static auto get_patches(const std::string & srcDirectory)
 /** Entry point. */
 int main()
 {
-	auto & logger = TaskLogger::GetInstance();
-	logger.addCallback_Text([&](const std::string & message) {
+	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
 		std::cout << message;
 	});
 
@@ -30,14 +29,15 @@ int main()
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	logger <<
+	TaskLogger::PushText(
 		"                      ~\r\n"
 		"    Updater          /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"
-		"There are " << std::to_string(patches.size()) << " patches(s) found.\r\n"
-		"\r\n";
+		"There are " + std::to_string(patches.size()) + " patches(s) found.\r\n"
+		"\r\n"
+	);
 	if (patches.size()) {
 		pause_program("Ready to update?");
 
@@ -49,7 +49,7 @@ int main()
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
 			const size_t diffSize = std::filesystem::file_size(patch);
 			if (!diffFile.is_open()) {
-				logger << "Cannot read diff file, skipping...\r\n";
+				TaskLogger::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
 			else {
@@ -58,14 +58,14 @@ int main()
 				diffFile.read(diffBuffer, std::streamsize(diffSize));
 				diffFile.close();
 				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, bytesWritten, instructionsUsed)) {
-					logger << "skipping patch...\r\n";
+					TaskLogger::PushText("skipping patch...\r\n");
 					delete[] diffBuffer;
 					continue;
 				}
 
 				// Delete patch file at very end
 				if (!std::filesystem::remove(patch))
-					logger << "Cannot delete diff file \"" << patch.path().string() << "\" from disk, make sure to delete it manually.\r\n";
+					TaskLogger::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
 				patchesApplied++;
 				delete[] diffBuffer;
 			}
@@ -74,10 +74,11 @@ int main()
 		// Success, report results
 		const auto end = std::chrono::system_clock::now();
 		const std::chrono::duration<double> elapsed_seconds = end - start;
-		logger
-			<< "Patches used:   " << std::to_string(patchesApplied) << " out of " << std::to_string(patches.size()) << "\r\n"
-			<< "Bytes written:  " << std::to_string(bytesWritten) << "\r\n"
-			<< "Total duration: " << std::to_string(elapsed_seconds.count()) << " seconds\r\n\r\n";
+		TaskLogger::PushText(
+			"Patches used:   " + std::to_string(patchesApplied) + " out of " + std::to_string(patches.size()) + "\r\n" +
+			"Bytes written:  " + std::to_string(bytesWritten) + "\r\n" +
+			"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
+		);
 	}
 
 	system("pause");

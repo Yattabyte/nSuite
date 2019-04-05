@@ -1,6 +1,5 @@
 #include "InstallState.h"
 #include "FinishState.h"
-#include "FailState.h"
 #include "Common.h"
 #include "BufferTools.h"
 #include "DirectoryTools.h"
@@ -22,7 +21,7 @@ void InstallState::enact()
 		auto directory = m_installer->getDirectory();
 		sanitize_path(directory);
 		if (!DRT::DecompressDirectory(directory, m_installer->getPackagePointer(), m_installer->getPackageSize(), byteCount, fileCount))
-			m_installer->setState(new FailState(m_installer));
+			m_installer->invalidate();
 		else
 			m_installer->enableButtons(false, true, false);
 	});
@@ -37,7 +36,6 @@ void InstallState::pressPrevious()
 void InstallState::pressNext()
 {
 	m_installer->setState(new FinishState(m_installer));
-	delete this;
 }
 
 void InstallState::pressClose()
