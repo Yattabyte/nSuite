@@ -1,20 +1,19 @@
 #include "FinishFrame.h"
-#include <tchar.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 
 
 constexpr static auto CLASS_NAME = "FINISH_FRAME";
-constexpr static auto FOREGROUND_COLOR = RGB(230, 230, 230);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 FinishFrame::~FinishFrame()
 {
 	UnregisterClass(CLASS_NAME, m_hinstance);
-	DeleteObject(m_hwnd);
+	DestroyWindow(m_hwnd);
+	DestroyWindow(m_checkbox);
 }
 
-FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h)
+FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, const HWND & parent, const RECT & rc)
 {
 	// Try to create window class
 	m_openDirOnClose = openDirOnClose;
@@ -33,15 +32,15 @@ FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, con
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 
-	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, x, y, w, h, parent, NULL, hInstance, NULL);
-	auto checkbox = CreateWindow("Button", "Open installation directory on close.", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, w-20, 25, m_hwnd, (HMENU)1, hInstance, NULL);
+	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	m_checkbox = CreateWindow("Button", "Open installation directory on close.", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, rc.right - rc.left -20, 25, m_hwnd, (HMENU)1, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	SetWindowLongPtr(checkbox, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(m_checkbox, GWLP_USERDATA, (LONG_PTR)this);
 	CheckDlgButton(m_hwnd, 1, *openDirOnClose ? BST_CHECKED : BST_UNCHECKED);
 	setVisible(false);
 }
 
-static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	auto ptr = (FinishFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
@@ -57,11 +56,11 @@ static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		};
 		SelectObject(hdc, big_font);
 		SetTextColor(hdc, RGB(25, 125, 225));
-		TextOut(hdc, 10, 10, text[0], _tcslen(text[0]));
+		TextOut(hdc, 10, 10, text[0], (int)strlen(text[0]));
 
 		SelectObject(hdc, reg_font);
 		SetTextColor(hdc, RGB(0, 0, 0));
-		TextOut(hdc, 10, 420, text[1], _tcslen(text[1]));
+		TextOut(hdc, 10, 420, text[1], (int)strlen(text[1]));
 
 		// Cleanup
 		DeleteObject(big_font);

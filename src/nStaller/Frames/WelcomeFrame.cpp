@@ -1,18 +1,16 @@
 #include "WelcomeFrame.h"
-#include <tchar.h>
 
 
 constexpr static auto CLASS_NAME = "WELCOME_FRAME";
-constexpr static auto FOREGROUND_COLOR = RGB(230, 230, 230);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 WelcomeFrame::~WelcomeFrame()
 {
 	UnregisterClass(CLASS_NAME, m_hinstance);
-	DeleteObject(m_hwnd);
+	DestroyWindow(m_hwnd);
 }
 
-WelcomeFrame::WelcomeFrame(const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h)
+WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND & parent, const RECT & rc)
 {
 	// Try to create window class
 	m_hinstance = hInstance;
@@ -29,11 +27,11 @@ WelcomeFrame::WelcomeFrame(const HINSTANCE & hInstance, const HWND & parent, con
 	m_wcex.lpszClassName = CLASS_NAME;
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, x, y, w, h, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);	
 	setVisible(false);
 }
 
-static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
@@ -52,20 +50,20 @@ static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		};
 		SelectObject(hdc, big_font);
 		SetTextColor(hdc, RGB(25, 125, 225));
-		TextOut(hdc, 10, 10, text[0], _tcslen(text[0]));
+		TextOut(hdc, 10, 10, text[0], (int)strlen(text[0]));
 
 		SelectObject(hdc, reg_font);
 		SetTextColor(hdc, RGB(0, 0, 0));
-		TextOut(hdc, 10, 100, text[1], _tcslen(text[1]));
-		TextOut(hdc, 10, 115, text[2], _tcslen(text[2]));
+		TextOut(hdc, 10, 100, text[1], (int)strlen(text[1]));
+		TextOut(hdc, 10, 115, text[2], (int)strlen(text[2]));
 
 		SelectObject(hdc, reg_font_under);
 		SetTextColor(hdc, RGB(0, 0, 238));
-		TextOut(hdc, 35, 130, text[3], _tcslen(text[3]));
+		TextOut(hdc, 35, 130, text[3], (int)strlen(text[3]));
 
 		SelectObject(hdc, reg_font);
 		SetTextColor(hdc, RGB(0, 0, 0));
-		TextOut(hdc, 10, 420, text[4], _tcslen(text[4]));
+		TextOut(hdc, 10, 420, text[4], (int)strlen(text[4]));
 
 		// Cleanup
 		DeleteObject(big_font);

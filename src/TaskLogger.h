@@ -45,6 +45,9 @@ public:
 		// log << value << value << value
 		return *this;
 	}
+	inline std::string getLog() const {
+		return m_log;
+	}
 	inline void setRange(const size_t & value) {
 		m_range = value;
 	}

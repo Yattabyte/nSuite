@@ -110,6 +110,11 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 {
 	Threader threader;
 	auto & log = TaskLogger::GetInstance();
+	if (packSize <= 0ull) {
+		log << "Critical failure: package buffer has no content.\r\n";
+		return false;
+	}
+
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
 	if (!BFT::DecompressBuffer(packBuffer, packSize, &decompressedBuffer, decompressedSize)) {

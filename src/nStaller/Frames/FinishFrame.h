@@ -10,10 +10,11 @@ class FinishFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~FinishFrame();
-	FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h);
+	FinishFrame(bool * openDirOnClose, const HINSTANCE & hInstance, const HWND & parent, const RECT & rc);
 
 
 	bool * m_openDirOnClose = nullptr;
+	HWND m_checkbox = nullptr;
 };
 
 #endif // FINISHFRAME_H

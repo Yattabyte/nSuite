@@ -11,7 +11,7 @@ class DirectoryFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~DirectoryFrame();
-	DirectoryFrame(std::string * directory, const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h);
+	DirectoryFrame(std::string * directory, const HINSTANCE & hInstance, const HWND & parent, const RECT & rc);
 
 
 	// Public Methods

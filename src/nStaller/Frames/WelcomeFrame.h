@@ -10,7 +10,7 @@ class WelcomeFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~WelcomeFrame();
-	WelcomeFrame(const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h);
+	WelcomeFrame(const HINSTANCE hInstance, const HWND & parent, const RECT & rc);
 };
 
 #endif // WELCOMEFRAME_H

@@ -35,6 +35,10 @@ bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char **
 
 bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
+	// Ensure buffer at least *exists*
+	if (sourceSize <= size_t(sizeof(size_t)) || sourceBuffer == nullptr)
+		return false;
+
 	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
 	*destinationBuffer = new char[destinationSize];
 	auto result = LZ4_decompress_safe(

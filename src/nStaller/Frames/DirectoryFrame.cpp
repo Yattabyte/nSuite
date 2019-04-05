@@ -1,22 +1,22 @@
 #include "DirectoryFrame.h"
 #include <sstream>
-#include <tchar.h>
 #include <vector>
 #include <shlobj.h>
 #include <shlwapi.h>
 
 
 constexpr static auto CLASS_NAME = "DIRECTORY_FRAME";
-constexpr static auto FOREGROUND_COLOR = RGB(230, 230, 230);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 DirectoryFrame::~DirectoryFrame()
 {
 	UnregisterClass(CLASS_NAME, m_hinstance);
-	DeleteObject(m_hwnd);
+	DestroyWindow(m_hwnd);
+	DestroyWindow(m_directoryField);
+	DestroyWindow(m_browseButton);
 }
 
-DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInstance, const HWND & parent, const int & x, const int & y, const int & w, const int & h)
+DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInstance, const HWND & parent, const RECT & rc)
 {
 	// Try to create window class
 	m_directory = directory;
@@ -34,13 +34,12 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE & hInsta
 	m_wcex.lpszClassName = CLASS_NAME;
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, x, y, w, h, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow(CLASS_NAME, CLASS_NAME, WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
 
 	// Create extra fields
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
 	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	SetWindowLongPtr(m_directoryField, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 }
 
@@ -91,12 +90,12 @@ static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
 		IFACEMETHODIMP OnHelp(IFileDialog *) { return S_OK; };
 		IFACEMETHODIMP OnSelectionChange(IFileDialog *) { return S_OK; };
 		IFACEMETHODIMP OnShareViolation(IFileDialog *, IShellItem *, FDE_SHAREVIOLATION_RESPONSE *) { return S_OK; };
-		IFACEMETHODIMP OnTypeChange(IFileDialog *pfd) { return S_OK; };
+		IFACEMETHODIMP OnTypeChange(IFileDialog *) { return S_OK; };
 		IFACEMETHODIMP OnOverwrite(IFileDialog *, IShellItem *, FDE_OVERWRITE_RESPONSE *) { return S_OK; };
 
 
 		// IFileDialogControlEvents methods
-		IFACEMETHODIMP OnItemSelected(IFileDialogCustomize *pfdc, DWORD dwIDCtl, DWORD dwIDItem) { return S_OK; };
+		IFACEMETHODIMP OnItemSelected(IFileDialogCustomize *, DWORD, DWORD ) { return S_OK; };
 		IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize *, DWORD) { return S_OK; };
 		IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize *, DWORD, BOOL) { return S_OK; };
 		IFACEMETHODIMP OnControlActivating(IFileDialogCustomize *, DWORD) { return S_OK; };
@@ -112,7 +111,7 @@ static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
 	return hr;
 }
 
-static HRESULT OpenFileDialog(std::string & directory)
+HRESULT OpenFileDialog(std::string & directory)
 {
 	// CoCreate the File Open Dialog object.
 	IFileDialog *pfd = NULL;
@@ -159,7 +158,7 @@ static HRESULT OpenFileDialog(std::string & directory)
 	return hr;
 }
 
-static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	auto ptr = (DirectoryFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
@@ -177,13 +176,13 @@ static LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		};
 		SelectObject(hdc, big_font);
 		SetTextColor(hdc, RGB(25, 125, 225));
-		TextOut(hdc, 10, 10, text[0], _tcslen(text[0]));
+		TextOut(hdc, 10, 10, text[0], (int)strlen(text[0]));
 
 		SelectObject(hdc, reg_font);
 		SetTextColor(hdc, RGB(0, 0, 0));
-		TextOut(hdc, 10, 100, text[1], _tcslen(text[1]));
-		TextOut(hdc, 10, 115, text[2], _tcslen(text[2]));
-		TextOut(hdc, 10, 420, text[3], _tcslen(text[3]));
+		TextOut(hdc, 10, 100, text[1], (int)strlen(text[1]));
+		TextOut(hdc, 10, 115, text[2], (int)strlen(text[2]));
+		TextOut(hdc, 10, 420, text[3], (int)strlen(text[3]));
 		
 		// Cleanup
 		DeleteObject(big_font);
