@@ -2,6 +2,7 @@
 #include "WelcomeState.h"
 #include "InstallState.h"
 #include "../Installer.h"
+#include <filesystem>
 
 
 DirectoryState::DirectoryState(Installer * installer)
@@ -20,7 +21,17 @@ void DirectoryState::pressPrevious()
 
 void DirectoryState::pressNext()
 {
-	m_installer->setState(new InstallState(m_installer));
+	auto directory = m_installer->getDirectory();
+	
+	if (directory == "" || directory == " " || directory.length() < 3 || !std::filesystem::is_directory(directory))
+		MessageBox(
+			NULL,
+			"Please enter a valid directory before proceeding.",
+			"Invalid path!",
+			MB_OK | MB_ICONERROR | MB_TASKMODAL
+		);
+	else
+		m_installer->setState(new InstallState(m_installer));
 }
 
 void DirectoryState::pressClose()

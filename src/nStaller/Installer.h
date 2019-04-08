@@ -40,6 +40,9 @@ public:
 	/** Retrieves the current directory chosen for installation.
 	@return					active installation directory. */
 	std::string getDirectory() const;
+	/** Retrieve if the chosen directory should open when the installer closes.
+	@return					true if should show, false otherwise. */
+	bool shouldShowDirectory() const;
 	/** Retrieves the pointer to the compressed packaged contents.
 	@return					the package pointer (offset of folder name data). */
 	char * getPackagePointer() const;
@@ -63,10 +66,9 @@ public:
 
 private:
 	// Private Attributes
-	bool m_valid = true;
 	Resource m_archive;
 	std::string m_directory = "", m_packageName = "";
-	bool m_openDirectoryOnClose = true;
+	bool  m_valid = true, m_showDirectoryOnClose = true;
 	char * m_packagePtr = nullptr;
 	size_t m_packageSize = 0ull;
 	FrameEnums m_currentIndex = WELCOME_FRAME;

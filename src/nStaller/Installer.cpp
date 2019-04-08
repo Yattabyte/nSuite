@@ -84,7 +84,7 @@ Installer::Installer(const HINSTANCE hInstance)
 		m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
 		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, hInstance, m_window, { 170,0,800,450 });
 		m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
-		m_frames[FINISH_FRAME] = new FinishFrame(&m_openDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
+		m_frames[FINISH_FRAME] = new FinishFrame(&m_showDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
 		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
 		setState(new WelcomeState(this));
 	}
@@ -129,6 +129,11 @@ Installer::FrameEnums Installer::getCurrentIndex() const
 std::string Installer::getDirectory() const
 {
 	return m_directory;
+}
+
+bool Installer::shouldShowDirectory() const
+{
+	return m_showDirectoryOnClose && m_valid;
 }
 
 char * Installer::getPackagePointer() const
@@ -199,7 +204,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		SetDCPenColor(hdc, RGB(100, 100, 100));
 		Rectangle(hdc, 26, 0, 29, 450);
 		int vertical_offset = 15;
-		int frameIndex = (int)ptr->getCurrentIndex();
+		const auto frameIndex = (int)ptr->getCurrentIndex();
 		for (int x = 0; x < 4; ++x) {
 			// Draw Circle
 			auto color = x == frameIndex ? RGB(25, 225, 125) : RGB(255, 255, 255);
@@ -212,10 +217,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 			// Draw Text
 			TextOut(hdc, 50, vertical_offset, step_labels[x], (int)strlen(step_labels[x]));
-			vertical_offset += 50;
 
 			if (x == 2)
 				vertical_offset = 420;
+			else
+				vertical_offset += 50;
 		}
 
 		DeleteObject(font);

@@ -188,7 +188,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		DeleteObject(reg_font);
 
 		EndPaint(hWnd, &ps);
-		return 0;
+		return S_OK;
 	}
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
@@ -197,8 +197,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			auto dirFrame = (DirectoryFrame*)GetWindowLongPtr(controlHandle, GWLP_USERDATA);
 			if (dirFrame) {
 				std::string directory("");
-				if (SUCCEEDED(OpenFileDialog(directory)))
-					dirFrame->setDirectory(directory);
+				if (SUCCEEDED(OpenFileDialog(directory))) {
+					if (directory != "" && directory.length() > 2ull) {
+						dirFrame->setDirectory(directory);
+						return S_OK;
+					}
+				}
 			}
 		}
 		else if (notification == EN_CHANGE) {
@@ -207,6 +211,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
 				GetWindowTextA(controlHandle, &data[0], (int)data.size());
 				*dirPtr = std::string(data.data());
+				return S_OK;
 			}
 		}
 	}	

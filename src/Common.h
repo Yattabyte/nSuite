@@ -11,6 +11,16 @@
 #include <vector>
 
 
+/** Changes an input string to lower case, and returns it.
+@param	string		the input string.
+@return				lower case version of the string. */
+inline static std::string string_to_lower(const std::string & string)
+{
+	std::string input = string;
+	std::transform(input.begin(), input.end(), input.begin(), [](const int & character){ return static_cast<char>(::tolower(character)); });
+	return input;
+}
+
 /** Increment a pointer's address by the offset provided.
 @param	ptr			the pointer to increment by the offset amount.
 @param	offset		the offset amount to apply to the pointer's address.
