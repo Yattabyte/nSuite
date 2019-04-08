@@ -28,6 +28,8 @@ public:
 	// Public Methods
 	/** When called, invalidates the installer, halting it from progressing. */
 	void invalidate();
+	/** Flags the installation as complete. */
+	void finish();
 	/** Displays the screen matching the supplied enumeration.
 	@param	newIndex		the screen to make visible (makes current screen invisible). */
 	void showFrame(const FrameEnums & newIndex);
@@ -68,7 +70,7 @@ private:
 	// Private Attributes
 	Resource m_archive;
 	std::string m_directory = "", m_packageName = "";
-	bool  m_valid = true, m_showDirectoryOnClose = true;
+	bool  m_valid = true, m_showDirectoryOnClose = true, m_finished = false;
 	char * m_packagePtr = nullptr;
 	size_t m_packageSize = 0ull;
 	FrameEnums m_currentIndex = WELCOME_FRAME;

@@ -2,7 +2,6 @@
 #include "WelcomeState.h"
 #include "InstallState.h"
 #include "../Installer.h"
-#include <filesystem>
 
 
 DirectoryState::DirectoryState(Installer * installer)
@@ -23,7 +22,7 @@ void DirectoryState::pressNext()
 {
 	auto directory = m_installer->getDirectory();
 	
-	if (directory == "" || directory == " " || directory.length() < 3 || !std::filesystem::is_directory(directory))
+	if (directory == "" || directory == " " || directory.length() < 3)
 		MessageBox(
 			NULL,
 			"Please enter a valid directory before proceeding.",

@@ -19,7 +19,8 @@ include_directories(
 # Add libraries common throughout entire project
 link_libraries(	
 	debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
-	optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib	
+	optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib
+	Gdiplus.lib
 )
 
 # add all sub-projects and plugins here

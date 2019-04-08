@@ -8,6 +8,7 @@
 #define IDR_ARCHIVE						102
 // Used by installerMaker.rc
 #define IDR_INSTALLER					103
+#define VS_VERSION_INFO                 1
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        104

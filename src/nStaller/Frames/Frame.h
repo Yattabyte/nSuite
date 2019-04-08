@@ -3,7 +3,13 @@
 #define FRAME_H
 
 #include <windows.h>
+#pragma warning(push)
+#pragma warning(disable:4458)
+#include <gdiplus.h>
+#pragma warning(pop)
 
+
+using namespace Gdiplus;
 
 /** Encapsulation of a windows GDI 'window' object.*/
 class Frame {
@@ -15,6 +21,10 @@ public:
 		ShowWindow(m_hwnd, state);
 		EnableWindow(m_hwnd, state);
 	}
+
+
+	// Public Attributes
+	int m_width = 0, m_height = 0;
 
 
 protected:

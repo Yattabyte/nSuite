@@ -34,6 +34,9 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE hInstanc
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("DIRECTORY_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
+	m_width = rc.right - rc.left;
+	m_height = rc.bottom - rc.top;
 
 	// Create directory lookup fields
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
@@ -162,30 +165,37 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 {
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
-		auto hdc = BeginPaint(hWnd, &ps);
-		auto big_font = CreateFont(35, 15, 0, 0, FW_ULTRABOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_ROMAN, "Segoe UI");
-		auto reg_font = CreateFont(17, 7, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_ROMAN, "Segoe UI");
+		Graphics graphics(BeginPaint(hWnd, &ps));
+		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
+		auto frame = (Frame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+
+		// Draw Background
+		LinearGradientBrush backgroundGradient(
+			Point(0, 0),
+			Point(frame->m_width, frame->m_height),
+			Color(255, 255, 255, 255),
+			Color(50, 25, 125, 225)
+		);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, frame->m_width, frame->m_height);
+
+		// Preparing Fonts
+		FontFamily  fontFamily(L"Segoe UI");
+		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
+		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
+		SolidBrush  blueBrush(Color(255, 25, 125, 225));
+		SolidBrush  blackBrush(Color(255, 0, 0, 0));
 
 		// Draw Text
-		constexpr static char* text[] = {
-			"Where would you like to install to?",
-			"Choose a folder by pressing the 'Browse' button.",
-			"Alternatively, type a specific directory into the box below.",
-			"Press the 'Next' button to begin installing . . ."
+		constexpr static wchar_t* text[] = {
+			L"Where would you like to install to?",
+			L"Choose a folder by pressing the 'Browse' button.",
+			L"Alternatively, type a specific directory into the box below.",
+			L"Press the 'Next' button to begin installing . . ."
 		};
-		SelectObject(hdc, big_font);
-		SetTextColor(hdc, RGB(25, 125, 225));
-		TextOut(hdc, 10, 10, text[0], (int)strlen(text[0]));
-
-		SelectObject(hdc, reg_font);
-		SetTextColor(hdc, RGB(0, 0, 0));
-		TextOut(hdc, 10, 100, text[1], (int)strlen(text[1]));
-		TextOut(hdc, 10, 115, text[2], (int)strlen(text[2]));
-		TextOut(hdc, 10, 420, text[3], (int)strlen(text[3]));
-
-		// Cleanup
-		DeleteObject(big_font);
-		DeleteObject(reg_font);
+		graphics.DrawString(text[0], -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+		graphics.DrawString(text[1], -1, &regFont, PointF{ 10, 100 }, &blackBrush);
+		graphics.DrawString(text[2], -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+		graphics.DrawString(text[3], -1, &regFont, PointF{ 10, 420 }, &blackBrush);
 
 		EndPaint(hWnd, &ps);
 		return S_OK;

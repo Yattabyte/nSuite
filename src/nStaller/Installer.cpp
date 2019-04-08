@@ -46,7 +46,7 @@ Installer::Installer(const HINSTANCE hInstance)
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
+	wcex.hIcon = LoadIcon(hInstance, (LPCSTR)IDI_ICON1);
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
@@ -58,7 +58,7 @@ Installer::Installer(const HINSTANCE hInstance)
 	}
 	else {
 		m_window = CreateWindow(
-			"nStaller", std::string(m_packageName + " - installer").c_str(),
+			"nStaller", std::string(m_packageName + " Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
@@ -88,8 +88,11 @@ Installer::Installer(const HINSTANCE hInstance)
 		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
 		setState(new WelcomeState(this));
 	}
+
+#ifndef DEBUG
 	if (!success)
 		invalidate();
+#endif
 }
 
 void Installer::invalidate()
@@ -98,6 +101,11 @@ void Installer::invalidate()
 	showButtons(false, false, true);
 	enableButtons(false, false, true);
 	m_valid = false;
+}
+
+void Installer::finish()
+{
+	m_finished = true;
 }
 
 void Installer::showFrame(const FrameEnums & newIndex)
@@ -133,7 +141,7 @@ std::string Installer::getDirectory() const
 
 bool Installer::shouldShowDirectory() const
 {
-	return m_showDirectoryOnClose && m_valid;
+	return m_showDirectoryOnClose && m_valid && m_finished;
 }
 
 char * Installer::getPackagePointer() const
@@ -181,50 +189,44 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	auto ptr = (Installer*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
-		auto hdc = BeginPaint(hWnd, &ps);
-		auto font = CreateFont(25, 10, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_ROMAN, "Segoe UI");
-		SelectObject(hdc, font);
+		Graphics graphics(BeginPaint(hWnd, &ps));
+		// Draw Background
+		const LinearGradientBrush backgroundGradient(
+			Point(0, 0),
+			Point(0, 500),
+			Color(255, 25, 25, 25),
+			Color(255, 75, 75, 75)
+		);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, 800, 500);
+		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 
-		// Background
-		SelectObject(hdc, GetStockObject(DC_BRUSH));
-		SelectObject(hdc, GetStockObject(DC_PEN));
-		SetDCBrushColor(hdc, RGB(25, 25, 25));
-		SetDCPenColor(hdc, RGB(25, 25, 25));
-		SetBkColor(hdc, RGB(25, 25, 25));
-		Rectangle(hdc, 0, 0, 800, 500);
-
-		// Footer
-		SetDCBrushColor(hdc, RGB(75, 75, 75));
-		SetDCPenColor(hdc, RGB(75, 75, 75));
-		Rectangle(hdc, 0, 450, 800, 500);
-
-		// Steps
-		constexpr static char* step_labels[] = { "Welcome", "Directory", "Install", "Finish" };
-		SetDCBrushColor(hdc, RGB(100, 100, 100));
-		SetDCPenColor(hdc, RGB(100, 100, 100));
-		Rectangle(hdc, 26, 0, 29, 450);
-		int vertical_offset = 15;
+		// Draw Steps
+		const SolidBrush lineBrush(Color(255,100,100,100));
+		graphics.FillRectangle(&lineBrush, 28, 0, 4, 500);
+		constexpr static wchar_t* step_labels[] = { L"Welcome", L"Directory", L"Install", L"Finish" };
+		FontFamily  fontFamily(L"Segoe UI");
+		Font        font(&fontFamily, 15, FontStyleBold, UnitPixel);
+		REAL vertical_offset = 15;
 		const auto frameIndex = (int)ptr->getCurrentIndex();
 		for (int x = 0; x < 4; ++x) {
 			// Draw Circle
-			auto color = x == frameIndex ? RGB(25, 225, 125) : RGB(255, 255, 255);
+			auto color = x == frameIndex ? Color(255, 25, 225, 125) : Color(255, 255, 255, 255);
 			if (x == 3 && frameIndex == 4)
-				color = RGB(225, 25, 25);
-			SetDCBrushColor(hdc, color);
-			SetDCPenColor(hdc, color);
-			SetTextColor(hdc, color);
-			Ellipse(hdc, 20, vertical_offset + 6, 35, vertical_offset + 21);
+				color = Color(255, 225, 25, 75);
+			const SolidBrush brush(color);
+			Pen pen(color);
+			graphics.DrawEllipse(&pen, 20, (int)vertical_offset, 20, 20 );
+			graphics.FillEllipse(&brush, 20, (int)vertical_offset, 20, 20 );
 
 			// Draw Text
-			TextOut(hdc, 50, vertical_offset, step_labels[x], (int)strlen(step_labels[x]));
+			graphics.DrawString(step_labels[x], -1, &font, PointF{ 50, vertical_offset }, &brush);
 
 			if (x == 2)
-				vertical_offset = 420;
+				vertical_offset = 460;
 			else
 				vertical_offset += 50;
 		}
 
-		DeleteObject(font);
 		EndPaint(hWnd, &ps);
 		return S_OK;
 	}
