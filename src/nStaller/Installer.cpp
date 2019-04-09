@@ -124,7 +124,7 @@ void Installer::setState(State * state)
 			delete m_state;
 		m_state = state;
 		m_state->enact();
-		RECT rc = { 0, 0, 160, 450 };
+		RECT rc = { 0, 0, 160, 500 };
 		RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
 	}
 }
@@ -162,7 +162,7 @@ void Installer::updateButtons(const WORD btnHandle)
 		m_state->pressNext();
 	else if (btnHandle == LOWORD(m_exitBtn))
 		m_state->pressClose();
-	RECT rc = { 0, 0, 160, 450 };
+	RECT rc = { 0, 0, 160, 500 };
 	RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
 }
 
@@ -191,18 +191,17 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));
 		// Draw Background
-		const LinearGradientBrush backgroundGradient(
+		const LinearGradientBrush backgroundGradient1(
 			Point(0, 0),
 			Point(0, 500),
 			Color(255, 25, 25, 25),
 			Color(255, 75, 75, 75)
 		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 800, 500);
-		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
+		graphics.FillRectangle(&backgroundGradient1, 0, 0, 170, 500);
 
 		// Draw Steps
 		const SolidBrush lineBrush(Color(255,100,100,100));
-		graphics.FillRectangle(&lineBrush, 28, 0, 4, 500);
+		graphics.FillRectangle(&lineBrush, 28, 0, 5, 500);
 		constexpr static wchar_t* step_labels[] = { L"Welcome", L"Directory", L"Install", L"Finish" };
 		FontFamily  fontFamily(L"Segoe UI");
 		Font        font(&fontFamily, 15, FontStyleBold, UnitPixel);
@@ -215,6 +214,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				color = Color(255, 225, 25, 75);
 			const SolidBrush brush(color);
 			Pen pen(color);
+			graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 			graphics.DrawEllipse(&pen, 20, (int)vertical_offset, 20, 20 );
 			graphics.FillEllipse(&brush, 20, (int)vertical_offset, 20, 20 );
 

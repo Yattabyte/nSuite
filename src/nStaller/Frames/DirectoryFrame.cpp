@@ -33,10 +33,7 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE hInstanc
 	m_wcex.lpszClassName = "DIRECTORY_FRAME";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("DIRECTORY_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_DLGFRAME, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
-	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	m_width = rc.right - rc.left;
-	m_height = rc.bottom - rc.top;
+	m_hwnd = CreateWindow("DIRECTORY_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
 
 	// Create directory lookup fields
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
@@ -165,18 +162,16 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 {
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
-		Graphics graphics(BeginPaint(hWnd, &ps));
-		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		auto frame = (Frame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+		Graphics graphics(BeginPaint(hWnd, &ps));		
 
 		// Draw Background
 		LinearGradientBrush backgroundGradient(
 			Point(0, 0),
-			Point(frame->m_width, frame->m_height),
-			Color(255, 255, 255, 255),
-			Color(50, 25, 125, 225)
+			Point(0, 500),
+			Color(50, 25, 125, 225),
+			Color(255, 255, 255, 255)
 		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, frame->m_width, frame->m_height);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 500);
 
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");
@@ -190,12 +185,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			L"Where would you like to install to?",
 			L"Choose a folder by pressing the 'Browse' button.",
 			L"Alternatively, type a specific directory into the box below.",
-			L"Press the 'Next' button to begin installing . . ."
 		};
+		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 		graphics.DrawString(text[0], -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 		graphics.DrawString(text[1], -1, &regFont, PointF{ 10, 100 }, &blackBrush);
 		graphics.DrawString(text[2], -1, &regFont, PointF{ 10, 115 }, &blackBrush);
-		graphics.DrawString(text[3], -1, &regFont, PointF{ 10, 420 }, &blackBrush);
 
 		EndPaint(hWnd, &ps);
 		return S_OK;

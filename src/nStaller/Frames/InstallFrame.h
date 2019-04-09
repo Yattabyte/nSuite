@@ -14,9 +14,13 @@ public:
 	InstallFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 	
 
+	// Public Attributes
+	std::wstring m_progress = L"0%";
+
+
 private:
 	// Private Attributes
-	HWND m_hwndLog = nullptr, m_hwndPrgsBar = nullptr, m_hwndPrgsText = nullptr;
+	HWND m_hwndLog = nullptr, m_hwndPrgsBar = nullptr;
 	size_t m_logIndex = 0ull, m_taskIndex = 0ull;
 };
 

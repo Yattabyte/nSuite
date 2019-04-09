@@ -23,10 +23,6 @@ public:
 	}
 
 
-	// Public Attributes
-	int m_width = 0, m_height = 0;
-
-
 protected:
 	// Private Attributes
 	WNDCLASSEX m_wcex;
