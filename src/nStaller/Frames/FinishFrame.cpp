@@ -48,11 +48,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Background
 		LinearGradientBrush backgroundGradient(
 			Point(0, 0),
-			Point(0, 500),
+			Point(0, 450),
 			Color(50, 25, 255, 125),
 			Color(255, 255, 255, 255)
 		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 500);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 450);
 
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");

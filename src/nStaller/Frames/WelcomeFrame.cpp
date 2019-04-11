@@ -39,11 +39,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Background
 		LinearGradientBrush backgroundGradient(
 			Point(0, 0),
-			Point(0, 500),
+			Point(0, 450),
 			Color(50, 25, 125, 225),
 			Color(255, 255, 255, 255)
 		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 500);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 450);
 
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");
@@ -54,17 +54,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		SolidBrush  blackBrush(Color(255, 0, 0, 0));
 
 		// Draw Text
-		constexpr static wchar_t* text[] = {
-			L"Welcome",
-			L"This custom installer was generated using nSuite",
-			L"Source-code can be found at:",
-			L"https://github.com/Yattabyte/nSuite",
-		};
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(text[0], -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		graphics.DrawString(text[1], -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(text[2], -1, &regFont, PointF{ 10, 115 }, &blackBrush);
-		graphics.DrawString(text[3], -1, &regUnderFont, PointF{ 35, 130 }, &blueBrush);
+		graphics.DrawString(L"Welcome", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+		graphics.DrawString(L"This custom installer was generated using nSuite", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
+		graphics.DrawString(L"Source-code can be found at:", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+		graphics.DrawString(L"https://github.com/Yattabyte/nSuite", -1, &regUnderFont, PointF{ 35, 130 }, &blueBrush);
 		
 		EndPaint(hWnd, &ps);
 		return S_OK;

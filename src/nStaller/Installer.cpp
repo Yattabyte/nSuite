@@ -37,6 +37,7 @@ Installer::Installer(const HINSTANCE hInstance)
 		m_directory += "\\" + m_packageName;
 		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
 		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
+		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
 	}
 	// Create window class
 	WNDCLASSEX wcex;
@@ -82,7 +83,7 @@ Installer::Installer(const HINSTANCE hInstance)
 
 		// The portions of the screen that change based on input
 		m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
-		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, hInstance, m_window, { 170,0,800,450 });
+		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, m_maxSize, hInstance, m_window, { 170,0,800,450 });
 		m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
 		m_frames[FINISH_FRAME] = new FinishFrame(&m_showDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
 		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
@@ -209,7 +210,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		const auto frameIndex = (int)ptr->getCurrentIndex();
 		for (int x = 0; x < 4; ++x) {
 			// Draw Circle
-			auto color = x == frameIndex ? Color(255, 25, 225, 125) : Color(255, 255, 255, 255);
+			auto color = x < frameIndex ? Color(255, 100, 100, 100) : x == frameIndex ? Color(255, 25, 225, 125) : Color(255, 255, 255, 255);
 			if (x == 3 && frameIndex == 4)
 				color = Color(255, 225, 25, 75);
 			const SolidBrush brush(color);

@@ -72,7 +72,7 @@ private:
 	std::string m_directory = "", m_packageName = "";
 	bool  m_valid = true, m_showDirectoryOnClose = true, m_finished = false;
 	char * m_packagePtr = nullptr;
-	size_t m_packageSize = 0ull;
+	size_t m_packageSize = 0ull, m_maxSize = 0ull;
 	FrameEnums m_currentIndex = WELCOME_FRAME;
 	Frame * m_frames[FRAME_COUNT];
 	State * m_state = nullptr;

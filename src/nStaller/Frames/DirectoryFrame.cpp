@@ -1,8 +1,9 @@
 #include "DirectoryFrame.h"
-#include <sstream>
-#include <vector>
+#include <filesystem>
 #include <shlobj.h>
 #include <shlwapi.h>
+#include <sstream>
+#include <vector>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -15,10 +16,11 @@ DirectoryFrame::~DirectoryFrame()
 	DestroyWindow(m_browseButton);
 }
 
-DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+DirectoryFrame::DirectoryFrame(std::string * directory, const size_t & requiredSize, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
 	m_directory = directory;
+	m_requiredSize = requiredSize;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -34,12 +36,14 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const HINSTANCE hInstanc
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("DIRECTORY_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
 	// Create directory lookup fields
-	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory->c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
+	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
 	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_browseButton, GWLP_USERDATA, (LONG_PTR)this);
 	SetWindowLongPtr(m_directoryField, GWLP_USERDATA, (LONG_PTR)m_directory);
+	setDirectory(*directory);
 	setVisible(false);
 }
 
@@ -47,6 +51,20 @@ void DirectoryFrame::setDirectory(const std::string & dir)
 {
 	*m_directory = dir;
 	SetWindowText(m_directoryField, dir.c_str());
+}
+
+void DirectoryFrame::getSizes(size_t & capacity, size_t & available, size_t & required) const
+{
+	try {
+		const auto spaceInfo = std::filesystem::space(std::filesystem::path(*m_directory).root_path());
+		capacity = spaceInfo.capacity;
+		available = spaceInfo.available;
+	}
+	catch (std::filesystem::filesystem_error &) {
+		capacity = 0ull;
+		available = 0ull;
+	}
+	required = m_requiredSize;
 }
 
 static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
@@ -162,16 +180,21 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 {
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
-		Graphics graphics(BeginPaint(hWnd, &ps));		
+		Graphics graphics(BeginPaint(hWnd, &ps));
+		auto ptr = (DirectoryFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 
 		// Draw Background
+		SolidBrush solidWhiteBackground(
+			Color(255, 255, 255, 255)
+		);
+		graphics.FillRectangle(&solidWhiteBackground, 0, 0, 630, 450);
 		LinearGradientBrush backgroundGradient(
 			Point(0, 0),
-			Point(0, 500),
+			Point(0, 450),
 			Color(50, 25, 125, 225),
 			Color(255, 255, 255, 255)
 		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 500);
+		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 450);
 
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");
@@ -181,15 +204,30 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		SolidBrush  blackBrush(Color(255, 0, 0, 0));
 
 		// Draw Text
-		constexpr static wchar_t* text[] = {
-			L"Where would you like to install to?",
-			L"Choose a folder by pressing the 'Browse' button.",
-			L"Alternatively, type a specific directory into the box below.",
-		};
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(text[0], -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		graphics.DrawString(text[1], -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(text[2], -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+		graphics.DrawString(L"Where would you like to install to?", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+		graphics.DrawString(L"Choose a folder by pressing the 'Browse' button.", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
+		graphics.DrawString(L"Alternatively, type a specific directory into the box below.", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+
+		constexpr static auto readableFileSize = [](const size_t & size) -> std::wstring {
+			auto remainingSize = (double)size;
+			constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB" };
+			int i = 0;
+			while (remainingSize > 1024.00) {
+				remainingSize /= 1024.00;
+				++i;
+			}
+			std::wstringstream stream;
+			stream << std::fixed << std::setprecision(2) << remainingSize;
+			return stream.str() + units[i] + L"\t(" + std::to_wstring(size) + L" bytes )";
+		};
+		size_t capacity, available, required;
+		ptr->getSizes(capacity, available, required);
+		graphics.DrawString(L"Disk Space", -1, &regFont, PointF{ 10, 200 }, &blackBrush);
+		graphics.DrawString((L"    Capacity:\t\t\t" + readableFileSize(capacity)).c_str(), -1, &regFont, PointF{ 10, 225 }, &blackBrush);
+		graphics.DrawString((L"    Available:\t\t\t" + readableFileSize(available)).c_str(), -1, &regFont, PointF{ 10, 240 }, &blackBrush);
+		graphics.DrawString((L"    Required:\t\t\t" + readableFileSize(required)).c_str(), -1, &regFont, PointF{ 10, 255 }, &blackBrush);
+		
 
 		EndPaint(hWnd, &ps);
 		return S_OK;
@@ -204,6 +242,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				if (SUCCEEDED(OpenFileDialog(directory))) {
 					if (directory != "" && directory.length() > 2ull) {
 						dirFrame->setDirectory(directory);
+						RECT rc = { 10, 200, 600, 300 };
+						RedrawWindow(hWnd, &rc, NULL, RDW_INVALIDATE);
 						return S_OK;
 					}
 				}
@@ -215,6 +255,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
 				GetWindowTextA(controlHandle, &data[0], (int)data.size());
 				*dirPtr = std::string(data.data());
+				RECT rc = { 10, 200, 600, 300 };
+				RedrawWindow(hWnd, &rc, NULL, RDW_INVALIDATE);
 				return S_OK;
 			}
 		}
