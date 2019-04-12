@@ -34,7 +34,6 @@ Installer::Installer(const HINSTANCE hInstance)
 	else {
 		const auto folderSize = *reinterpret_cast<size_t*>(m_archive.getPtr());
 		m_packageName = std::string(reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)))), folderSize);
-		m_directory += "\\" + m_packageName;
 		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
 		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
 		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
@@ -59,7 +58,7 @@ Installer::Installer(const HINSTANCE hInstance)
 	}
 	else {
 		m_window = CreateWindow(
-			"nStaller", std::string(m_packageName + " Installer").c_str(),
+			"nStaller", (Resource::String(IDS_PRODUCT_NAME) + " Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
@@ -83,7 +82,7 @@ Installer::Installer(const HINSTANCE hInstance)
 
 		// The portions of the screen that change based on input
 		m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
-		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, m_maxSize, hInstance, m_window, { 170,0,800,450 });
+		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, m_packageName, m_maxSize, hInstance, m_window, { 170,0,800,450 });
 		m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
 		m_frames[FINISH_FRAME] = new FinishFrame(&m_showDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
 		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });

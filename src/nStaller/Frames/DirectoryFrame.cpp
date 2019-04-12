@@ -16,10 +16,11 @@ DirectoryFrame::~DirectoryFrame()
 	DestroyWindow(m_browseButton);
 }
 
-DirectoryFrame::DirectoryFrame(std::string * directory, const size_t & requiredSize, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+DirectoryFrame::DirectoryFrame(std::string * directory, const std::string & packageName, const size_t & requiredSize, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
 	m_directory = directory;
+	m_packageName = packageName;
 	m_requiredSize = requiredSize;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
@@ -50,7 +51,12 @@ DirectoryFrame::DirectoryFrame(std::string * directory, const size_t & requiredS
 void DirectoryFrame::setDirectory(const std::string & dir)
 {
 	*m_directory = dir;
-	SetWindowText(m_directoryField, dir.c_str());
+	// Ensure last character is a backslash
+	if (dir.size() && dir[dir.size() - 1ull] != '\\')
+		*m_directory += '\\' + m_packageName;
+	else
+		*m_directory += m_packageName;
+	SetWindowText(m_directoryField, m_directory->c_str());
 }
 
 void DirectoryFrame::getSizes(size_t & capacity, size_t & available, size_t & required) const

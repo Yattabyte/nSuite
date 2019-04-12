@@ -3,15 +3,17 @@
 #define RESOURCE_H
 
 // Used for icons
-#define IDI_ICON1                       101
-// Used by installer.rc
-#define IDR_ARCHIVE						102
+#define IDI_ICON1						101
 // Used by installerMaker.rc
-#define IDR_INSTALLER					103
-#define VS_VERSION_INFO                 1
+#define IDR_INSTALLER					102
+// Used by installer.rc
+#define IDR_ARCHIVE						103
+#define IDS_PRODUCT_NAME				104
+#define IDS_PRODUCT_VERSION				105
+#define IDS_PRODUCT_DESCRIPTION			106
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        104
+#define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
@@ -55,6 +57,26 @@ public:
 	@return		true if this resource exists, false otherwise. */
 	inline bool exists() const {
 		return (m_hResource && m_hMemory && m_ptr) && (m_size > 0ull);
+	}
+	/** Retrieve a wide-string resource from a string table.*/
+	inline static std::wstring WString(const int & resourceID, const HMODULE & moduleHandle = nullptr) {
+		if (MAKEINTRESOURCE(resourceID)) {
+			wchar_t * buffer = nullptr;
+			if (auto length = LoadStringW(moduleHandle, resourceID, (LPWSTR)(&buffer), 0)) 
+				return std::wstring(buffer, length);			
+		}
+		return std::wstring();
+	}
+	/** Retrieve a string resource from a string table.*/
+	inline static std::string String(const int & resourceID, const HMODULE & moduleHandle = nullptr) {		
+		const auto wstr = WString(resourceID, moduleHandle);
+		if (!wstr.empty())
+			if (const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL)) {
+				std::string strTo(size_needed, 0);
+				WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+				return strTo;
+			}	
+		return std::string();
 	}
 
 
