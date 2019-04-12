@@ -48,17 +48,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");
 		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
-		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
-		Font        regUnderFont(&fontFamily, 14, FontStyleUnderline, UnitPixel);
 		SolidBrush  blueBrush(Color(255, 25, 125, 225));
-		SolidBrush  blackBrush(Color(255, 0, 0, 0));
 
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 		graphics.DrawString(L"Welcome", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		graphics.DrawString(L"This custom installer was generated using nSuite", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(L"Source-code can be found at:", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
-		graphics.DrawString(L"https://github.com/Yattabyte/nSuite", -1, &regUnderFont, PointF{ 35, 130 }, &blueBrush);
+
 		
 		EndPaint(hWnd, &ps);
 		return S_OK;

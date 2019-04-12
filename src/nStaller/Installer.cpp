@@ -228,6 +228,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				vertical_offset += 50;
 		}
 
+		// Draw -watermark-
+		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
+		Font        regUnderFont(&fontFamily, 14, FontStyleUnderline, UnitPixel);
+		SolidBrush  greyBrush(Color(255, 127, 127, 127));
+		SolidBrush  blueishBrush(Color(255, 100, 125, 175));
+		graphics.DrawString(L"This custom installer was generated using nSuite", -1, &regFont, PointF{ 180, 455 }, &greyBrush);
+		graphics.DrawString(L"https://github.com/Yattabyte/nSuite", -1, &regUnderFont, PointF{ 180, 475 }, &blueishBrush);
+
 		EndPaint(hWnd, &ps);
 		return S_OK;
 	}
