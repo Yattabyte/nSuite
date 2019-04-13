@@ -54,7 +54,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
 {
 	std::vector<InstructionTypes> instructions;
-	instructions.reserve(std::max(size_old, size_new) / 8ull);
+	instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
 	Threader threader;
 	constexpr size_t amount(4096);
@@ -192,7 +192,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 				// We only care about repeats larger than 36 bytes.
 				if (inst->newData.size() > 36ull) {
 					// Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-					size_t max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
+					size_t max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
 					for (size_t x = 0ull; x < max; ++x) {
 						const auto & value_at_x = inst->newData[x];
 						if (inst->newData[x + 36ull] != value_at_x)
@@ -233,7 +233,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 							writeGuard.release();
 
 							x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
-							max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
+							max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
 							break;
 						}
 						x = y - 1;

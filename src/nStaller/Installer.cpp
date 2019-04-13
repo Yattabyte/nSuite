@@ -63,6 +63,10 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
 		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
 		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
+
+		// If no name is found, use the package name (if available)
+		if (m_name.empty() && !m_packageName.empty()) 	
+			m_name = to_wideString(m_packageName);		
 	}
 	// Create window class
 	WNDCLASSEX wcex;
@@ -84,7 +88,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	}
 	else {
 		m_window = CreateWindowW(
-			L"nStaller", (m_name + L" Installer").c_str(),
+			L"nStaller",(m_name + L" Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,

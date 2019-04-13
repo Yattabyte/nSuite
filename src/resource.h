@@ -56,26 +56,6 @@ public:
 	inline bool exists() const {
 		return (m_hResource && m_hMemory && m_ptr) && (m_size > 0ull);
 	}
-	/** Retrieve a wide-string resource from a string table.*/
-	inline static std::wstring WString(const int & resourceID, const HMODULE & moduleHandle = nullptr) {
-		if (MAKEINTRESOURCE(resourceID)) {
-			wchar_t * buffer = nullptr;
-			if (auto length = LoadStringW(moduleHandle, resourceID, (LPWSTR)(&buffer), 0)) 
-				return std::wstring(buffer, length);			
-		}
-		return std::wstring();
-	}
-	/** Retrieve a string resource from a string table.*/
-	inline static std::string String(const int & resourceID, const HMODULE & moduleHandle = nullptr) {		
-		const auto wstr = WString(resourceID, moduleHandle);
-		if (!wstr.empty())
-			if (const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL)) {
-				std::string strTo(size_needed, 0);
-				WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
-				return strTo;
-			}	
-		return std::string();
-	}
 
 
 private:
