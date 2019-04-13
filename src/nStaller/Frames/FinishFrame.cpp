@@ -73,7 +73,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	}
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
-		auto controlHandle = HWND(lParam);
 		if (notification == BN_CLICKED) {
 			BOOL checked = IsDlgButtonChecked(hWnd, 1);
 			ptr->m_installer->showDirectoryOnClose(checked);
