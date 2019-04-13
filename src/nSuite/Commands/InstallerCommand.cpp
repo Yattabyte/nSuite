@@ -66,6 +66,23 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	auto handle = BeginUpdateResource(dstDirectory.c_str(), false);
 	if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
 		exit_program("Cannot write archive contents to the installer, aborting...\r\n");
+	// Try to find manifest file
+	if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {
+		const auto manifestSize = std::filesystem::file_size(srcDirectory + "\\manifest.nman");
+		std::ifstream maniFile(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
+		if (!maniFile.is_open())
+			exit_program("Cannot open manifest file from disk, aborting...\r\n");
+		
+		// Read manifest file
+		char * maniBuffer = new char[manifestSize];
+		maniFile.read(maniBuffer, (std::streamsize)manifestSize);
+		maniFile.close();
+
+		// Update installers' manifest resource
+		if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), maniBuffer, (DWORD)manifestSize))
+			exit_program("Cannot write manifest contents to the installer, aborting...\r\n");
+		delete[] maniBuffer;
+	}
 	EndUpdateResource(handle, FALSE);	
 	delete[] packBuffer;
 

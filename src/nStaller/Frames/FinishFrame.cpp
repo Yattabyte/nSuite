@@ -1,4 +1,5 @@
 #include "FinishFrame.h"
+#include "../Installer.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -12,10 +13,10 @@ FinishFrame::~FinishFrame()
 	DestroyWindow(m_checkbox);
 }
 
-FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+FinishFrame::FinishFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
-	m_openDirOnClose = openDirOnClose;
+	m_installer = installer;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -31,16 +32,17 @@ FinishFrame::FinishFrame(bool * openDirOnClose, const HINSTANCE hInstance, const
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("FINISH_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
 	// Create checkbox
 	m_checkbox = CreateWindow("Button", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_BORDER | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, 15, 15, m_hwnd, (HMENU)1, hInstance, NULL);
-	SetWindowLongPtr(m_checkbox, GWLP_USERDATA, (LONG_PTR)m_openDirOnClose);
-	CheckDlgButton(m_hwnd, 1, *openDirOnClose ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 	setVisible(false);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto ptr = (FinishFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));
@@ -73,12 +75,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		const auto notification = HIWORD(wParam);
 		auto controlHandle = HWND(lParam);
 		if (notification == BN_CLICKED) {
-			auto oOCPtr = (bool*)GetWindowLongPtr(controlHandle, GWLP_USERDATA);
-			if (oOCPtr) {
-				BOOL checked = IsDlgButtonChecked(hWnd, 1);
-				*oOCPtr = checked;
-				return S_OK;
-			}
+			BOOL checked = IsDlgButtonChecked(hWnd, 1);
+			ptr->m_installer->showDirectoryOnClose(checked);
+			return S_OK;
 		}
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);

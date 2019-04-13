@@ -1,5 +1,6 @@
 #include "InstallFrame.h"
 #include "TaskLogger.h"
+#include "../Installer.h"
 #include <CommCtrl.h>
 
 
@@ -15,9 +16,10 @@ InstallFrame::~InstallFrame()
 	TaskLogger::RemoveCallback_ProgressUpdated(m_taskIndex);
 }
 
-InstallFrame::InstallFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+InstallFrame::InstallFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
+	m_installer = installer;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -55,10 +57,10 @@ InstallFrame::InstallFrame(const HINSTANCE hInstance, const HWND parent, const R
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto ptr = (InstallFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));
-		auto ptr = (InstallFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	
 		// Draw Background
 		LinearGradientBrush backgroundGradient(

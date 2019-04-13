@@ -5,16 +5,18 @@
 #include "Frame.h"
 
 
+class Installer;
+
 /** Custom frame class, representing the installer 'failure' screen. */
 class FailFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~FailFrame();
-	FailFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc);
+	FailFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
-private:
-	// Private Attributes
+	// Public Attributes
+	Installer * m_installer = nullptr;
 	HWND m_hwndLog = nullptr;
 	size_t m_logIndex = 0ull;
 };

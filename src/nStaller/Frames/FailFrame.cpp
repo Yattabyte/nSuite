@@ -1,5 +1,6 @@
 #include "FailFrame.h"
 #include "TaskLogger.h"
+#include "../Installer.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -14,9 +15,10 @@ FailFrame::~FailFrame()
 	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
 }
 
-FailFrame::FailFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+FailFrame::FailFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
+	m_installer = installer;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -32,6 +34,7 @@ FailFrame::FailFrame(const HINSTANCE hInstance, const HWND parent, const RECT & 
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("FAIL_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
 	// Create error log
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 50, (rc.right - rc.left) - 20, (rc.bottom - rc.top) - 100, m_hwnd, NULL, hInstance, NULL);
@@ -44,6 +47,7 @@ FailFrame::FailFrame(const HINSTANCE hInstance, const HWND parent, const RECT & 
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto ptr = (FailFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));

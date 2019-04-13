@@ -1,7 +1,9 @@
 #include "Installer.h"
 #include "Common.h"
 #include "TaskLogger.h"
+#include <map>
 #include <Shlobj.h>
+#include <sstream>
 
 // Starting State
 #include "States/WelcomeState.h"
@@ -17,14 +19,38 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Installer::Installer(const HINSTANCE hInstance)
-	: m_archive(IDR_ARCHIVE, "ARCHIVE")
+Installer::Installer() 
+	: m_archive(IDR_ARCHIVE, "ARCHIVE"), m_manifest(IDR_MANIFEST, "MANIFEST")
+{
+	// Process manifest
+	if (m_manifest.exists()) {
+		struct compare_string { bool operator()(const wchar_t * a, const wchar_t * b) const { return wcscmp(a, b) < 0; } };
+		std::map<const wchar_t*, std::wstring*, compare_string> valueMap = { 
+			// Add all manifest string values to keep track of here
+			{ L"-name", &m_name }, 
+			{ L"-version", &m_version },
+			{ L"-description", &m_description }
+		};		
+		
+		// Create a string stream of the manifest file
+		std::wstringstream ss;
+		ss << reinterpret_cast<char*>(m_manifest.getPtr());
+
+		// Cycle through every line, matching the attribute name with the attribute value
+		std::wstring attrib, value;
+		while (ss >> attrib && ss >> std::quoted(value)) 
+			if (valueMap.find(attrib.c_str()) != valueMap.end())
+				*(valueMap.at(attrib.c_str())) = value;	// update the value found in the map
+	}
+}
+
+Installer::Installer(const HINSTANCE hInstance) : Installer()
 {
 	bool success = true;
 	// Get user's program files directory
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
-	m_directory = std::string(pf);
+	setDirectory(std::string(pf));
 	
 	// Check archive integrity
 	if (!m_archive.exists()) {
@@ -57,8 +83,8 @@ Installer::Installer(const HINSTANCE hInstance)
 		success = false;
 	}
 	else {
-		m_window = CreateWindow(
-			"nStaller", (Resource::String(IDS_PRODUCT_NAME) + " Installer").c_str(),
+		m_window = CreateWindowW(
+			L"nStaller", (m_name + L" Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
@@ -81,11 +107,11 @@ Installer::Installer(const HINSTANCE hInstance)
 		SetWindowPos(m_window, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_frames[WELCOME_FRAME] = new WelcomeFrame(hInstance, m_window, { 170,0,800,450 });
-		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(&m_directory, m_packageName, m_maxSize, hInstance, m_window, { 170,0,800,450 });
-		m_frames[INSTALL_FRAME] = new InstallFrame(hInstance, m_window, { 170,0,800,450 });
-		m_frames[FINISH_FRAME] = new FinishFrame(&m_showDirectoryOnClose, hInstance, m_window, { 170,0,800,450 });
-		m_frames[FAIL_FRAME] = new FailFrame(hInstance, m_window, { 170,0,800,450 });
+		m_frames[WELCOME_FRAME] = new WelcomeFrame(this, hInstance, m_window, { 170,0,800,450 });
+		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(this, hInstance, m_window, { 170,0,800,450 });
+		m_frames[INSTALL_FRAME] = new InstallFrame(this, hInstance, m_window, { 170,0,800,450 });
+		m_frames[FINISH_FRAME] = new FinishFrame(this, hInstance, m_window, { 170,0,800,450 });
+		m_frames[FAIL_FRAME] = new FailFrame(this, hInstance, m_window, { 170,0,800,450 });
 		setState(new WelcomeState(this));
 	}
 
@@ -139,9 +165,29 @@ std::string Installer::getDirectory() const
 	return m_directory;
 }
 
+void Installer::setDirectory(const std::string & directory)
+{
+	m_directory = directory;
+
+	try {
+		const auto spaceInfo = std::filesystem::space(std::filesystem::path(getDirectory()).root_path());
+		m_capacity = spaceInfo.capacity;
+		m_available = spaceInfo.available;
+	}
+	catch (std::filesystem::filesystem_error &) {
+		m_capacity = 0ull;
+		m_available = 0ull;
+	}
+}
+
 bool Installer::shouldShowDirectory() const
 {
 	return m_showDirectoryOnClose && m_valid && m_finished;
+}
+
+void Installer::showDirectoryOnClose(const bool & show)
+{
+	m_showDirectoryOnClose = show;
 }
 
 char * Installer::getPackagePointer() const
@@ -149,9 +195,29 @@ char * Installer::getPackagePointer() const
 	return m_packagePtr;
 }
 
-size_t Installer::getPackageSize() const
+size_t Installer::getCompressedPackageSize() const
 {
 	return m_packageSize;
+}
+
+size_t Installer::getDirectorySizeCapacity() const
+{
+	return m_capacity;
+}
+
+size_t Installer::getDirectorySizeAvailable() const
+{
+	return m_available;
+}
+
+size_t Installer::getDirectorySizeRequired() const
+{
+	return m_maxSize;
+}
+
+std::string Installer::getPackageName() const
+{
+	return m_packageName;
 }
 
 void Installer::updateButtons(const WORD btnHandle)

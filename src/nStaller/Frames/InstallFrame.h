@@ -6,22 +6,21 @@
 #include <string>
 
 
+class Installer;
+
 /** Custom frame class, representing the installer 'install' screen. */
 class InstallFrame : public Frame {
 public:
 	// Public (de)Constructors
 	~InstallFrame();
-	InstallFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc);
+	InstallFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 	
 
 	// Public Attributes
-	std::wstring m_progress = L"0%";
-
-
-private:
-	// Private Attributes
+	Installer * m_installer = nullptr;
 	HWND m_hwndLog = nullptr, m_hwndPrgsBar = nullptr;
 	size_t m_logIndex = 0ull, m_taskIndex = 0ull;
+	std::wstring m_progress = L"0%";
 };
 
 #endif // INSTALLFRAME_H

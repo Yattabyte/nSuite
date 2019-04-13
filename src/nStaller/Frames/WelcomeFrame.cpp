@@ -1,11 +1,9 @@
 #include "WelcomeFrame.h"
 #include "Resource.h"
+#include "../Installer.h"
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-static std::wstring name = Resource::WString(IDS_PRODUCT_NAME);
-static std::wstring version = Resource::WString(IDS_PRODUCT_VERSION);
-static std::wstring description = Resource::WString(IDS_PRODUCT_DESCRIPTION);
 
 WelcomeFrame::~WelcomeFrame()
 {
@@ -13,9 +11,10 @@ WelcomeFrame::~WelcomeFrame()
 	DestroyWindow(m_hwnd);
 }
 
-WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+WelcomeFrame::WelcomeFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
 {
 	// Create window class
+	m_installer = installer;
 	m_hinstance = hInstance;
 	m_wcex.cbSize = sizeof(WNDCLASSEX);
 	m_wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -31,11 +30,13 @@ WelcomeFrame::WelcomeFrame(const HINSTANCE hInstance, const HWND parent, const R
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("WELCOME_FRAME", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);	
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	auto ptr = (WelcomeFrame*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));
@@ -59,10 +60,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 		graphics.DrawString(L"Welcome to the Installation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		auto nameVer = name + L" " + version;
-		if (name.empty()) nameVer = L"it's contents";
+		auto nameVer = ptr->m_installer->m_name + L" " + ptr->m_installer->m_version;
+		if (ptr->m_installer->m_name.empty()) nameVer = L"it's contents";
 		graphics.DrawString((L"The Wizard will install " + nameVer + L" on to your computer.").c_str(), -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(description.c_str(), -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+		graphics.DrawString(ptr->m_installer->m_description.c_str(), -1, &regFont, PointF{ 10, 115 }, &blackBrush);
 		
 		EndPaint(hWnd, &ps);
 		return S_OK;

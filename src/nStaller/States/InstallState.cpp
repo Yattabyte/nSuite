@@ -20,7 +20,7 @@ void InstallState::enact()
 		size_t byteCount(0ull), fileCount(0ull);
 		auto directory = m_installer->getDirectory();
 		sanitize_path(directory);
-		if (!DRT::DecompressDirectory(directory, m_installer->getPackagePointer(), m_installer->getPackageSize(), byteCount, fileCount))
+		if (!DRT::DecompressDirectory(directory, m_installer->getPackagePointer(), m_installer->getCompressedPackageSize(), byteCount, fileCount))
 			m_installer->invalidate();
 		else
 			m_installer->enableButtons(false, true, false);

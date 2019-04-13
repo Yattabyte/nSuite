@@ -8,12 +8,10 @@
 #define IDR_INSTALLER					102
 // Used by installer.rc
 #define IDR_ARCHIVE						103
-#define IDS_PRODUCT_NAME				104
-#define IDS_PRODUCT_VERSION				105
-#define IDS_PRODUCT_DESCRIPTION			106
+#define IDR_MANIFEST					104
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        107
+#define _APS_NEXT_RESOURCE_VALUE        105
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101
