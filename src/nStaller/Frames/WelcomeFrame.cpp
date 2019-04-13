@@ -55,15 +55,16 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
 		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
 		SolidBrush  blueBrush(Color(255, 25, 125, 225));
-		SolidBrush  blackBrush(Color(255, 0, 0, 0));
+		SolidBrush	blackBrush(Color(255, 0, 0, 0));
+		StringFormat format = StringFormat::GenericTypographic();
 
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 		graphics.DrawString(L"Welcome to the Installation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 		auto nameVer = ptr->m_installer->m_name + L" " + ptr->m_installer->m_version;
 		if (ptr->m_installer->m_name.empty()) nameVer = L"it's contents";
-		graphics.DrawString((L"The Wizard will install " + nameVer + L" on to your computer.").c_str(), -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(ptr->m_installer->m_description.c_str(), -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+		graphics.DrawString((L"The Wizard will install " + nameVer + L" on to your computer.").c_str(), -1, &regFont, PointF{ 10, 100 }, &format, &blackBrush);
+		graphics.DrawString(ptr->m_installer->m_description.c_str(), -1, &regFont, RectF(10, 150, 630, 300), &format, &blackBrush);
 		
 		EndPaint(hWnd, &ps);
 		return S_OK;
