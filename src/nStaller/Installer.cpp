@@ -1,7 +1,6 @@
 #include "Installer.h"
 #include "Common.h"
 #include "TaskLogger.h"
-#include <map>
 #include <Shlobj.h>
 #include <sstream>
 
@@ -24,23 +23,19 @@ Installer::Installer()
 {
 	// Process manifest
 	if (m_manifest.exists()) {
-		struct compare_string { bool operator()(const wchar_t * a, const wchar_t * b) const { return wcscmp(a, b) < 0; } };
-		std::map<const wchar_t*, std::wstring*, compare_string> valueMap = { 
-			// Add all manifest string values to keep track of here
-			{ L"-name", &m_name }, 
-			{ L"-version", &m_version },
-			{ L"-description", &m_description }
-		};		
-		
 		// Create a string stream of the manifest file
 		std::wstringstream ss;
 		ss << reinterpret_cast<char*>(m_manifest.getPtr());
 
-		// Cycle through every line, matching the attribute name with the attribute value
+		// Cycle through every line, inserting attributes into the manifest map
 		std::wstring attrib, value;
-		while (ss >> attrib && ss >> std::quoted(value)) 
-			if (valueMap.find(attrib.c_str()) != valueMap.end())
-				*(valueMap.at(attrib.c_str())) = value;	// update the value found in the map
+		while (ss >> attrib && ss >> std::quoted(value)) {
+			// Yes, this will leak
+			// still doesn't work
+			wchar_t * k = new wchar_t[attrib.length() + 1];
+			wcscpy_s(k, attrib.length() + 1, attrib.data());
+			m_mfStrings[k] = value;
+		}
 	}
 }
 
@@ -65,8 +60,8 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
 
 		// If no name is found, use the package name (if available)
-		if (m_name.empty() && !m_packageName.empty()) 	
-			m_name = to_wideString(m_packageName);		
+		if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
+			m_mfStrings[L"name"] = to_wideString(m_packageName);
 	}
 	// Create window class
 	WNDCLASSEX wcex;
@@ -88,7 +83,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	}
 	else {
 		m_window = CreateWindowW(
-			L"nStaller",(m_name + L" Installer").c_str(),
+			L"nStaller",(m_mfStrings[L"name"] + L" Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,

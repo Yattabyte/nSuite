@@ -3,6 +3,7 @@
 #define INSTALLER_H
 
 #include "Resource.h"
+#include <map>
 #include <string>
 #include <Windows.h>
 
@@ -85,10 +86,12 @@ public:
 
 
 	// Public manifest strings
-	std::wstring 
-		m_name = L"",
-		m_version = L"",
-		m_description = L"";
+	struct compare_string { 
+		bool operator()(const wchar_t * a, const wchar_t * b) const { 
+			return wcscmp(a, b) < 0; 
+		} 
+	};
+	std::map<const wchar_t*, std::wstring, compare_string> m_mfStrings;
 
 
 private:
@@ -96,7 +99,7 @@ private:
 	Installer();
 
 
-	// Private Attributes
+	// Private Attributes	
 	Resource m_archive, m_manifest;
 	std::string m_directory = "", m_packageName = "";
 	bool  m_valid = true, m_showDirectoryOnClose = true, m_finished = false;

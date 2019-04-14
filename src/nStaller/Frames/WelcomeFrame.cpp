@@ -61,10 +61,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
 		graphics.DrawString(L"Welcome to the Installation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		auto nameVer = ptr->m_installer->m_name + L" " + ptr->m_installer->m_version;
-		if (ptr->m_installer->m_name.empty()) nameVer = L"it's contents";
+		auto nameVer = ptr->m_installer->m_mfStrings[L"name"] + L" " + ptr->m_installer->m_mfStrings[L"version"];
+		if (ptr->m_installer->m_mfStrings[L"name"].empty()) nameVer = L"it's contents";
 		graphics.DrawString((L"The Wizard will install " + nameVer + L" on to your computer.").c_str(), -1, &regFont, PointF{ 10, 100 }, &format, &blackBrush);
-		graphics.DrawString(ptr->m_installer->m_description.c_str(), -1, &regFont, RectF(10, 150, 630, 300), &format, &blackBrush);
+		graphics.DrawString(ptr->m_installer->m_mfStrings[L"description"].c_str(), -1, &regFont, RectF(10, 150, 630, 300), &format, &blackBrush);
 		
 		EndPaint(hWnd, &ps);
 		return S_OK;
