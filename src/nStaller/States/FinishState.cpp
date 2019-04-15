@@ -36,7 +36,7 @@ FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const
 	setVisible(false);
 
 	// Create checkbox
-	m_checkbox = CreateWindow("Button", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | WS_BORDER | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, 15, 15, m_hwnd, (HMENU)1, hInstance, NULL);
+	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, 610, 15, m_hwnd, (HMENU)1, hInstance, NULL);
 	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 }
 
@@ -82,19 +82,21 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Preparing Fonts
 		FontFamily  fontFamily(L"Segoe UI");
 		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
-		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
 		SolidBrush  blueBrush(Color(255, 25, 125, 225));
-		SolidBrush  blackBrush(Color(255, 0, 0, 0));
 
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(L"Installation Complete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		graphics.DrawString(L"Show installation directory on close.", -1, &regFont, PointF{ 30, 147 }, &blackBrush);
+		graphics.DrawString(L"Installation Complete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);		
 
 		EndPaint(hWnd, &ps);
 		return S_OK;
 	}
 	else if (message == WM_CTLCOLORSTATIC) {
+		// Make checkbox text background color transparent
+		if (HWND(lParam) == ptr->m_checkbox) {
+			SetBkMode(HDC(wParam), TRANSPARENT);
+			return (LRESULT)GetStockObject(NULL_BRUSH);
+		}
 		// Make log color white
 		SetBkColor(HDC(wParam), RGB(255, 255, 255));
 		return (LRESULT)GetStockObject(WHITE_BRUSH);

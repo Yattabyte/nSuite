@@ -35,8 +35,12 @@ AgreementState::AgreementState(Installer * installer, const HINSTANCE hInstance,
 	setVisible(false);
 
 	// Create eula
-	m_log = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, (rc.right - rc.left) - 20, (rc.bottom - rc.top) - 125, m_hwnd, NULL, hInstance, NULL);	
-	SetWindowTextW(m_log, m_installer->m_mfStrings[L"eula"].c_str());
+	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"eula"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, (rc.right - rc.left) - 20, (rc.bottom - rc.top) - 125, m_hwnd, NULL, hInstance, NULL);
+	if (m_installer->m_mfStrings[L"eula"].empty())
+		SetWindowTextW(m_log, 
+			L"nSuite installers can be created freely by anyone, as such those who generate them are responsible for its contents, not the developers.\r\n"
+			L"This software is provided as - is, use it at your own risk."
+		);
 
 	// Create checkboxes
 	m_checkYes = CreateWindow("Button", "I accept the terms of this license agreement", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, (rc.bottom - rc.top) - 40, 610, 15, m_hwnd, (HMENU)1, hInstance, NULL);

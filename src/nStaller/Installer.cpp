@@ -31,8 +31,6 @@ Installer::Installer()
 		// Cycle through every line, inserting attributes into the manifest map
 		std::wstring attrib, value;
 		while (ss >> attrib && ss >> std::quoted(value)) {
-			// Yes, this will leak
-			// still doesn't work
 			wchar_t * k = new wchar_t[attrib.length() + 1];
 			wcscpy_s(k, attrib.length() + 1, attrib.data());
 			m_mfStrings[k] = value;
