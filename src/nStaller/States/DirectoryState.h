@@ -6,11 +6,11 @@
 
 
 /** This state encapuslates the "Choose a directory - Screen" state. */
-class DirectoryState : public State {
+class DirectoryState : public FrameState {
 public:
 	// Public (de)Constructors
-	~DirectoryState() = default;
-	DirectoryState(Installer * installer);
+	~DirectoryState();
+	DirectoryState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations
@@ -18,6 +18,10 @@ public:
 	virtual void pressPrevious();
 	virtual void pressNext();
 	virtual void pressClose();
+
+
+	// Public Attributes
+	HWND m_directoryField = nullptr, m_browseButton = nullptr;
 };
 
 #endif // DIRECTORYSTATE_H

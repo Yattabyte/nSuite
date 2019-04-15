@@ -6,11 +6,11 @@
 
 
 /** This state encapuslates the "Welcome - Screen" state. */
-class WelcomeState : public State {
+class WelcomeState : public FrameState {
 public:
 	// Public (de)Constructors
-	~WelcomeState() = default;
-	WelcomeState(Installer * installer);
+	~WelcomeState();
+	WelcomeState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations

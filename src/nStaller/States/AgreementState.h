@@ -6,11 +6,11 @@
 
 
 /** This state encapuslates the "Accept the license agreement" - Screen" state. */
-class AgreementState : public State {
+class AgreementState : public FrameState {
 public:
 	// Public (de)Constructors
-	~AgreementState() = default;
-	AgreementState(Installer * installer);
+	~AgreementState();
+	AgreementState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations
@@ -18,6 +18,11 @@ public:
 	virtual void pressPrevious();
 	virtual void pressNext();
 	virtual void pressClose();
+
+
+	// Public Attributes
+	HWND m_log = nullptr, m_checkNo = nullptr, m_checkYes = nullptr;
+	bool m_agrees = false;
 };
 
 #endif // AGREEMENTSTATE_H

@@ -8,8 +8,7 @@
 #include <Windows.h>
 
 
-class Frame;
-class State;
+class FrameState;
 
 /** Encapsulates the logical features of the installer. */
 class Installer {
@@ -20,9 +19,9 @@ public:
 
 
 	// Public Enumerations
-	const enum FrameEnums {
-		WELCOME_FRAME, AGREEMENT_FRAME, DIRECTORY_FRAME, INSTALL_FRAME, FINISH_FRAME, FAIL_FRAME,
-		FRAME_COUNT
+	const enum StateEnums {
+		WELCOME_STATE, AGREEMENT_STATE, DIRECTORY_STATE, INSTALL_STATE, FINISH_STATE, FAIL_STATE,
+		STATE_COUNT
 	};
 
 
@@ -31,15 +30,12 @@ public:
 	void invalidate();
 	/** Flags the installation as complete. */
 	void finish();
-	/** Displays the screen matching the supplied enumeration.
-	@param	newIndex		the screen to make visible (makes current screen invisible). */
-	void showFrame(const FrameEnums & newIndex);
-	/** Override the current state, making the supplied state active.
-	@param	state			the new state to use. */
-	void setState(State * state);
+	/** Make the state identified by the supplied enum as active, deactivating the previous state.
+	@param	stateIndex		the new state to use. */
+	void setState(const StateEnums & stateIndex);
 	/** Retrieves the current frame's enumeration. 
 	@return					the current frame's index, as an enumeration. */
-	FrameEnums getCurrentIndex() const;
+	StateEnums getCurrentIndex() const;
 	/** Retrieves the current directory chosen for installation.
 	@return					active installation directory. */
 	std::string getDirectory() const;
@@ -105,9 +101,8 @@ private:
 	bool  m_valid = true, m_showDirectoryOnClose = true, m_finished = false;
 	char * m_packagePtr = nullptr;
 	size_t m_packageSize = 0ull, m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
-	FrameEnums m_currentIndex = WELCOME_FRAME;
-	Frame * m_frames[FRAME_COUNT];
-	State * m_state = nullptr;
+	StateEnums m_currentIndex = WELCOME_STATE;
+	FrameState * m_states[STATE_COUNT];
 	HWND 
 		m_window = nullptr, 
 		m_prevBtn = nullptr,

@@ -7,11 +7,11 @@
 
 
 /** This state encapuslates the "Installing - Screen" state. */
-class InstallState : public State {
+class InstallState : public FrameState {
 public:
 	// Public (de)Constructors
-	~InstallState() = default;
-	InstallState(Installer * installer);
+	~InstallState();
+	InstallState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations
@@ -19,6 +19,12 @@ public:
 	virtual void pressPrevious();
 	virtual void pressNext();
 	virtual void pressClose();
+
+
+	// Public Attributes
+	HWND m_hwndLog = nullptr, m_hwndPrgsBar = nullptr;
+	size_t m_logIndex = 0ull, m_taskIndex = 0ull;
+	std::wstring m_progress = L"0%";
 
 
 private:

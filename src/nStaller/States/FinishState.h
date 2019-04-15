@@ -6,11 +6,11 @@
 
 
 /** This state encapuslates the "Finished - Screen" state. */
-class FinishState: public State {
+class FinishState: public FrameState {
 public:
 	// Public (de)Constructors
-	~FinishState() = default;
-	FinishState(Installer * installer);
+	~FinishState();
+	FinishState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations
@@ -18,6 +18,10 @@ public:
 	virtual void pressPrevious();
 	virtual void pressNext();
 	virtual void pressClose();
+
+
+	// Public Attributes
+	HWND m_checkbox = nullptr;
 };
 
 #endif // FINISHSTATE_H

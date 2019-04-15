@@ -9,12 +9,12 @@
 #include "States/FailState.h"
 
 // Frames used in this GUI application
-#include "Frames/WelcomeFrame.h"
-#include "Frames/AgreementFrame.h"
-#include "Frames/DirectoryFrame.h"
-#include "Frames/InstallFrame.h"
-#include "Frames/FinishFrame.h"
-#include "Frames/FailFrame.h"
+#include "States/WelcomeState.h"
+#include "States/AgreementState.h"
+#include "States/DirectoryState.h"
+#include "States/InstallState.h"
+#include "States/FinishState.h"
+#include "States/FailState.h"
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -107,13 +107,13 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		SetWindowPos(m_window, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_frames[WELCOME_FRAME] = new WelcomeFrame(this, hInstance, m_window, { 170,0,800,450 });
-		m_frames[AGREEMENT_FRAME] = new AgreementFrame(this, hInstance, m_window, { 170,0,800,450 });
-		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(this, hInstance, m_window, { 170,0,800,450 });
-		m_frames[INSTALL_FRAME] = new InstallFrame(this, hInstance, m_window, { 170,0,800,450 });
-		m_frames[FINISH_FRAME] = new FinishFrame(this, hInstance, m_window, { 170,0,800,450 });
-		m_frames[FAIL_FRAME] = new FailFrame(this, hInstance, m_window, { 170,0,800,450 });
-		setState(new WelcomeState(this));
+		m_states[WELCOME_STATE] = new WelcomeState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[AGREEMENT_STATE] = new AgreementState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[DIRECTORY_STATE] = new DirectoryState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[INSTALL_STATE] = new InstallState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[FINISH_STATE] = new FinishState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[FAIL_STATE] = new FailState(this, hInstance, m_window, { 170,0,800,450 });
+		setState(WELCOME_STATE);
 	}
 
 #ifndef DEBUG
@@ -124,7 +124,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 void Installer::invalidate()
 {
-	setState(new FailState(this));
+	setState(FAIL_STATE);
 	showButtons(false, false, true);
 	enableButtons(false, false, true);
 	m_valid = false;
@@ -135,28 +135,19 @@ void Installer::finish()
 	m_finished = true;
 }
 
-void Installer::showFrame(const FrameEnums & newIndex)
-{
-	m_frames[m_currentIndex]->setVisible(false);
-	m_frames[newIndex]->setVisible(true);
-	m_currentIndex = newIndex;
-}
-
-void Installer::setState(State * state)
-{
-	if (!m_valid) 
-		delete state; // refuse new states
-	else {
-		if (m_state != nullptr)
-			delete m_state;
-		m_state = state;
-		m_state->enact();
+void Installer::setState(const StateEnums & stateIndex)
+{	
+	if (m_valid) {
+		m_states[m_currentIndex]->setVisible(false);
+		m_states[stateIndex]->enact();
+		m_states[stateIndex]->setVisible(true);
+		m_currentIndex = stateIndex;
 		RECT rc = { 0, 0, 160, 500 };
 		RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
 	}
 }
 
-Installer::FrameEnums Installer::getCurrentIndex() const
+Installer::StateEnums Installer::getCurrentIndex() const
 {
 	return m_currentIndex;
 }
@@ -224,11 +215,11 @@ std::string Installer::getPackageName() const
 void Installer::updateButtons(const WORD btnHandle)
 {
 	if (btnHandle == LOWORD(m_prevBtn))
-		m_state->pressPrevious();
+		m_states[m_currentIndex]->pressPrevious();
 	else if (btnHandle == LOWORD(m_nextBtn))
-		m_state->pressNext();
+		m_states[m_currentIndex]->pressNext();
 	else if (btnHandle == LOWORD(m_exitBtn))
-		m_state->pressClose();
+		m_states[m_currentIndex]->pressClose();
 	RECT rc = { 0, 0, 160, 500 };
 	RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
 }

@@ -6,11 +6,11 @@
 
 
 /** This state encapuslates the "Failure - Screen" state. */
-class FailState: public State {
+class FailState: public FrameState {
 public:
 	// Public (de)Constructors
-	~FailState() = default;
-	FailState(Installer * installer);
+	~FailState();
+	FailState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
 
 	// Public Interface Implementations
@@ -18,6 +18,11 @@ public:
 	virtual void pressPrevious();
 	virtual void pressNext();
 	virtual void pressClose();
+
+
+	// Public Attributes
+	HWND m_hwndLog = nullptr;
+	size_t m_logIndex = 0ull;
 };
 
 #endif // FAILSTATE_H
