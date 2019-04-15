@@ -172,9 +172,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		Graphics graphics(BeginPaint(hWnd, &ps));
 
 		// Draw Background
-		SolidBrush solidWhiteBackground(
-			Color(255, 255, 255, 255)
-		);
+		SolidBrush solidWhiteBackground(Color(255, 255, 255, 255));
 		graphics.FillRectangle(&solidWhiteBackground, 0, 0, 630, 450);
 		LinearGradientBrush backgroundGradient(
 			Point(0, 0),

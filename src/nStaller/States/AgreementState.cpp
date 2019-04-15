@@ -1,24 +1,24 @@
-#include "DirectoryState.h"
 #include "AgreementState.h"
-#include "InstallState.h"
+#include "WelcomeState.h"
+#include "DirectoryState.h"
 #include "../Installer.h"
 
 
-DirectoryState::DirectoryState(Installer * installer)
+AgreementState::AgreementState(Installer * installer)
 	: State(installer) {}
 
-void DirectoryState::enact()
+void AgreementState::enact()
 {
-	m_installer->showFrame(Installer::FrameEnums::DIRECTORY_FRAME);
+	m_installer->showFrame(Installer::FrameEnums::AGREEMENT_FRAME);
 	m_installer->showButtons(true, true, true);
 }
 
-void DirectoryState::pressPrevious()
+void AgreementState::pressPrevious()
 {
-	m_installer->setState(new AgreementState(m_installer));
+	m_installer->setState(new WelcomeState(m_installer));
 }
 
-void DirectoryState::pressNext()
+void AgreementState::pressNext()
 {
 	auto directory = m_installer->getDirectory();
 	
@@ -30,10 +30,10 @@ void DirectoryState::pressNext()
 			MB_OK | MB_ICONERROR | MB_TASKMODAL
 		);
 	else
-		m_installer->setState(new InstallState(m_installer));
+		m_installer->setState(new DirectoryState(m_installer));
 }
 
-void DirectoryState::pressClose()
+void AgreementState::pressClose()
 {
 	// No new screen
 	PostQuitMessage(0);

@@ -10,6 +10,7 @@
 
 // Frames used in this GUI application
 #include "Frames/WelcomeFrame.h"
+#include "Frames/AgreementFrame.h"
 #include "Frames/DirectoryFrame.h"
 #include "Frames/InstallFrame.h"
 #include "Frames/FinishFrame.h"
@@ -107,6 +108,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 		// The portions of the screen that change based on input
 		m_frames[WELCOME_FRAME] = new WelcomeFrame(this, hInstance, m_window, { 170,0,800,450 });
+		m_frames[AGREEMENT_FRAME] = new AgreementFrame(this, hInstance, m_window, { 170,0,800,450 });
 		m_frames[DIRECTORY_FRAME] = new DirectoryFrame(this, hInstance, m_window, { 170,0,800,450 });
 		m_frames[INSTALL_FRAME] = new InstallFrame(this, hInstance, m_window, { 170,0,800,450 });
 		m_frames[FINISH_FRAME] = new FinishFrame(this, hInstance, m_window, { 170,0,800,450 });
@@ -267,15 +269,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Steps
 		const SolidBrush lineBrush(Color(255,100,100,100));
 		graphics.FillRectangle(&lineBrush, 28, 0, 5, 500);
-		constexpr static wchar_t* step_labels[] = { L"Welcome", L"Directory", L"Install", L"Finish" };
+		constexpr static wchar_t* step_labels[] = { L"Welcome", L"EULA", L"Directory", L"Install", L"Finish" };
 		FontFamily  fontFamily(L"Segoe UI");
 		Font        font(&fontFamily, 15, FontStyleBold, UnitPixel);
 		REAL vertical_offset = 15;
 		const auto frameIndex = (int)ptr->getCurrentIndex();
-		for (int x = 0; x < 4; ++x) {
+		for (int x = 0; x < 5; ++x) {
 			// Draw Circle
 			auto color = x < frameIndex ? Color(255, 100, 100, 100) : x == frameIndex ? Color(255, 25, 225, 125) : Color(255, 255, 255, 255);
-			if (x == 3 && frameIndex == 4)
+			if (x == 4 && frameIndex == 5)
 				color = Color(255, 225, 25, 75);
 			const SolidBrush brush(color);
 			Pen pen(color);
@@ -286,7 +288,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			// Draw Text
 			graphics.DrawString(step_labels[x], -1, &font, PointF{ 50, vertical_offset }, &brush);
 
-			if (x == 2)
+			if (x == 3)
 				vertical_offset = 460;
 			else
 				vertical_offset += 50;

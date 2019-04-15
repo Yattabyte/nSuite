@@ -15,6 +15,7 @@ public:
 	~DirectoryFrame();
 	DirectoryFrame(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
 
+
 	// Public Attributes
 	Installer * m_installer = nullptr;
 	HWND m_directoryField = nullptr, m_browseButton = nullptr;

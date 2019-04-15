@@ -1,5 +1,5 @@
 #include "WelcomeState.h"
-#include "DirectoryState.h"
+#include "AgreementState.h"
 #include "../Installer.h"
 
 
@@ -19,7 +19,7 @@ void WelcomeState::pressPrevious()
 
 void WelcomeState::pressNext()
 {
-	m_installer->setState(new DirectoryState(m_installer));
+	m_installer->setState(new AgreementState(m_installer));
 }
 
 void WelcomeState::pressClose()
