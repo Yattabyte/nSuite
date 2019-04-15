@@ -3,6 +3,7 @@
 #define DIRECTORY_TOOLS_H
 
 #include <string>
+#include <vector>
 
 
 /** Namespace to keep directory-related operations grouped together. */
@@ -13,8 +14,9 @@ namespace DRT {
 	@param	packBuffer			pointer to the destination buffer, which will hold compressed contents.
 	@param	packSize			reference updated with the size in bytes of the compressed destinationBuffer.
 	@param	fileCount			reference updated with the number of files compressed into the package.
+	@param	exclusions			optional list of filenames/types to avoid packaging. Strings starting with "\\" match an entire path, "." match extension.
 	@return						true if compression success, false otherwise. */
-	bool CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t & fileCount);
+	bool CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t & fileCount, const std::vector<std::string> & exclusions = std::vector<std::string>());
 	/** Decompresses a packaged buffer into a destination directory.
 	@param	dstDirectory		the absolute path to the directory to compress.
 	@param	packBuffer			the buffer containing the compressed contents.

@@ -46,7 +46,7 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	// Compress the directory specified
 	char * packBuffer(nullptr);
 	size_t packSize(0ull), fileCount(0ull);
-	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount))
+	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount, {"\\manifest.nman"}))
 		exit_program("Cannot create installer from the directory specified, aborting...\r\n");
 
 	// Acquire installer resource

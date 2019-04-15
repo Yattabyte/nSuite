@@ -10,7 +10,7 @@
 #include <vector>
 
 
-bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t & fileCount)
+bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t & fileCount, const std::vector<std::string> & exclusions)
 {
 	// Variables
 	Threader threader;
@@ -35,17 +35,39 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	// and make a list containing all relevant files and their attributes
 	size_t archiveSize(0ull);
 	for each (const auto & entry in directoryArray) {
+		const auto extension = std::filesystem::path(entry).extension();
 		auto path = entry.path().string();
 		path = path.substr(absolute_path_length, path.size() - absolute_path_length);
-		const auto pathSize = path.size();
+		bool useEntry = true;
+		for each (const auto & excl in exclusions) {
+			if (excl.empty())
+				continue;
+			if (excl[0] == '\\') {
+				// Compare Paths
+				if (path == excl) {
+					useEntry = false;
+					break;
+				}
+			}
+			else if (excl[0] == '.') {
+				// Compare Extensions
+				if (extension == excl) {
+					useEntry = false;
+					break;
+				}
+			}
+		}
+		if (useEntry) {
+			const auto pathSize = path.size();
 
-		const size_t unitSize =
-			size_t(sizeof(size_t)) +							// size of path size variable in bytes
-			pathSize +											// the actual path data
-			size_t(sizeof(size_t)) +							// size of the file size variable in bytes
-			entry.file_size();									// the actual file data
-		archiveSize += unitSize;
-		files.push_back({ entry.path().string(), path, entry.file_size(), unitSize });
+			const size_t unitSize =
+				size_t(sizeof(size_t)) +							// size of path size variable in bytes
+				pathSize +											// the actual path data
+				size_t(sizeof(size_t)) +							// size of the file size variable in bytes
+				entry.file_size();									// the actual file data
+			archiveSize += unitSize;
+			files.push_back({ entry.path().string(), path, entry.file_size(), unitSize });
+		}
 	}
 	fileCount = files.size();
 
