@@ -24,6 +24,7 @@ link_libraries(
 )
 
 # add all sub-projects and plugins here
+add_subdirectory( "src/unStaller" )
 add_subdirectory( "src/nStaller" )
 add_subdirectory( "src/nUpdater" )
 add_subdirectory( "src/nSuite" )

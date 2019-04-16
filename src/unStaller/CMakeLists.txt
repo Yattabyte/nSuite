@@ -1,7 +1,7 @@
-################
-### nStaller ###
-################
-set (Module nStaller)
+#################
+### unStaller ###
+#################
+set (Module unStaller)
 
 # Get source files
 file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")
@@ -33,9 +33,6 @@ target_link_libraries(${Module}
 	"propsys.lib" 
 	"Shlwapi.lib"
 )
-
-# This module requires the uninstaller to be built first
-add_dependencies(nStaller unStaller)
 
 # Set windows/visual studio settings
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")

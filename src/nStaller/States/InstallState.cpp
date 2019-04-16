@@ -2,8 +2,11 @@
 #include "Common.h"
 #include "BufferTools.h"
 #include "DirectoryTools.h"
+#include "Resource.h"
 #include "../Installer.h"
 #include <CommCtrl.h>
+#include <regex>
+#include <fstream>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -62,14 +65,48 @@ void InstallState::enact()
 	m_installer->enableButtons(false, false, false);
 
 	m_thread = std::thread([&]() {
-		// Unpackage using the rest of the resource file
-		size_t byteCount(0ull), fileCount(0ull);
-		auto directory = m_installer->getDirectory();
-		sanitize_path(directory);
-		if (!DRT::DecompressDirectory(directory, m_installer->getPackagePointer(), m_installer->getCompressedPackageSize(), byteCount, fileCount))
-			m_installer->invalidate();
-		else
-			m_installer->enableButtons(false, true, false);
+		// Acquire the uninstaller resource
+		Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
+		if (!uninstaller.exists()) {
+			TaskLogger::PushText("Cannot access installer resource, aborting...\r\n");
+			m_installer->setState(Installer::FAIL_STATE);
+		}
+		else {
+			// Unpackage using the rest of the resource file
+			size_t byteCount(0ull), fileCount(0ull);
+			auto directory = m_installer->getDirectory();
+			sanitize_path(directory);
+			if (!DRT::DecompressDirectory(directory, m_installer->getPackagePointer(), m_installer->getCompressedPackageSize(), byteCount, fileCount))
+				m_installer->invalidate();
+			else {
+				// Write uninstaller to disk
+				const auto uninstallerPath = m_installer->getDirectory() + "\\uninstaller.exe";
+				std::filesystem::create_directories(std::filesystem::path(uninstallerPath).parent_path());
+				std::ofstream file(uninstallerPath, std::ios::binary | std::ios::out);
+				if (!file.is_open()) {
+					TaskLogger::PushText("Cannot write uninstaller to disk, aborting...\r\n");
+					m_installer->invalidate();
+				}
+				TaskLogger::PushText("Writing Uninstaller:\"" + uninstallerPath + "\"\r\n");
+				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
+				file.close();
+
+				// Update uninstaller's resources
+				std::string newDir = std::regex_replace(directory, std::regex("\\\\"), "\\\\");
+				const std::string newManifest(
+					std::string(reinterpret_cast<char*>(manifest.getPtr()), manifest.getSize()) 
+					+ "\r\ndirectory \"" + newDir + "\""
+				);
+				auto handle = BeginUpdateResource(uninstallerPath.c_str(), false);
+				if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPVOID)newManifest.c_str(), (DWORD)newManifest.size())) {
+					TaskLogger::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
+					m_installer->invalidate();
+				}
+				EndUpdateResource(handle, FALSE);
+
+				m_installer->enableButtons(false, true, false);
+			}
+		}
 	});
 	m_thread.detach();
 }

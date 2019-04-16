@@ -1,22 +1,64 @@
-#include "Installer.h"
+#include "Uninstaller.h"
 #include "Common.h"
 #include "TaskLogger.h"
 #include <Shlobj.h>
+#include <strsafe.h>
 #include <sstream>
+#pragma warning(push)
+#pragma warning(disable:4458)
+#include <gdiplus.h>
+#pragma warning(pop)
 
 // States used in this GUI application
 #include "States/WelcomeState.h"
-#include "States/AgreementState.h"
-#include "States/DirectoryState.h"
-#include "States/InstallState.h"
+#include "States/UninstallState.h"
 #include "States/FinishState.h"
 #include "States/FailState.h"
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Installer::Installer() 
-	: m_archive(IDR_ARCHIVE, "ARCHIVE"), m_manifest(IDR_MANIFEST, "MANIFEST")
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
+{
+	CoInitialize(NULL);
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	Uninstaller uninstaller(hInstance);
+
+	// Main message loop:
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+#ifdef NDEBUG
+	// Delete scraps of the installation directory
+	if (uninstaller.isValid()) {
+		std::wstring cmd(L"cmd.exe /C ping 1.1.1.1 -n 1 -w 5000 > Nul & rmdir /q/s \"" + uninstaller.getDirectory());
+		cmd.erase(std::find(cmd.begin(), cmd.end(), L'\0'), cmd.end());
+		cmd += L"\"";
+		STARTUPINFOW si = { 0 };
+		PROCESS_INFORMATION pi = { 0 };
+
+		CreateProcessW(NULL, (LPWSTR)cmd.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+
+		std::error_code er;
+		std::filesystem::remove_all(uninstaller.getDirectory(), er);
+	}
+#endif
+
+	// Close
+	CoUninitialize();
+	return (int)msg.wParam;
+}
+
+Uninstaller::Uninstaller() 
+	: m_manifest(IDR_MANIFEST, "MANIFEST")
 {
 	// Process manifest
 	if (m_manifest.exists()) {
@@ -34,30 +76,20 @@ Installer::Installer()
 	}
 }
 
-Installer::Installer(const HINSTANCE hInstance) : Installer()
+Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 {
+	// Ensure that a manifest exists
 	bool success = true;
-	// Get user's program files directory
-	TCHAR pf[MAX_PATH];
-	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
-	setDirectory(std::string(pf));
-	
-	// Check archive integrity
-	if (!m_archive.exists()) {
-		TaskLogger::PushText("Critical failure: archive doesn't exist!\r\n");
+	if (!m_manifest.exists()) {
+		TaskLogger::PushText("Critical failure: uninstaller manifest doesn't exist!\r\n");
 		success = false;
 	}
-	else {
-		const auto folderSize = *reinterpret_cast<size_t*>(m_archive.getPtr());
-		m_packageName = std::string(reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)))), folderSize);
-		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
-		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
-		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
 
-		// If no name is found, use the package name (if available)
-		if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
-			m_mfStrings[L"name"] = to_wideString(m_packageName);
-	}
+	// Acquire the installation directory
+	m_directory = m_mfStrings[L"directory"];
+	if (m_directory.empty())
+		m_directory = to_wideString(get_current_directory());
+
 	// Create window class
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
@@ -70,7 +102,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = "nStaller";
+	wcex.lpszClassName = "Uninstaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
 		TaskLogger::PushText("Critical failure: could not create main window.\r\n");
@@ -78,7 +110,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	}
 	else {
 		m_window = CreateWindowW(
-			L"nStaller",(m_mfStrings[L"name"] + L" Installer").c_str(),
+			L"Uninstaller",(m_mfStrings[L"name"] + L" Uninstaller").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
@@ -102,9 +134,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 		// The portions of the screen that change based on input
 		m_states[WELCOME_STATE] = new WelcomeState(this, hInstance, m_window, { 170,0,800,450 });
-		m_states[AGREEMENT_STATE] = new AgreementState(this, hInstance, m_window, { 170,0,800,450 });
-		m_states[DIRECTORY_STATE] = new DirectoryState(this, hInstance, m_window, { 170,0,800,450 });
-		m_states[INSTALL_STATE] = new InstallState(this, hInstance, m_window, { 170,0,800,450 });
+		m_states[UNINSTALL_STATE] = new UninstallState(this, hInstance, m_window, { 170,0,800,450 });
 		m_states[FINISH_STATE] = new FinishState(this, hInstance, m_window, { 170,0,800,450 });
 		m_states[FAIL_STATE] = new FailState(this, hInstance, m_window, { 170,0,800,450 });
 		setState(WELCOME_STATE);
@@ -116,7 +146,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 #endif
 }
 
-void Installer::invalidate()
+void Uninstaller::invalidate()
 {
 	setState(FAIL_STATE);
 	showButtons(false, false, true);
@@ -124,12 +154,17 @@ void Installer::invalidate()
 	m_valid = false;
 }
 
-void Installer::finish()
+bool Uninstaller::isValid() const
+{
+	return m_valid;
+}
+
+void Uninstaller::finish()
 {
 	m_finished = true;
 }
 
-void Installer::setState(const StateEnums & stateIndex)
+void Uninstaller::setState(const StateEnums & stateIndex)
 {	
 	if (m_valid) {
 		m_states[m_currentIndex]->setVisible(false);
@@ -141,62 +176,17 @@ void Installer::setState(const StateEnums & stateIndex)
 	}
 }
 
-Installer::StateEnums Installer::getCurrentIndex() const
+Uninstaller::StateEnums Uninstaller::getCurrentIndex() const
 {
 	return m_currentIndex;
 }
 
-std::string Installer::getDirectory() const
+std::wstring Uninstaller::getDirectory() const
 {
 	return m_directory;
 }
 
-void Installer::setDirectory(const std::string & directory)
-{
-	m_directory = directory;
-
-	try {
-		const auto spaceInfo = std::filesystem::space(std::filesystem::path(getDirectory()).root_path());
-		m_capacity = spaceInfo.capacity;
-		m_available = spaceInfo.available;
-	}
-	catch (std::filesystem::filesystem_error &) {
-		m_capacity = 0ull;
-		m_available = 0ull;
-	}
-}
-
-char * Installer::getPackagePointer() const
-{
-	return m_packagePtr;
-}
-
-size_t Installer::getCompressedPackageSize() const
-{
-	return m_packageSize;
-}
-
-size_t Installer::getDirectorySizeCapacity() const
-{
-	return m_capacity;
-}
-
-size_t Installer::getDirectorySizeAvailable() const
-{
-	return m_available;
-}
-
-size_t Installer::getDirectorySizeRequired() const
-{
-	return m_maxSize;
-}
-
-std::string Installer::getPackageName() const
-{
-	return m_packageName;
-}
-
-void Installer::updateButtons(const WORD btnHandle)
+void Uninstaller::updateButtons(const WORD btnHandle)
 {
 	if (btnHandle == LOWORD(m_prevBtn))
 		m_states[m_currentIndex]->pressPrevious();
@@ -208,7 +198,7 @@ void Installer::updateButtons(const WORD btnHandle)
 	RedrawWindow(m_window, &rc, NULL, RDW_INVALIDATE);
 }
 
-void Installer::showButtons(const bool & prev, const bool & next, const bool & close)
+void Uninstaller::showButtons(const bool & prev, const bool & next, const bool & close)
 {
 	if (m_valid) {
 		ShowWindow(m_prevBtn, prev);
@@ -217,7 +207,7 @@ void Installer::showButtons(const bool & prev, const bool & next, const bool & c
 	}
 }
 
-void Installer::enableButtons(const bool & prev, const bool & next, const bool & close)
+void Uninstaller::enableButtons(const bool & prev, const bool & next, const bool & close)
 {
 	if (m_valid) {
 		EnableWindow(m_prevBtn, prev);
@@ -228,7 +218,7 @@ void Installer::enableButtons(const bool & prev, const bool & next, const bool &
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	auto ptr = (Installer*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	auto ptr = (Uninstaller*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT) {
 		PAINTSTRUCT ps;
 		Graphics graphics(BeginPaint(hWnd, &ps));
@@ -244,15 +234,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		// Draw Steps
 		const SolidBrush lineBrush(Color(255,100,100,100));
 		graphics.FillRectangle(&lineBrush, 28, 0, 5, 500);
-		constexpr static wchar_t* step_labels[] = { L"Welcome", L"EULA", L"Directory", L"Install", L"Finish" };
+		constexpr static wchar_t* step_labels[] = { L"Welcome", L"Uninstall", L"Finish" };
 		FontFamily  fontFamily(L"Segoe UI");
 		Font        font(&fontFamily, 15, FontStyleBold, UnitPixel);
 		REAL vertical_offset = 15;
 		const auto frameIndex = (int)ptr->getCurrentIndex();
-		for (int x = 0; x < 5; ++x) {
+		for (int x = 0; x < 3; ++x) {
 			// Draw Circle
 			auto color = x < frameIndex ? Color(255, 100, 100, 100) : x == frameIndex ? Color(255, 25, 225, 125) : Color(255, 255, 255, 255);
-			if (x == 4 && frameIndex == 5)
+			if (x == 2 && frameIndex == 3)
 				color = Color(255, 225, 25, 75);
 			const SolidBrush brush(color);
 			Pen pen(color);
@@ -263,7 +253,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			// Draw Text
 			graphics.DrawString(step_labels[x], -1, &font, PointF{ 50, vertical_offset }, &brush);
 
-			if (x == 3)
+			if (x == 1)
 				vertical_offset = 460;
 			else
 				vertical_offset += 50;

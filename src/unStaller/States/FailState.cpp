@@ -1,7 +1,7 @@
 #include "FailState.h"
 #include "Common.h"
 #include "TaskLogger.h"
-#include "../Installer.h"
+#include "../Uninstaller.h"
 #include <ctime>
 #include <fstream>
 #include <shlobj.h>
@@ -18,8 +18,8 @@ FailState::~FailState()
 	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
 }
 
-FailState::FailState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
-	: FrameState(installer)
+FailState::FailState(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
+	: FrameState(uninstaller)
 {
 	// Create window class
 	m_hinstance = hInstance;
@@ -50,8 +50,8 @@ FailState::FailState(Installer * installer, const HINSTANCE hInstance, const HWN
 
 void FailState::enact()
 {
-	m_installer->showButtons(false, false, true);
-	m_installer->enableButtons(false, false, true);
+	m_uninstaller->showButtons(false, false, true);
+	m_uninstaller->enableButtons(false, false, true);
 
 	// Dump error log to disk
 	const auto dir = get_current_directory() + "\\error_log.txt";
@@ -62,7 +62,7 @@ void FailState::enact()
 
 	// If the log doesn't exist, add header text
 	if (!std::filesystem::exists(dir))
-		logData += "Installer error log:\r\n";
+		logData += "Uninstaller error log:\r\n";
 
 	// Add remaining log data
 	logData += std::string(dateData) + TaskLogger::PullText() + "\r\n";
@@ -117,7 +117,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 
 		// Draw Text
 		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(L"Installation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+		graphics.DrawString(L"Uninstallation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 
 		EndPaint(hWnd, &ps);
 		return S_OK;

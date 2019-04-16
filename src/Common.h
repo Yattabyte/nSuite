@@ -109,9 +109,10 @@ inline static void sanitize_path(std::string & path)
 inline static auto get_file_paths(const std::string & directory)
 {
 	std::vector<std::filesystem::directory_entry> paths;
-	for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
-		if (entry.is_regular_file())
-			paths.emplace_back(entry);
+	if (std::filesystem::is_directory(directory))
+		for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+			if (entry.is_regular_file())
+				paths.emplace_back(entry);
 	return paths;
 }
 

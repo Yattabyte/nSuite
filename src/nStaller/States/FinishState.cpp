@@ -45,10 +45,11 @@ FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const
 	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 
 	// Shortcuts
-	auto desktopStrings = m_installer->m_mfStrings[L"shortcut"], startmenuStrings = m_installer->m_mfStrings[L"startmenu"];
+	const auto desktopStrings = m_installer->m_mfStrings[L"shortcut"], startmenuStrings = m_installer->m_mfStrings[L"startmenu"];
 	size_t numD = std::count(desktopStrings.begin(), desktopStrings.end(), L',') + 1ull, numS = std::count(startmenuStrings.begin(), startmenuStrings.end(), L',') + 1ull;
 	m_shortcutCheckboxes.reserve(numD + numS);
 	m_shortcuts_d.reserve(numD + numS);
+	m_shortcuts_s.reserve(numD + numS);
 	size_t last = 0;
 	if (!desktopStrings.empty())
 		for (size_t x = 0; x < numD; ++x) {
@@ -84,14 +85,14 @@ FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const
 	int vertical = 170, checkIndex = 2;
 	for each (const auto & shortcut in m_shortcuts_d) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the Desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
 	}
 	for each (const auto & shortcut in m_shortcuts_s) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
