@@ -42,12 +42,6 @@ public:
 	/** Sets a new installation directory.
 	@param	directory		new installation directory. */
 	void setDirectory(const std::string & directory);
-	/** Retrieve if the chosen directory should show when the installer closes.
-	@return					true if should show, false otherwise. */
-	bool shouldShowDirectory() const;
-	/** Set if the chosen directory should show when the installer closes.
-	@param	show			whether or not the directory should show. */
-	void showDirectoryOnClose(const bool & show);
 	/** Retrieves the pointer to the compressed packaged contents.
 	@return					the package pointer (offset of folder name data). */
 	char * getPackagePointer() const;
@@ -98,7 +92,7 @@ private:
 	// Private Attributes	
 	Resource m_archive, m_manifest;
 	std::string m_directory = "", m_packageName = "";
-	bool  m_valid = true, m_showDirectoryOnClose = true, m_finished = false;
+	bool  m_valid = true, m_finished = false;
 	char * m_packagePtr = nullptr;
 	size_t m_packageSize = 0ull, m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
 	StateEnums m_currentIndex = WELCOME_STATE;

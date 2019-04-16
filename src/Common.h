@@ -7,10 +7,11 @@
 #include <direct.h>
 #include <filesystem>
 #include <iostream>
+#include <shlobj.h>
 #include <string>
+#include <stdio.h>
 #include <vector>
 #include <windows.h>
-
 
 /** Changes an input string to lower case, and returns it.
 @param	string		the input string.
@@ -52,6 +53,37 @@ inline static std::string from_wideString(const std::wstring & wstr)
 	return std::string();
 }
 
+/** Creates a shortcut file for the paths chosen.
+@param	srcPath		path to the target file that the shortcut will link to.
+@param	wrkPath		path to the working directory for the shortcut.
+@param	dstPath		path to where the shortcut should be placed. */
+inline static void create_shortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
+{
+	IShellLink* psl;
+	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
+		IPersistFile* ppf;
+
+		// Set the path to the shortcut target and add the description. 
+		psl->SetPath(srcPath.c_str());
+		psl->SetWorkingDirectory(wrkPath.c_str());
+		psl->SetIconLocation(srcPath.c_str(), 0);
+
+		// Query IShellLink for the IPersistFile interface, used for saving the 
+		// shortcut in persistent storage. 
+		if (SUCCEEDED(psl->QueryInterface(IID_IPersistFile, (LPVOID*)&ppf))) {
+			WCHAR wsz[MAX_PATH];
+
+			// Ensure that the string is Unicode. 
+			MultiByteToWideChar(CP_ACP, 0, (dstPath + ".lnk").c_str(), -1, wsz, MAX_PATH);
+
+			// Save the link by calling IPersistFile::Save. 
+			ppf->Save(wsz, TRUE);
+			ppf->Release();
+		}
+		psl->Release();
+	}
+}
+
 /** Increment a pointer's address by the offset provided.
 @param	ptr			the pointer to increment by the offset amount.
 @param	offset		the offset amount to apply to the pointer's address.
@@ -81,6 +113,28 @@ inline static auto get_file_paths(const std::string & directory)
 		if (entry.is_regular_file())
 			paths.emplace_back(entry);
 	return paths;
+}
+
+/** Retrieve the start menu directory.
+@return		path to the user's start menu. */
+inline static std::string get_users_startmenu()
+{
+	// Get the running directory
+	char cPath[FILENAME_MAX];
+	if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_COMMON_PROGRAMS, NULL, 0, cPath)))
+		return std::string(cPath);
+	return std::string();
+}
+
+/** Retrieve the desktop directory.
+@return		path to the user's desktop. */
+inline static std::string get_users_desktop()
+{
+	// Get the running directory
+	char cPath[FILENAME_MAX];
+	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE))
+		return std::string(cPath);
+	return std::string();
 }
 
 /** Retrieve the directory this executable is running out-of.

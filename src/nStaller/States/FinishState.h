@@ -3,6 +3,7 @@
 #define FINISHSTATE_H
 
 #include "State.h"
+#include <vector>
 
 
 /** This state encapuslates the "Finished - Screen" state. */
@@ -22,6 +23,9 @@ public:
 
 	// Public Attributes
 	HWND m_checkbox = nullptr;
+	bool m_showDirectory = true;
+	std::vector<HWND> m_shortcutCheckboxes;
+	std::vector<std::wstring> m_shortcuts_d, m_shortcuts_s;
 };
 
 #endif // FINISHSTATE_H

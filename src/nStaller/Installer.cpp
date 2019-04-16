@@ -170,16 +170,6 @@ void Installer::setDirectory(const std::string & directory)
 	}
 }
 
-bool Installer::shouldShowDirectory() const
-{
-	return m_showDirectoryOnClose && m_valid && m_finished;
-}
-
-void Installer::showDirectoryOnClose(const bool & show)
-{
-	m_showDirectoryOnClose = show;
-}
-
 char * Installer::getPackagePointer() const
 {
 	return m_packagePtr;

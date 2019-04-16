@@ -7,6 +7,7 @@
 
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
+	CoInitialize(NULL);
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
 	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -18,11 +19,8 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-
-	// Open the installation directory if finished successfully + if user wants it to
-	if (installer.shouldShowDirectory())
-		ShellExecute(NULL, "open", installer.getDirectory().c_str(), NULL, NULL, SW_SHOWDEFAULT);
-
+	
 	// Close
+	CoUninitialize();
 	return (int)msg.wParam;
 }
