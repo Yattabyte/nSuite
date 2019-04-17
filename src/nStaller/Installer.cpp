@@ -225,7 +225,7 @@ void Installer::beginInstallation()
 					TaskLogger::PushText("Cannot write uninstaller to disk, aborting...\r\n");
 					invalidate();
 				}
-				TaskLogger::PushText("Writing Uninstaller:\"" + uninstallerPath + "\"\r\n");
+				TaskLogger::PushText("Uninstaller:\"" + uninstallerPath + "\"\r\n");
 				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
 				file.close();
 
@@ -241,6 +241,31 @@ void Installer::beginInstallation()
 					invalidate();
 				}
 				EndUpdateResource(handle, FALSE);
+
+				// Add uninstaller to system registry
+				HKEY hkey;
+				if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, NULL) == ERROR_SUCCESS) {
+					auto
+						name = from_wideString(m_mfStrings[L"name"]),
+						version = from_wideString(m_mfStrings[L"version"]),
+						publisher = from_wideString(m_mfStrings[L"publisher"]),
+						icon = from_wideString(m_mfStrings[L"icon"]);
+					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize/1024ull);
+					if (icon.empty())
+						icon = uninstallerPath;
+					else
+						icon = directory + icon;
+					RegSetKeyValueA(hkey, 0, "UninstallString", REG_SZ, (LPCVOID)uninstallerPath.c_str(), (DWORD)uninstallerPath.size());
+					RegSetKeyValueA(hkey, 0, "DisplayIcon", REG_SZ, (LPCVOID)icon.c_str(), (DWORD)icon.size());
+					RegSetKeyValueA(hkey, 0, "DisplayName", REG_SZ, (LPCVOID)name.c_str(), (DWORD)name.size());
+					RegSetKeyValueA(hkey, 0, "DisplayVersion", REG_SZ, (LPCVOID)version.c_str(), (DWORD)version.size());
+					RegSetKeyValueA(hkey, 0, "InstallLocation", REG_SZ, (LPCVOID)directory.c_str(), (DWORD)directory.size());
+					RegSetKeyValueA(hkey, 0, "Publisher", REG_SZ, (LPCVOID)publisher.c_str(), (DWORD)publisher.size());
+					RegSetKeyValueA(hkey, 0, "NoModify", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
+					RegSetKeyValueA(hkey, 0, "NoRepair", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
+					RegSetKeyValueA(hkey, 0, "EstimatedSize", REG_DWORD, (LPCVOID)&SIZE, (DWORD)sizeof(DWORD));
+				}
+				RegCloseKey(hkey);
 			}
 		}
 	});
