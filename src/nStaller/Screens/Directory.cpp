@@ -1,4 +1,4 @@
-#include "DirectoryState.h"
+#include "Directory.h"
 #include "../Installer.h"
 #include <iomanip>
 #include <shlobj.h>
@@ -8,6 +8,8 @@
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static HRESULT CreateDialogEventHandler(REFIID, void **);
+static HRESULT OpenFileDialog(std::string &);
 
 static std::string directory_and_package(const std::string & dir, const std::string & pack)
 {
@@ -20,7 +22,7 @@ static std::string directory_and_package(const std::string & dir, const std::str
 	return directory;
 }
 
-DirectoryState::~DirectoryState()
+Directory::~Directory()
 {
 	UnregisterClass("DIRECTORY_STATE", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -28,8 +30,8 @@ DirectoryState::~DirectoryState()
 	DestroyWindow(m_browseButton);
 }
 
-DirectoryState::DirectoryState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
-	: FrameState(installer) 
+Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+	: Screen(installer, pos, size)
 {
 	// Create window class
 	m_hinstance = hInstance;
@@ -46,30 +48,98 @@ DirectoryState::DirectoryState(Installer * installer, const HINSTANCE hInstance,
 	m_wcex.lpszClassName = "DIRECTORY_STATE";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("DIRECTORY_STATE", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("DIRECTORY_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create directory lookup fields
-	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory_and_package(m_installer->getDirectory(), m_installer->getPackageName()).c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
-}
-
-void DirectoryState::enact()
-{
-	m_installer->showButtons(true, true, true);
-	m_installer->enableButtons(true, true, true);
-}
-
-void DirectoryState::pressPrevious()
-{
-	m_installer->setState(Installer::AGREEMENT_STATE);
-}
-
-void DirectoryState::pressNext()
-{
-	auto directory = m_installer->getDirectory();
+	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	
+	// Create Buttons
+	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
+	m_btnPrev = CreateWindow("BUTTON", "< Back", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 290, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnInst = CreateWindow("BUTTON", "Install >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+}
+
+void Directory::enact()
+{
+	// Does nothing
+}
+
+void Directory::paint()
+{
+	PAINTSTRUCT ps;
+	Graphics graphics(BeginPaint(m_hwnd, &ps));
+
+	// Draw Background
+	SolidBrush solidWhiteBackground(Color(255, 255, 255, 255));
+	graphics.FillRectangle(&solidWhiteBackground, 0, 0, 630, 500);
+	LinearGradientBrush backgroundGradient(
+		Point(0, 0),
+		Point(0, m_size.y),
+		Color(50, 25, 125, 225),
+		Color(255, 255, 255, 255)
+	);
+	graphics.FillRectangle(&backgroundGradient, 0, 0, m_size.x, m_size.y);
+
+	// Preparing Fonts
+	FontFamily  fontFamily(L"Segoe UI");
+	Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
+	Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
+	SolidBrush  blueBrush(Color(255, 25, 125, 225));
+	SolidBrush  blackBrush(Color(255, 0, 0, 0));
+
+	// Draw Text
+	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
+	graphics.DrawString(L"Where would you like to install to?", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+	graphics.DrawString(L"Choose a folder by pressing the 'Browse' button.", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
+	graphics.DrawString(L"Alternatively, type a specific directory into the box below.", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
+
+	constexpr static auto readableFileSize = [](const size_t & size) -> std::wstring {
+		auto remainingSize = (double)size;
+		constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB", L"EB" };
+		int i = 0;
+		while (remainingSize > 1024.00) {
+			remainingSize /= 1024.00;
+			++i;
+		}
+		std::wstringstream stream;
+		stream << std::fixed << std::setprecision(2) << remainingSize;
+		return stream.str() + units[i] + L" (" + std::to_wstring(size) + L" bytes )";
+	};
+	graphics.DrawString(L"Disk Space", -1, &regFont, PointF{ 10, 200 }, &blackBrush);
+	graphics.DrawString((L"    Capacity:\t\t\t" + readableFileSize(m_installer->getDirectorySizeCapacity())).c_str(), -1, &regFont, PointF{ 10, 225 }, &blackBrush);
+	graphics.DrawString((L"    Available:\t\t\t" + readableFileSize(m_installer->getDirectorySizeAvailable())).c_str(), -1, &regFont, PointF{ 10, 240 }, &blackBrush);
+	graphics.DrawString((L"    Required:\t\t\t" + readableFileSize(m_installer->getDirectorySizeRequired())).c_str(), -1, &regFont, PointF{ 10, 255 }, &blackBrush);
+
+
+	EndPaint(m_hwnd, &ps);
+}
+
+void Directory::browse()
+{
+	std::string directory("");
+	if (SUCCEEDED(OpenFileDialog(directory))) {
+		if (directory != "" && directory.length() > 2ull) {
+			directory = directory_and_package(directory, m_installer->getPackageName());
+			m_installer->setDirectory(directory);
+			SetWindowTextA(m_directoryField, directory.c_str());
+			RECT rc = { 10, 200, 600, 300 };
+			RedrawWindow(m_hwnd, &rc, NULL, RDW_INVALIDATE);
+		}
+	}
+}
+
+void Directory::goPrevious()
+{
+	m_installer->setState(Installer::StateEnums::AGREEMENT_STATE);
+}
+
+void Directory::goInstall()
+{
+	const auto directory = m_installer->getDirectory();
 	if (directory == "" || directory == " " || directory.length() < 3)
 		MessageBox(
 			NULL,
@@ -81,9 +151,8 @@ void DirectoryState::pressNext()
 		m_installer->setState(Installer::INSTALL_STATE);
 }
 
-void DirectoryState::pressClose()
+void Directory::goCancel()
 {
-	// No new screen
 	PostQuitMessage(0);
 }
 
@@ -149,7 +218,7 @@ static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
 	return hr;
 }
 
-HRESULT OpenFileDialog(std::string & directory)
+static HRESULT OpenFileDialog(std::string & directory)
 {
 	// CoCreate the File Open Dialog object.
 	IFileDialog *pfd = NULL;
@@ -198,73 +267,24 @@ HRESULT OpenFileDialog(std::string & directory)
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	auto ptr = (DirectoryState*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if (message == WM_PAINT) {
-		PAINTSTRUCT ps;
-		Graphics graphics(BeginPaint(hWnd, &ps));
-
-		// Draw Background
-		SolidBrush solidWhiteBackground(Color(255, 255, 255, 255));
-		graphics.FillRectangle(&solidWhiteBackground, 0, 0, 630, 450);
-		LinearGradientBrush backgroundGradient(
-			Point(0, 0),
-			Point(0, 450),
-			Color(50, 25, 125, 225),
-			Color(255, 255, 255, 255)
-		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 450);
-
-		// Preparing Fonts
-		FontFamily  fontFamily(L"Segoe UI");
-		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
-		Font        regFont(&fontFamily, 14, FontStyleRegular, UnitPixel);
-		SolidBrush  blueBrush(Color(255, 25, 125, 225));
-		SolidBrush  blackBrush(Color(255, 0, 0, 0));
-
-		// Draw Text
-		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(L"Where would you like to install to?", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-		graphics.DrawString(L"Choose a folder by pressing the 'Browse' button.", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
-		graphics.DrawString(L"Alternatively, type a specific directory into the box below.", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
-
-		constexpr static auto readableFileSize = [](const size_t & size) -> std::wstring {
-			auto remainingSize = (double)size;
-			constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB" };
-			int i = 0;
-			while (remainingSize > 1024.00) {
-				remainingSize /= 1024.00;
-				++i;
-			}
-			std::wstringstream stream;
-			stream << std::fixed << std::setprecision(2) << remainingSize;
-			return stream.str() + units[i] + L"\t(" + std::to_wstring(size) + L" bytes )";
-		};
-		graphics.DrawString(L"Disk Space", -1, &regFont, PointF{ 10, 200 }, &blackBrush);
-		graphics.DrawString((L"    Capacity:\t\t\t" + readableFileSize(ptr->m_installer->getDirectorySizeCapacity())).c_str(), -1, &regFont, PointF{ 10, 225 }, &blackBrush);
-		graphics.DrawString((L"    Available:\t\t\t" + readableFileSize(ptr->m_installer->getDirectorySizeAvailable())).c_str(), -1, &regFont, PointF{ 10, 240 }, &blackBrush);
-		graphics.DrawString((L"    Required:\t\t\t" + readableFileSize(ptr->m_installer->getDirectorySizeRequired())).c_str(), -1, &regFont, PointF{ 10, 255 }, &blackBrush);
-
-
-		EndPaint(hWnd, &ps);
-		return S_OK;
-	}
+	const auto ptr = (Directory*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto controlHandle = HWND(lParam);
+	if (message == WM_PAINT)
+		ptr->paint();	
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
-		auto controlHandle = HWND(lParam);
 		if (notification == BN_CLICKED) {
-			std::string directory("");
-			if (SUCCEEDED(OpenFileDialog(directory))) {
-				if (directory != "" && directory.length() > 2ull) {
-					directory = directory_and_package(directory, ptr->m_installer->getPackageName());
-					ptr->m_installer->setDirectory(directory);
-					SetWindowTextA(ptr->m_directoryField, directory.c_str());
-					RECT rc = { 10, 200, 600, 300 };
-					RedrawWindow(hWnd, &rc, NULL, RDW_INVALIDATE);
-					return S_OK;
-				}
-			}
+			if (controlHandle == ptr->m_browseButton)
+				ptr->browse();
+			else if (controlHandle == ptr->m_btnPrev)
+				ptr->goPrevious();
+			else if (controlHandle == ptr->m_btnInst)
+				ptr->goInstall();
+			else if (controlHandle == ptr->m_btnCancel)
+				ptr->goCancel();
 		}
 		else if (notification == EN_CHANGE) {
+			// Redraw 'disk space data' region of window when the text field changes
 			std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
 			GetWindowTextA(controlHandle, &data[0], (int)data.size());
 			ptr->m_installer->setDirectory(std::string(data.data()));

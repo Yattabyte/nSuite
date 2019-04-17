@@ -2,27 +2,30 @@
 #ifndef FINISHSTATE_H
 #define FINISHSTATE_H
 
-#include "State.h"
+#include "Screen.h"
 #include <vector>
 
 
 /** This state encapuslates the "Finished - Screen" state. */
-class FinishState: public FrameState {
+class Finish: public Screen {
 public:
 	// Public (de)Constructors
-	~FinishState();
-	FinishState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc);
+	~Finish();
+	Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
-	virtual void enact();
-	virtual void pressPrevious();
-	virtual void pressNext();
-	virtual void pressClose();
+	virtual void enact() override;
+	virtual void paint() override;
+
+
+	// Public Methods
+	/** Switch to the next state. */
+	void goClose();
 
 
 	// Public Attributes
-	HWND m_checkbox = nullptr;
+	HWND m_checkbox = nullptr, m_btnClose = nullptr;
 	bool m_showDirectory = true;
 	std::vector<HWND> m_shortcutCheckboxes;
 	std::vector<std::wstring> m_shortcuts_d, m_shortcuts_s;

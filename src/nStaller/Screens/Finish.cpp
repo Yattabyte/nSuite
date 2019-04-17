@@ -1,4 +1,4 @@
-#include "FinishState.h"
+#include "Finish.h"
 #include "Common.h"
 #include "../Installer.h"
 #include <algorithm>
@@ -9,7 +9,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-FinishState::~FinishState()
+Finish::~Finish()
 {
 	UnregisterClass("FINISH_STATE", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -18,8 +18,8 @@ FinishState::~FinishState()
 		DestroyWindow(checkboxHandle);
 }
 
-FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const HWND parent, const RECT & rc)
-	: FrameState(installer) 
+Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+	: Screen(installer, pos, size)
 {
 	// Create window class
 	m_hinstance = hInstance;
@@ -36,12 +36,12 @@ FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const
 	m_wcex.lpszClassName = "FINISH_STATE";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("FINISH_STATE", "", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("FINISH_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create checkboxes
-	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, 610, 15, m_hwnd, (HMENU)1, hInstance, NULL);
+	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, size.x, 15, m_hwnd, (HMENU)1, hInstance, NULL);
 	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 
 	// Shortcuts
@@ -85,41 +85,60 @@ FinishState::FinishState(Installer * installer, const HINSTANCE hInstance, const
 	int vertical = 170, checkIndex = 2;
 	for each (const auto & shortcut in m_shortcuts_d) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
 	}
 	for each (const auto & shortcut in m_shortcuts_s) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, 610, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
 	}
+	
+	// Create Buttons
+	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
+	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void FinishState::enact()
+void Finish::enact()
 {
-	m_installer->showButtons(false, false, true);
-	m_installer->enableButtons(false, false, true);
-	m_installer->finish();
+	// Does nothing
 }
 
-void FinishState::pressPrevious()
+void Finish::paint()
 {
-	// Should never happen
+	PAINTSTRUCT ps;
+	Graphics graphics(BeginPaint(m_hwnd, &ps));
+
+	// Draw Background
+	LinearGradientBrush backgroundGradient(
+		Point(0, 0),
+		Point(0, m_size.y),
+		Color(50, 25, 255, 125),
+		Color(255, 255, 255, 255)
+	);
+	graphics.FillRectangle(&backgroundGradient, 0, 0, m_size.x, m_size.y);
+
+	// Preparing Fonts
+	FontFamily  fontFamily(L"Segoe UI");
+	Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
+	SolidBrush  blueBrush(Color(255, 25, 125, 225));
+
+	// Draw Text
+	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
+	graphics.DrawString(L"Installation Complete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+
+	EndPaint(m_hwnd, &ps);
 }
 
-void FinishState::pressNext()
+void Finish::goClose()
 {
-	// Should never happen
-}
-
-void FinishState::pressClose()
-{
+	m_showDirectory = IsDlgButtonChecked(m_hwnd, 1);
 	// Open the installation directory + if user wants it to
-	if (IsDlgButtonChecked(m_hwnd, 1))
+	if (m_showDirectory)
 		ShellExecute(NULL, "open", m_installer->getDirectory().c_str(), NULL, NULL, SW_SHOWDEFAULT);
 
 	// Create Shortcuts
@@ -152,44 +171,20 @@ void FinishState::pressClose()
 		}
 		x++;
 	}
-	
-	PostQuitMessage(0);
+	PostQuitMessage(0);	
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	auto ptr = (FinishState*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if (message == WM_PAINT) {
-		PAINTSTRUCT ps;
-		Graphics graphics(BeginPaint(hWnd, &ps));
-
-		// Draw Background
-		LinearGradientBrush backgroundGradient(
-			Point(0, 0),
-			Point(0, 450),
-			Color(50, 25, 255, 125),
-			Color(255, 255, 255, 255)
-		);
-		graphics.FillRectangle(&backgroundGradient, 0, 0, 630, 450);
-
-		// Preparing Fonts
-		FontFamily  fontFamily(L"Segoe UI");
-		Font        bigFont(&fontFamily, 25, FontStyleBold, UnitPixel);
-		SolidBrush  blueBrush(Color(255, 25, 125, 225));
-
-		// Draw Text
-		graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-		graphics.DrawString(L"Installation Complete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);		
-
-		EndPaint(hWnd, &ps);
-		return S_OK;
-	}
+	const auto ptr = (Finish*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto controlHandle = HWND(lParam);
+	if (message == WM_PAINT)
+		ptr->paint();
 	else if (message == WM_CTLCOLORSTATIC) {
 		// Make checkbox text background color transparent
-		const auto handle = HWND(lParam);
-		bool isCheckbox = handle == ptr->m_checkbox;
+		bool isCheckbox = controlHandle == ptr->m_checkbox;
 		for each (auto chkHandle in ptr->m_shortcutCheckboxes)
-			if (handle == chkHandle) {
+			if (controlHandle == chkHandle) {
 				isCheckbox = true;
 				break;
 			}
@@ -204,8 +199,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {
-			ptr->m_showDirectory = IsDlgButtonChecked(hWnd, 1);
-			return S_OK;
+			if (controlHandle == ptr->m_btnClose) 
+				ptr->goClose();			
 		}
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);

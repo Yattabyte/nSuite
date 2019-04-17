@@ -33,7 +33,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 		DispatchMessage(&msg);
 	}
 
-#ifdef NDEBUG
+#ifndef DEBUG
 	// Delete scraps of the installation directory
 	if (uninstaller.isValid()) {
 		std::wstring cmd(L"cmd.exe /C ping 1.1.1.1 -n 1 -w 5000 > Nul & rmdir /q/s \"" + uninstaller.getDirectory());
