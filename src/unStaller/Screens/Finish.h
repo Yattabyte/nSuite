@@ -1,9 +1,8 @@
 #pragma once
-#ifndef FINISH_H
-#define FINISH_H
+#ifndef FINISHSTATE_H
+#define FINISHSTATE_H
 
 #include "Screen.h"
-#include <vector>
 
 
 /** This state encapuslates the "Finished - Screen" state. */
@@ -11,7 +10,7 @@ class Finish: public Screen {
 public:
 	// Public (de)Constructors
 	~Finish();
-	Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Finish(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -25,10 +24,7 @@ public:
 
 
 	// Public Attributes
-	HWND m_checkbox = nullptr, m_btnClose = nullptr;
-	bool m_showDirectory = true;
-	std::vector<HWND> m_shortcutCheckboxes;
-	std::vector<std::wstring> m_shortcuts_d, m_shortcuts_s;
+	HWND m_btnClose = nullptr;
 };
 
-#endif // FINISH_H
+#endif // FINISHSTATE_H

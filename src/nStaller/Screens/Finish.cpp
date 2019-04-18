@@ -11,9 +11,10 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 Finish::~Finish()
 {
-	UnregisterClass("FINISH_STATE", m_hinstance);
+	UnregisterClass("FINISH_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_checkbox);
+	DestroyWindow(m_btnClose);
 	for each (auto checkboxHandle in m_shortcutCheckboxes)
 		DestroyWindow(checkboxHandle);
 }
@@ -33,10 +34,10 @@ Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND pare
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = "FINISH_STATE";
+	m_wcex.lpszClassName = "FINISH_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("FINISH_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
@@ -192,9 +193,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			SetBkMode(HDC(wParam), TRANSPARENT);
 			return (LRESULT)GetStockObject(NULL_BRUSH);
 		}
-		// Make log color white
-		SetBkColor(HDC(wParam), RGB(255, 255, 255));
-		return (LRESULT)GetStockObject(WHITE_BRUSH);
 	}
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);

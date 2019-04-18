@@ -1,5 +1,5 @@
 #include "Welcome.h"
-#include "../Installer.h"
+#include "../Uninstaller.h"
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -12,8 +12,8 @@ Welcome::~Welcome()
 	DestroyWindow(m_btnCancel);
 }
 
-Welcome::Welcome(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
-	: Screen(installer, pos, size)
+Welcome::Welcome(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+	: Screen(uninstaller, pos, size)
 {
 	// Create window class
 	m_hinstance = hInstance;
@@ -33,10 +33,10 @@ Welcome::Welcome(Installer * installer, const HINSTANCE hInstance, const HWND pa
 	m_hwnd = CreateWindow("WELCOME_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
-
+	
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnNext = CreateWindow("BUTTON", "Next >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnNext = CreateWindow("BUTTON", "Uninstall >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
@@ -56,7 +56,7 @@ void Welcome::paint()
 		Point(0, m_size.y),
 		Color(50, 25, 125, 225),
 		Color(255, 255, 255, 255)
-	);
+	); 
 	graphics.FillRectangle(&backgroundGradient, 0, 0, m_size.x, m_size.y);
 
 	// Preparing Fonts
@@ -72,11 +72,11 @@ void Welcome::paint()
 
 	// Draw Text
 	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-	graphics.DrawString(L"Welcome to the Installation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
-	auto nameVer = m_installer->m_mfStrings[L"name"] + L" " + m_installer->m_mfStrings[L"version"];
-	if (m_installer->m_mfStrings[L"name"].empty()) nameVer = L"it's contents";
-	graphics.DrawString((L"The Wizard will install " + nameVer + L" on to your computer.").c_str(), -1, &regFont, PointF{ 10, 100 }, &format, &blackBrush);
-	graphics.DrawString(m_installer->m_mfStrings[L"description"].c_str(), -1, &regFont, RectF(10, 150, REAL(m_size.x - 20), REAL(m_size.y - 200)), &format, &blackBrush);
+	graphics.DrawString(L"Welcome to the Uninstallation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+	auto nameVer = m_uninstaller->m_mfStrings[L"name"] + L" " + m_uninstaller->m_mfStrings[L"version"];
+	if (m_uninstaller->m_mfStrings[L"name"].empty()) nameVer = L"it's contents";
+	graphics.DrawString((L"The Wizard will remove " + nameVer + L" from your computer.").c_str(), -1, &regFont, PointF{ 10, 75 }, &format, &blackBrush);
+	graphics.DrawString(L"Note: the installation directory for this software will be deleted.\r\nIf there are any files that you wish to preserve, move them before continuing.", -1, &regFont, RectF(10, 400, 620, 300), &format, &blackBrush);
 
 	// Draw -watermark-
 	graphics.DrawString(L"This software was generated using nSuite", -1, &regFont, PointF(10, REAL(m_size.y - 45)), &greyBrush);
@@ -87,7 +87,7 @@ void Welcome::paint()
 
 void Welcome::goNext()
 {
-	m_installer->setScreen(Installer::ScreenEnums::AGREEMENT_SCREEN);
+	m_uninstaller->setScreen(Uninstaller::ScreenEnums::UNINSTALL_SCREEN);
 }
 
 void Welcome::goCancel()
@@ -99,7 +99,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 {
 	const auto ptr = (Welcome*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT)
-		ptr->paint();	
+		ptr->paint();
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {

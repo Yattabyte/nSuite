@@ -20,18 +20,18 @@ public:
 
 
 	// Public Enumerations
-	const enum StateEnums {
-		WELCOME_STATE, AGREEMENT_STATE, DIRECTORY_STATE, INSTALL_STATE, FINISH_STATE, FAIL_STATE,
-		STATE_COUNT
+	const enum ScreenEnums {
+		WELCOME_SCREEN, AGREEMENT_SCREEN, DIRECTORY_SCREEN, INSTALL_SCREEN, FINISH_SCREEN, FAIL_SCREEN,
+		SCREEN_COUNT
 	};
 
 
 	// Public Methods
 	/** When called, invalidates the installer, halting it from progressing. */
 	void invalidate();
-	/** Make the state identified by the supplied enum as active, deactivating the previous state.
-	@param	stateIndex		the new state to use. */
-	void setState(const StateEnums & stateIndex);
+	/** Make the screen identified by the supplied enum as active, deactivating the previous screen.
+	@param	screenIndex		the new screen to use. */
+	void setScreen(const ScreenEnums & screenIndex);
 	/** Retrieves the current directory chosen for installation.
 	@return					active installation directory. */
 	std::string getDirectory() const;
@@ -72,15 +72,15 @@ private:
 	Installer();
 
 
-	// Private Attributes	
+	// Private Attributes
 	Threader m_threader;
 	Resource m_archive, m_manifest;
 	std::string m_directory = "", m_packageName = "";
 	bool  m_valid = true;
 	char * m_packagePtr = nullptr;
 	size_t m_packageSize = 0ull, m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
-	StateEnums m_currentIndex = WELCOME_STATE;
-	Screen * m_states[STATE_COUNT];
+	ScreenEnums m_currentIndex = WELCOME_SCREEN;
+	Screen * m_screens[SCREEN_COUNT];
 	HWND m_hwnd = nullptr;
 };
 

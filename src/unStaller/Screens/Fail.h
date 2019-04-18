@@ -1,6 +1,6 @@
 #pragma once
-#ifndef FAIL_H
-#define FAIL_H
+#ifndef FAILSTATE_H
+#define FAILSTATE_H
 
 #include "Screen.h"
 
@@ -10,7 +10,7 @@ class Fail: public Screen {
 public:
 	// Public (de)Constructors
 	~Fail();
-	Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Fail(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -28,4 +28,4 @@ public:
 	size_t m_logIndex = 0ull;
 };
 
-#endif // FAIL_H
+#endif // FAILSTATE_H

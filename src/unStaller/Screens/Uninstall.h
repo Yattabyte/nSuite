@@ -1,17 +1,18 @@
 #pragma once
-#ifndef INSTALL_H
-#define INSTALL_H
+#ifndef UNINSTALL_H
+#define UNINSTALL_H
 
 #include "Screen.h"
 #include <string>
+#include <thread>
 
 
-/** This state encapuslates the "Installing - Screen" state. */
-class Install : public Screen {
+/** This state encapuslates the "Uninstalling - Screen" state. */
+class Uninstall : public Screen {
 public:
 	// Public (de)Constructors
-	~Install();
-	Install(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Uninstall();
+	Uninstall(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -29,4 +30,4 @@ public:
 	size_t m_logIndex = 0ull, m_taskIndex = 0ull;
 };
 
-#endif // INSTALL_H
+#endif // UNINSTALL_H

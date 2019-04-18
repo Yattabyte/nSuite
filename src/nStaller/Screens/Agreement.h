@@ -1,6 +1,6 @@
 #pragma once
-#ifndef AGREEMENTSTATE_H
-#define AGREEMENTSTATE_H
+#ifndef AGREEMENT_H
+#define AGREEMENT_H
 
 #include "Screen.h"
 
@@ -36,4 +36,4 @@ public:
 	bool m_agrees = false;
 };
 
-#endif // AGREEMENTSTATE_H
+#endif // AGREEMENT_H

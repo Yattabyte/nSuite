@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DIRECTORYSTATE_H
-#define DIRECTORYSTATE_H
+#ifndef DIRECTORY_H
+#define DIRECTORY_H
 
 #include "Screen.h"
 
@@ -33,4 +33,4 @@ public:
 	HWND m_directoryField = nullptr, m_browseButton = nullptr, m_btnPrev = nullptr, m_btnInst = nullptr, m_btnCancel = nullptr;
 };
 
-#endif // DIRECTORYSTATE_H
+#endif // DIRECTORY_H

@@ -8,10 +8,11 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 Install::~Install()
 {
-	UnregisterClass("INSTALL_STATE", m_hinstance);
+	UnregisterClass("INSTALL_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_hwndLog);
 	DestroyWindow(m_hwndPrgsBar);
+	DestroyWindow(m_btnFinish);
 	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
 	TaskLogger::RemoveCallback_ProgressUpdated(m_taskIndex);
 }
@@ -31,17 +32,16 @@ Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND pa
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = "INSTALL_STATE";
+	m_wcex.lpszClassName = "INSTALL_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("INSTALL_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("INSTALL_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create log box and progress bar
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	m_hwndPrgsBar = CreateWindowEx(WS_EX_CLIENTEDGE, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE | WS_OVERLAPPED | WS_DLGFRAME | WS_CLIPCHILDREN | PBS_SMOOTH, 10, size.y - 40, size.x - 115, 30, m_hwnd, NULL, hInstance, NULL);
-	SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)"Installation Log:\r\n");
 	m_logIndex = TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
 	});
@@ -95,7 +95,7 @@ void Install::paint()
 
 void Install::goFinish()
 {
-	m_installer->setState(Installer::StateEnums::FINISH_STATE);
+	m_installer->setScreen(Installer::ScreenEnums::FINISH_SCREEN);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

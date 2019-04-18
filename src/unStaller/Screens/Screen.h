@@ -1,6 +1,6 @@
 #pragma once
-#ifndef STATE_H
-#define STATE_H
+#ifndef SCREEN_H
+#define SCREEN_H
 
 #include <windows.h>
 #pragma warning(push)
@@ -11,12 +11,13 @@
 
 using namespace Gdiplus;
 class Uninstaller;
+struct vec2 { int x = 0, y = 0; };
 
 /**Encapsulation of a windows GDI 'window' object, for a particular state of the application. */
-class FrameState {
+class Screen {
 public:
 	// Public (de)Constructors
-	FrameState(Uninstaller * uninstaller) : m_uninstaller(uninstaller) {}
+	Screen(Uninstaller * uninstaller, const vec2 & pos, const vec2 & size) : m_uninstaller(uninstaller), m_pos(pos), m_size(size) {}
 	
 	
 	// Public Methods
@@ -31,12 +32,8 @@ public:
 	// Public Interface Declarations
 	/** Trigger this state to perform its screen action. */
 	virtual void enact() = 0;
-	/** Cause this state to process the "previous" action. */
-	virtual void pressPrevious() = 0;
-	/** Cause this state to process the "next" action. */
-	virtual void pressNext() = 0;
-	/** Cause this state to process the "close" action. */
-	virtual void pressClose() = 0;
+	/** Render this window. */
+	virtual void paint() = 0;
 
 
 	// Public Attributes
@@ -48,6 +45,7 @@ protected:
 	// Private Attributes
 	WNDCLASSEX m_wcex;
 	HINSTANCE m_hinstance;
+	vec2 m_pos, m_size;
 };
 
-#endif // STATE_H
+#endif // SCREEN_H

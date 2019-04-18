@@ -24,10 +24,13 @@ static std::string directory_and_package(const std::string & dir, const std::str
 
 Directory::~Directory()
 {
-	UnregisterClass("DIRECTORY_STATE", m_hinstance);
+	UnregisterClass("DIRECTORY_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_directoryField);
 	DestroyWindow(m_browseButton);
+	DestroyWindow(m_btnPrev);
+	DestroyWindow(m_btnInst);
+	DestroyWindow(m_btnCancel);
 }
 
 Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
@@ -45,10 +48,10 @@ Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWN
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = "DIRECTORY_STATE";
+	m_wcex.lpszClassName = "DIRECTORY_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("DIRECTORY_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("DIRECTORY_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
@@ -134,7 +137,7 @@ void Directory::browse()
 
 void Directory::goPrevious()
 {
-	m_installer->setState(Installer::StateEnums::AGREEMENT_STATE);
+	m_installer->setScreen(Installer::ScreenEnums::AGREEMENT_SCREEN);
 }
 
 void Directory::goInstall()
@@ -148,7 +151,7 @@ void Directory::goInstall()
 			MB_OK | MB_ICONERROR | MB_TASKMODAL
 		);
 	else
-		m_installer->setState(Installer::INSTALL_STATE);
+		m_installer->setScreen(Installer::INSTALL_SCREEN);
 }
 
 void Directory::goCancel()

@@ -6,9 +6,12 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 Agreement::~Agreement()
 {
-	UnregisterClass("AGREEMENT_STATE", m_hinstance);
+	UnregisterClass("AGREEMENT_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_checkYes);
+	DestroyWindow(m_btnPrev);
+	DestroyWindow(m_btnNext);
+	DestroyWindow(m_btnCancel);
 }
 
 Agreement::Agreement(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
@@ -26,10 +29,10 @@ Agreement::Agreement(Installer * installer, const HINSTANCE hInstance, const HWN
 	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	m_wcex.lpszMenuName = NULL;
-	m_wcex.lpszClassName = "AGREEMENT_STATE";
+	m_wcex.lpszClassName = "AGREEMENT_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("AGREEMENT_STATE", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("AGREEMENT_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
@@ -95,12 +98,12 @@ void Agreement::checkYes()
 
 void Agreement::goPrevious()
 {
-	m_installer->setState(Installer::StateEnums::WELCOME_STATE);
+	m_installer->setScreen(Installer::ScreenEnums::WELCOME_SCREEN);
 }
 
 void Agreement::goNext()
 {
-	m_installer->setState(Installer::StateEnums::DIRECTORY_STATE);
+	m_installer->setScreen(Installer::ScreenEnums::DIRECTORY_SCREEN);
 }
 
 void Agreement::goCancel()

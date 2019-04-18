@@ -1,7 +1,7 @@
 #include "Fail.h"
 #include "Common.h"
 #include "TaskLogger.h"
-#include "../Installer.h"
+#include "../Uninstaller.h"
 #include <ctime>
 #include <fstream>
 #include <shlobj.h>
@@ -19,8 +19,8 @@ Fail::~Fail()
 	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
 }
 
-Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
-	: Screen(installer, pos, size)
+Fail::Fail(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+	: Screen(uninstaller, pos, size)
 {
 	// Create window class
 	m_hinstance = hInstance;
@@ -55,7 +55,7 @@ Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, 
 
 void Fail::enact()
 {
-	Installer::dumpErrorLog();
+	Uninstaller::dumpErrorLog();	
 }
 
 void Fail::paint()
@@ -80,7 +80,7 @@ void Fail::paint()
 
 	// Draw Text
 	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-	graphics.DrawString(L"Installation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+	graphics.DrawString(L"Uninstallation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 
 	EndPaint(m_hwnd, &ps);
 }
