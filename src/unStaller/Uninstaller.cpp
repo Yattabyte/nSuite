@@ -195,7 +195,7 @@ void Uninstaller::beginUninstallation()
 			}
 
 		// Set progress bar range to include all files + shortcuts + 1 (cleanup step)
-		TaskLogger::SetRange(entries.size() + shortcuts_d.size() + shortcuts_s.size() + 1);
+		TaskLogger::SetRange(entries.size() + shortcuts_d.size() + shortcuts_s.size() + 2);
 		size_t progress = 0ull;
 
 		// Remove all files in the installation folder, list them
@@ -226,6 +226,10 @@ void Uninstaller::beginUninstallation()
 
 		// Clean up whatever's left (empty folders)
 		std::filesystem::remove_all(directory, er);
+		TaskLogger::SetProgress(++progress);
+
+		// Remove registry entry for this uninstaller		
+		RegDeleteKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), KEY_ALL_ACCESS, NULL);		
 		TaskLogger::SetProgress(++progress);
 	});
 }
