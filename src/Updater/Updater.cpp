@@ -30,9 +30,9 @@ int main()
 
 	// Report an overview of supplied procedure
 	TaskLogger::PushText(
-		"                      ~\r\n"
-		"    Updater          /\r\n"
-		"  ~-----------------~\r\n"
+		"                       ~\r\n"
+		"        Updater       /\r\n"
+		"  ~------------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"
 		"There are " + std::to_string(patches.size()) + " patches(s) found.\r\n"

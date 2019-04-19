@@ -5,6 +5,7 @@
 // Command inclusions
 #include "Commands/Command.h"
 #include "Commands/InstallerCommand.h"
+#include "Commands/PackagerCommand.h"
 #include "Commands/DiffCommand.h"
 #include "Commands/PatchCommand.h"
 #include "Commands/PackCommand.h"
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
 	struct compare_string { bool operator()(const char * a, const char * b) const { return strcmp(a, b) < 0; } };
 	const std::map<const char *, Command*, compare_string> commandMap{ 
 		{	"-installer"	,	new InstallerCommand()	},
+		{	"-packager"		,	new PackagerCommand()	},
 		{	"-pack"			,	new PackCommand()		},
 		{	"-unpack"		,	new UnpackCommand()		},
 		{	"-diff"			,	new DiffCommand()		},
@@ -37,11 +39,12 @@ int main(int argc, char *argv[])
 			" /\r\n"
 			"~\r\n\r\n"
 			" Operations Supported:\r\n"
-			" -installer	(To package and compress an entire directory into an executable file)\r\n"
-			" -pack			(To compress an entire directory into a single .npack file)\r\n"
-			" -unpack		(To decompress an entire directory from a .npack file)\r\n"
-			" -diff			(To diff an entire directory into a single .ndiff file)\r\n"
-			" -patch		(To patch an entire directory from a .ndiff file)\r\n"
+			" -installer	(Packages a directory into a GUI Installer (for Windows))\r\n"
+			" -packager		(Packages a directory into a portable package executable (like a mini installer))\r\n"
+			" -pack			(Packages a directory into an .npack file)\r\n"
+			" -unpack		(Unpackages into a directory from an .npack file)\r\n"
+			" -diff			(Diff. 2 directories into an .ndiff file)\r\n"
+			" -patch		(Patches a directory from an .ndiff file)\r\n"
 			"\r\n\r\n"
 		);
 	

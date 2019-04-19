@@ -11,7 +11,7 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 	// Supply command header to console
 	TaskLogger::PushText(
 		"                      ~\r\n"
-		"    Patcher          /\r\n"
+		"        Patcher      /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"

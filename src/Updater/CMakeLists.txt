@@ -1,7 +1,7 @@
-##############
-### nSuite ###
-##############
-set (Module nSuite)
+###############
+### Updater ###
+################
+set (Module Updater)
 
 # Get source files
 file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")
@@ -26,9 +26,6 @@ add_executable(${Module}
 	${CORE_DIR}/DirectoryTools.cpp	
 	${CORE_DIR}/TaskLogger.h	
 )
-
-# This module requires the installer and updater to be built first
-add_dependencies(nSuite Installer Updater Unpacker)
 
 # Set visual studio settings
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)

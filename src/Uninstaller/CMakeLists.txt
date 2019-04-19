@@ -1,7 +1,7 @@
-#################
-### unStaller ###
-#################
-set (Module unStaller)
+###################
+### Uninstaller ###
+###################
+set (Module Uninstaller)
 
 # Get source files
 file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")

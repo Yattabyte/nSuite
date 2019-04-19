@@ -24,9 +24,10 @@ link_libraries(
 )
 
 # add all sub-projects and plugins here
-add_subdirectory( "src/unStaller" )
-add_subdirectory( "src/nStaller" )
-add_subdirectory( "src/nUpdater" )
+add_subdirectory( "src/Installer" )
+add_subdirectory( "src/Uninstaller" )
+add_subdirectory( "src/Unpacker" )
+add_subdirectory( "src/Updater" )
 add_subdirectory( "src/nSuite" )
 
 # Visual studio specific setting: make nSuite the startup project

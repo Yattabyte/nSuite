@@ -1,7 +1,7 @@
-################
-### nUpdater ###
-################
-set (Module nUpdater)
+#################
+### Installer ###
+#################
+set (Module Installer)
 
 # Get source files
 file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")
@@ -27,7 +27,18 @@ add_executable(${Module}
 	${CORE_DIR}/TaskLogger.h	
 )
 
-# Set visual studio settings
+# Add libraries
+target_link_libraries(${Module} 
+	"Comctl32.lib" 
+	"propsys.lib" 
+	"Shlwapi.lib"
+)
+
+# This module requires the uninstaller to be built first
+add_dependencies(Installer Uninstaller)
+
+# Set windows/visual studio settings
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
 set_target_properties(${Module} PROPERTIES 	
 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -35,6 +46,7 @@ set_target_properties(${Module} PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"
+	LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\""
 )
 
 # Force highest c++ version supported

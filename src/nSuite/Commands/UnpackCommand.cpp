@@ -11,7 +11,7 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 	// Supply command header to console
 	TaskLogger::PushText(
 		"                      ~\r\n"
-		"    Unpacker         /\r\n"
+		"       Unpacker      /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"

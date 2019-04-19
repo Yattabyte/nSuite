@@ -6,13 +6,14 @@
 #define IDI_ICON1						101
 // Used by installerMaker.rc
 #define IDR_INSTALLER					102
+#define IDR_UNPACKER					103
 // Used by uninstaller.rc
-#define IDR_ARCHIVE						103
-#define IDR_MANIFEST					104
-#define IDR_UNINSTALLER					105
+#define IDR_ARCHIVE						104
+#define IDR_MANIFEST					105
+#define IDR_UNINSTALLER					106
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        106
+#define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

@@ -10,9 +10,9 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
 	TaskLogger::PushText(
-		"                      ~\r\n"
-		"    Packager         /\r\n"
-		"  ~-----------------~\r\n"
+		"                     ~\r\n"
+		"       Packager     /\r\n"
+		"  ~----------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"
 	);
@@ -28,7 +28,7 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 		else
 			exit_program(
 				" Arguments Expected:\r\n"
-				" -src=[path to the directory to compress]\r\n"
+				" -src=[path to the directory to package]\r\n"
 				" -dst=[path to write the package] (can omit filename)\r\n"
 				"\r\n"
 			);

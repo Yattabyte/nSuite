@@ -11,7 +11,7 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	// Supply command header to console
 	TaskLogger::PushText(
 		"                      ~\r\n"
-		"    Patch Maker      /\r\n"
+		"      Patch Maker    /\r\n"
 		"  ~-----------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"
