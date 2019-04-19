@@ -17,4 +17,12 @@ The following is how nSuite uses this application:
 This installer has several screens it displays to the user. It starts off with a welcome screen, and requires that the user accept a EULA in order to proceed.
 If at any point an error occurs, the program enters a failure state and dumps its entire operation log to disk (next to the program, error_log.txt).
 
-The uninstaller may reuse several of the manifest strings provided by its proceeding installer, such as name, version, and where shortcuts may be located (to remove them).
+The installer manifest has optional strings the developer can implement to customize the installation process. *Quotes are required*
+  - name "string"
+  - version "string"
+  - description "string"
+  - eula "string"
+  - shortcut "\\relative path within installation directory"
+  - icon "\\relative path within installation directory"
+  
+Any and all of these manifest values can be omitted.

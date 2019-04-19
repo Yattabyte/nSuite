@@ -3,8 +3,6 @@ This program is a fully-fledged uninstallation application, made to run on Windo
 
 It uses the Windows GDI library for rendering.
 
-On its own, this application is useless, though it can be mostly tested stand-alone if compiled in debug mode.
-
 This application has 2 (two) resources embedded within it:
   - IDI_ICON1		the application icon
   - IDR_MANIFEST	the installer manifest (attributes, strings, instructions)
@@ -17,12 +15,4 @@ The following is how the Installer uses this application:
 This uninstaller has several screens it displays to the user.
 If at any point an error occurs, the program enters a failure state and dumps its entire operation log to disk (next to the program, error_log.txt).
 
-The installer manifest has optional strings the developer can implement to customize the installation process. *Quotes are required*
-  - name "string"
-  - version "string"
-  - description "string"
-  - eula "string"
-  - shortcut "\\relative path within installation directory"
-  - icon "\\relative path within installation directory"
-  
-Any and all of these manifest values can be omitted.
+The uninstaller may reuse several of the manifest strings provided by its proceeding installer, such as name, version, and where shortcuts may be located (to remove them).
