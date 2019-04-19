@@ -17,7 +17,9 @@ It is a command-line application and is run by using one of the following argume
   - Packages and compresses all the contents of the source directory into an .npack file
   - Writes package file to the destination path specified
   - Requires nSuite to unpackage
-  - Note: these package files are what is embedded in the installers above
+  - Note:
+    - these package files are what is embedded in the installers above
+    - can be used in diffing as a substitution for a source 'old/new' directory
   
 - #### `-unpack -src=<path> -dst=<path>`
   - Decompresses and unpackages the contents held in an .npack file
