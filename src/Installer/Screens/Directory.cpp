@@ -27,6 +27,7 @@ Directory::~Directory()
 	UnregisterClass("DIRECTORY_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_directoryField);
+	DestroyWindow(m_packageField);
 	DestroyWindow(m_browseButton);
 	DestroyWindow(m_btnPrev);
 	DestroyWindow(m_btnInst);
@@ -56,8 +57,9 @@ Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWN
 	setVisible(false);
 
 	// Create directory lookup fields
-	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", directory_and_package(m_installer->getDirectory(), m_installer->getPackageName()).c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 490, 25, m_hwnd, NULL, hInstance, NULL);
-	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 510, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
+	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", m_installer->getDirectory().c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 400, 25, m_hwnd, NULL, hInstance, NULL);
+	m_packageField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", ("\\" + m_installer->getPackageName()).c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_READONLY, 410, 150, 100, 25, m_hwnd, NULL, hInstance, NULL);
+	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 520, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
@@ -126,7 +128,6 @@ void Directory::browse()
 	std::string directory("");
 	if (SUCCEEDED(OpenFileDialog(directory))) {
 		if (directory != "" && directory.length() > 2ull) {
-			directory = directory_and_package(directory, m_installer->getPackageName());
 			m_installer->setDirectory(directory);
 			SetWindowTextA(m_directoryField, directory.c_str());
 			RECT rc = { 10, 200, 600, 300 };
@@ -287,13 +288,15 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 				ptr->goCancel();
 		}
 		else if (notification == EN_CHANGE) {
-			// Redraw 'disk space data' region of window when the text field changes
-			std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
-			GetWindowTextA(controlHandle, &data[0], (int)data.size());
-			ptr->m_installer->setDirectory(std::string(data.data()));
-			RECT rc = { 10, 200, 600, 300 };
-			RedrawWindow(hWnd, &rc, NULL, RDW_INVALIDATE);
-			return S_OK;
+			if (controlHandle == ptr->m_directoryField) {
+				// Redraw 'disk space data' region of window when the text field changes
+				std::vector<char> data(GetWindowTextLength(controlHandle) + 1ull);
+				GetWindowTextA(controlHandle, &data[0], (int)data.size());
+				ptr->m_installer->setDirectory(std::string(data.data()));
+				RECT rc = { 10, 200, 600, 300 };
+				RedrawWindow(hWnd, &rc, NULL, RDW_INVALIDATE);
+				return S_OK;
+			}
 		}
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);

@@ -108,22 +108,27 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		continue;
 	threader.shutdown();
 
-	// Compress the archive, pad the beginning with header-space
-	if (!BFT::CompressBuffer(filebuffer, archiveSize, packBuffer, packSize, sizeof(size_t) + folderName.size())) {
+	// Compress the archive
+	char * compBuffer(nullptr);
+	size_t compSize(0ull);
+	if (!BFT::CompressBuffer(filebuffer, archiveSize, &compBuffer, compSize)) {
 		TaskLogger::PushText("Critical failure: cannot perform compression operation on the set of joined files.\r\n");
 		return false;
 	}
 	delete[] filebuffer;
 
-	// Write root folder name and size
+	// Move compressed buffer data to a new buffer that has a special header
+	packSize = compSize + sizeof(size_t) + folderName.size();
+	*packBuffer = new char[packSize];
+	memcpy(&(*packBuffer)[sizeof(size_t) + folderName.size()], compBuffer, compSize);
+	delete[] compBuffer;
+
+	// Write the header (root folder name and size)
 	pointer = *packBuffer;
 	auto pathSize = folderName.size();	
 	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
 	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
 	memcpy(pointer, folderName.data(), pathSize);
-	pointer = PTR_ADD(pointer, pathSize);
-
-	// Clean up
 	return true;
 }
 
@@ -135,9 +140,17 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 		return false;
 	}
 
+	// Read the directory header
+	char * packBufferOffset = packBuffer;
+	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
+	const auto finalDestionation = dstDirectory + "\\" + std::string(folderArray, folderSize);
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	if (!BFT::DecompressBuffer(packBuffer, packSize, &decompressedBuffer, decompressedSize)) {
+	if (!BFT::DecompressBuffer(packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), &decompressedBuffer, decompressedSize)) {
 		TaskLogger::PushText("Critical failure: cannot decompress package file.\r\n");
 		return false;
 	}
@@ -154,7 +167,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
-		std::string fullPath = dstDirectory + std::string(path_array, pathSize);
+		std::string fullPath = finalDestionation + std::string(path_array, pathSize);
 		readingPtr = PTR_ADD(readingPtr, pathSize);
 
 		// Read the file size in bytes, from the archive 

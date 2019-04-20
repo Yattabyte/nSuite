@@ -9,6 +9,9 @@
 /** Namespace to keep directory-related operations grouped together. */
 namespace DRT {
 	/** Compresses a source directory into an equal or smaller sized destination buffer.
+	------------------------------------------------------
+	| Directory name header | compressed directory data  |
+	------------------------------------------------------
 	@note						caller is responsible for cleaning-up packBuffer.
 	@param	srcDirectory		the absolute path to the directory to compress.
 	@param	packBuffer			pointer to the destination buffer, which will hold compressed contents.

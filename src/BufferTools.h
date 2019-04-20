@@ -6,13 +6,19 @@
 /** Namespace to keep buffer-related operations grouped together. */
 namespace BFT {
 	/** Compresses a source buffer into an equal or smaller sized destination buffer.
+	---------------
+	| buffer data |
+	---------------	
+	v
+	-----------------------------------------
+	| compression header | compressed data  |
+	-----------------------------------------
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size in bytes of the source buffer.
 	@param	destinationBuffer	pointer to the destination buffer, which will hold compressed contents.
 	@param	destinationSize		reference updated with the size in bytes of the compressed destinationBuffer.
-	@param	headerPadding		amount of headroom to allocate for a header on top of the final compressed buffer. (optional, defaults to 0)
 	@return						true if compression success, false otherwise. */
-	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize, const size_t & headerPadding = 0ull);
+	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
 	/** Decompressess a source buffer into an equal or larger sized destination buffer.
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size in bytes of the source buffer.

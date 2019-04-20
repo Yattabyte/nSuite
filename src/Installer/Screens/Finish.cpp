@@ -138,9 +138,10 @@ void Finish::paint()
 void Finish::goClose()
 {
 	m_showDirectory = IsDlgButtonChecked(m_hwnd, 1);
+	const auto instDir = m_installer->getDirectory() + "\\" + m_installer->getPackageName();
 	// Open the installation directory + if user wants it to
 	if (m_showDirectory)
-		ShellExecute(NULL, "open", m_installer->getDirectory().c_str(), NULL, NULL, SW_SHOWDEFAULT);
+		ShellExecute(NULL, "open", instDir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 
 	// Create Shortcuts
 	int x = 2;
@@ -148,7 +149,6 @@ void Finish::goClose()
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
 			const auto nonwideShortcut = from_wideString(shortcut);
-			auto instDir = m_installer->getDirectory();
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
@@ -162,7 +162,6 @@ void Finish::goClose()
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
 			const auto nonwideShortcut = from_wideString(shortcut);
-			auto instDir = m_installer->getDirectory();
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);

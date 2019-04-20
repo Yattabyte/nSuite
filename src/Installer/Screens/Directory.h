@@ -30,7 +30,7 @@ public:
 
 
 	// Public Attributes
-	HWND m_directoryField = nullptr, m_browseButton = nullptr, m_btnPrev = nullptr, m_btnInst = nullptr, m_btnCancel = nullptr;
+	HWND m_directoryField = nullptr, m_packageField = nullptr, m_browseButton = nullptr, m_btnPrev = nullptr, m_btnInst = nullptr, m_btnCancel = nullptr;
 };
 
 #endif // DIRECTORY_H

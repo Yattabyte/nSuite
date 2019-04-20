@@ -76,11 +76,14 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		success = false;
 	}
 	else {
-		const auto folderSize = *reinterpret_cast<size_t*>(m_archive.getPtr());
-		m_packageName = std::string(reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)))), folderSize);
-		m_packagePtr = reinterpret_cast<char*>(PTR_ADD(m_archive.getPtr(), size_t(sizeof(size_t)) + folderSize));
-		m_packageSize = m_archive.getSize() - (size_t(sizeof(size_t)) + folderSize);
-		m_maxSize = *reinterpret_cast<size_t*>(m_packagePtr);
+		// Read directory header data
+		void * pointer = m_archive.getPtr();
+		const auto folderSize = *reinterpret_cast<size_t*>(pointer);
+		pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
+		m_packageName = std::string(reinterpret_cast<char*>(pointer), folderSize);
+		pointer = PTR_ADD(pointer, folderSize);
+		// Read compressed package header
+		m_maxSize = *reinterpret_cast<size_t*>(reinterpret_cast<char*>(pointer));
 
 		// If no name is found, use the package name (if available)
 		if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
@@ -209,23 +212,24 @@ void Installer::beginInstallation()
 			size_t byteCount(0ull), fileCount(0ull);
 			auto directory = getDirectory();
 			sanitize_path(directory);
-			if (!DRT::DecompressDirectory(directory, m_packagePtr, m_packageSize, byteCount, fileCount))
+			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), byteCount, fileCount))
 				invalidate();
 			else {
 				// Write uninstaller to disk
-				const auto uninstallerPath = directory + "\\uninstaller.exe";
+				const auto fullDirectory = directory + "\\" + m_packageName;
+				const auto uninstallerPath = fullDirectory + "\\uninstaller.exe";
 				std::filesystem::create_directories(std::filesystem::path(uninstallerPath).parent_path());
 				std::ofstream file(uninstallerPath, std::ios::binary | std::ios::out);
 				if (!file.is_open()) {
 					TaskLogger::PushText("Cannot write uninstaller to disk, aborting...\r\n");
 					invalidate();
 				}
-				TaskLogger::PushText("Uninstaller:\"" + uninstallerPath + "\"\r\n");
+				TaskLogger::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
 				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
 				file.close();
 
 				// Update uninstaller's resources
-				std::string newDir = std::regex_replace(directory, std::regex("\\\\"), "\\\\");
+				std::string newDir = std::regex_replace(fullDirectory, std::regex("\\\\"), "\\\\");
 				const std::string newManifest(
 					std::string(reinterpret_cast<char*>(manifest.getPtr()), manifest.getSize())
 					+ "\r\ndirectory \"" + newDir + "\""
@@ -249,12 +253,12 @@ void Installer::beginInstallation()
 					if (icon.empty())
 						icon = uninstallerPath;
 					else
-						icon = directory + icon;
+						icon = fullDirectory + icon;
 					RegSetKeyValueA(hkey, 0, "UninstallString", REG_SZ, (LPCVOID)uninstallerPath.c_str(), (DWORD)uninstallerPath.size());
 					RegSetKeyValueA(hkey, 0, "DisplayIcon", REG_SZ, (LPCVOID)icon.c_str(), (DWORD)icon.size());
 					RegSetKeyValueA(hkey, 0, "DisplayName", REG_SZ, (LPCVOID)name.c_str(), (DWORD)name.size());
 					RegSetKeyValueA(hkey, 0, "DisplayVersion", REG_SZ, (LPCVOID)version.c_str(), (DWORD)version.size());
-					RegSetKeyValueA(hkey, 0, "InstallLocation", REG_SZ, (LPCVOID)directory.c_str(), (DWORD)directory.size());
+					RegSetKeyValueA(hkey, 0, "InstallLocation", REG_SZ, (LPCVOID)fullDirectory.c_str(), (DWORD)fullDirectory.size());
 					RegSetKeyValueA(hkey, 0, "Publisher", REG_SZ, (LPCVOID)publisher.c_str(), (DWORD)publisher.size());
 					RegSetKeyValueA(hkey, 0, "NoModify", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
 					RegSetKeyValueA(hkey, 0, "NoRepair", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));

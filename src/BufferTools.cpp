@@ -6,30 +6,33 @@
 #include <algorithm>
 
 
-bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize, const size_t & headerPadding)
+bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
-	// Allocate enough room for the compressed buffer (2 size_t bigger than source buffer)
-	destinationSize = (sourceSize * 2ull) + size_t(sizeof(size_t)) + headerPadding;
-	*destinationBuffer = new char[destinationSize];
+	// Pre-allocate a huge buffer to allow for compression OPS
+	char * compressedBuffer = new char[sourceSize * 2ull];
 
-	// Offset pointer by the amount requested for header-space
-	char * pointer = reinterpret_cast<char*>(PTR_ADD(*destinationBuffer, headerPadding));
-
-	// First chunk of data = the total uncompressed size
-	*reinterpret_cast<size_t*>(pointer) = sourceSize;
-
-	// Increment pointer so that the compression works on the remaining part of the buffer
-	pointer = reinterpret_cast<char*>(pointer) + size_t(sizeof(size_t));
-
-	// Compress the buffer
+	// Try to compress the source buffer
 	auto result = LZ4_compress_default(
 		sourceBuffer,
-		pointer,
+		compressedBuffer,
 		int(sourceSize),
-		int(destinationSize - size_t(sizeof(size_t)) - headerPadding)
+		int(sourceSize * 2ull)
 	);
 
-	destinationSize = headerPadding + size_t(sizeof(size_t)) + size_t(result);
+	// Create the final buffer (done separate b/c we now know the final reduced buffer size)
+	constexpr size_t HEADER_SIZE = size_t(sizeof(size_t));
+	destinationSize = HEADER_SIZE + size_t(result);
+	*destinationBuffer = new char[destinationSize];
+	char * HEADER_ADDRESS = *destinationBuffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
+
+	// Header = the total uncompressed size
+	*reinterpret_cast<size_t*>(HEADER_ADDRESS) = sourceSize;
+
+	// Data = compressed source buffer
+	std::memcpy(DATA_ADDRESS, compressedBuffer, size_t(result));	
+	delete[] compressedBuffer;
+
 	return (result > 0);
 }
 

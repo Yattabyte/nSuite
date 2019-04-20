@@ -76,9 +76,8 @@ private:
 	Threader m_threader;
 	Resource m_archive, m_manifest;
 	std::string m_directory = "", m_packageName = "";
-	bool  m_valid = true;
-	char * m_packagePtr = nullptr;
-	size_t m_packageSize = 0ull, m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
+	bool m_valid = true;
+	size_t m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
 	ScreenEnums m_currentIndex = WELCOME_SCREEN;
 	Screen * m_screens[SCREEN_COUNT];
 	HWND m_hwnd = nullptr;
