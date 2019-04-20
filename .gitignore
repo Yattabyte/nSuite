@@ -36,9 +36,11 @@ x64/
 x32/
 Documentation/
 .vs/
-src/nStaller/nStaller.dir/
-src/nUpdater/nUpdater.dir/
+src/Installer/Installer.dir/
 src/nSuite/nSuite.dir/
+src/Uninstaller/Uninstaller.dir/
+src/Unpacker/Unpacker.dir/
+src/Updater/Updater.dir/
 app/
 
 # Other
