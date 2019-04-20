@@ -1,5 +1,5 @@
 # Updater
-This program is a naiive upadater application. It consumes .ndiff files found next to it, and applies them automatically if it can.
+This program is a naive upadater application. It consumes .ndiff files found next to it, and applies them automatically if it can.
 
 Its goal is to be a quick means of updating a directory for a user. 
 
