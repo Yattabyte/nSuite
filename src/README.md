@@ -12,7 +12,7 @@ Buffer Tools exposes 5 useful functions:
 - [HashBuffer](#HashBuffer)
 
 ## DirectoryTools
-Directory Tools exposes 4 similar functions that effectively map BFT functions to an entire directory:
+Directory Tools exposes 4 similar functions which effectively maps BFT functions to an entire directory:
 - [CompressDirectory](#CompressDirectory)
 - [DecompressDirectory](#DecompressDirectory)
 - [DiffDirectory](#DiffDirectory)
