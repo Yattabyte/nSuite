@@ -51,10 +51,12 @@ int main(int argc, char *argv[])
 	// Command exists in command map, execute it
 	commandMap.at(argv[1])->execute(argc, argv);
 
-	// Output results and finish
+	// Success, report results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
 	TaskLogger::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
+
+	// Pause and exit
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

@@ -20,6 +20,7 @@ static auto get_patches(const std::string & srcDirectory)
 /** Entry point. */
 int main()
 {
+	// Tap-in to the log, have it redirect to the console
 	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
 		std::cout << message;
 	});
@@ -81,6 +82,7 @@ int main()
 		);
 	}
 
+	// Pause and exit
 	system("pause");
 	exit(EXIT_SUCCESS);	
 }

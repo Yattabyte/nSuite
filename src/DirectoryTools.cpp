@@ -545,7 +545,11 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 			// Patch buffer
 			TaskLogger::PushText("patching file \"" + file.path + "\"\r\n");
 			size_t newSize(0ull);
-			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
+			if (!BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed)) {
+				TaskLogger::PushText("Critical failure: patching failed!.\r\n");
+				return false;
+			}
+
 			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
 
 			// Confirm new hashes match

@@ -7,19 +7,22 @@
 /** Entry point. */
 int main()
 {
-	// Check command line arguments
-	const std::string dstDirectory(get_current_directory());
+	// Tap-in to the log, have it redirect to the console
+	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+		std::cout << message;
+	});
 
-	// Report an overview of supplied procedure
-	std::cout <<
+	TaskLogger::PushText(
 		"                       ~\r\n"
 		"       Unpackager     /\r\n"
 		"  ~------------------~\r\n"
 		" /\r\n"
-		"~\r\n\r\n";
+		"~\r\n\r\n"
+	);
 
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
+	const std::string dstDirectory(get_current_directory());
 	size_t fileCount(0ull), byteCount(0ull);
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	if (!archive.exists())
@@ -30,11 +33,13 @@ int main()
 	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
 	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
 	const auto folderName = std::string(reinterpret_cast<char*>(packBufferOffset), folderSize);
-	   	// Report an overview of supplied procedure
-	std::cout <<
+	
+	// Report where we're unpacking to
+	TaskLogger::PushText(
 		"Unpacking to the following directory:\r\n"
 		"\t> " + dstDirectory + "\\" + folderName +
-		"\r\n";
+		"\r\n"
+	);
 
 	// Unpackage using the resource file
 	if (!DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount))
@@ -43,10 +48,13 @@ int main()
 	// Success, report results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout
-		<< "Files written:  " << fileCount << "\r\n"
-		<< "Bytes written:  " << byteCount << "\r\n"
-		<< "Total duration: " << elapsed_seconds.count() << " seconds\r\n\r\n";
+	TaskLogger::PushText(
+		"Files written:  " + std::to_string(fileCount) + "\r\n" +
+		"Bytes written:  " + std::to_string(byteCount) + "\r\n" +
+		"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
+	);
+
+	// Pause and exit
 	system("pause");
 	exit(EXIT_SUCCESS);
 }
