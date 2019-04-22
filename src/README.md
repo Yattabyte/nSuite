@@ -3,26 +3,26 @@ The core of this library can be found between 2 namespaces:
 - BFT (BufferTools)
 - DFT (DirectoryTools)
 
-## BufferTools
-Buffer Tools exposes 5 useful functions:
+#### The BufferTools namespace provides the following 5 functions:
 - [CompressBuffer](#CompressBuffer)
 - [DecompressBuffer](#DecompressBuffer)
 - [DiffBuffers](#DiffBuffers)
 - [PatchBuffer](#PatchBuffer)
 - [HashBuffer](#HashBuffer)
 
-## DirectoryTools
-Directory Tools exposes 4 similar functions which effectively maps BFT functions to an entire directory:
+### The DirectoryTools namespace exposes 4 similar helper functions:
 - [CompressDirectory](#CompressDirectory)
 - [DecompressDirectory](#DecompressDirectory)
 - [DiffDirectory](#DiffDirectory)
 - [PatchDirectory](#PatchDirectory)
 
+# Functions
+## BFT namespace
 ### CompressBuffer
 Compresses a source buffer into an equal or smaller-sized destination buffer.  
 After compression, it applies a small header describing how large the uncompressed buffer is.
 ```c++
-bool CompressBuffer(
+bool BFT::CompressBuffer(
   char * sourceBuffer, 
   const size_t & sourceSize,
   char ** destinationBuffer,
@@ -55,7 +55,7 @@ if (result) {
 Decompressess a source buffer into an equal or larger-sized destination buffer.  
 Prior to decompression, it reads from a small header describing how large of a buffer it needs to allocate.
 ```c++
-bool CompressBuffer(
+bool BFT::DecompressBuffer(
   char * sourceBuffer, 
   const size_t & sourceSize, 
   char ** destinationBuffer, 
@@ -88,7 +88,7 @@ if (result) {
 Processes two input buffers, diffing them.  
 Generates a compressed instruction set dictating how to get from the old buffer to the new buffer.
 ```c++
-bool DiffBuffers(
+bool BFT::DiffBuffers(
   char * buffer_old, 
   const size_t & size_old, 
   char * buffer_new, 
@@ -130,7 +130,7 @@ if (result) {
 ### PatchBuffer
 Reads from a compressed instruction set, uses it to patch the 'older' buffer into the 'newer' buffer
 ```c++
-bool PatchBuffer(
+bool BFT::PatchBuffer(
   char * buffer_old, 
   const size_t & size_old, 
   char ** buffer_new,
@@ -172,7 +172,7 @@ if (result) {
 ### HashBuffer
 Generates a hash value for the buffer provided, using the buffers' contents.
 ```c++
-size_t HashBuffer(
+size_t BFT::HashBuffer(
   char * buffer, 
   const size_t & size
 );
