@@ -13,7 +13,7 @@ The core of this library can be found between 2 namespaces:
 #### The DirectoryTools namespace exposes 4 similar helper functions:
 - [CompressDirectory](#CompressDirectory)
 - [DecompressDirectory](#DecompressDirectory)
-- [DiffDirectory](#DiffDirectory)
+- [DiffDirectories](#DiffDirectories)
 - [PatchDirectory](#PatchDirectory)
 
 # Functions
@@ -219,7 +219,7 @@ Return:                     true if compression success, false otherwise.
 
 Example Usage:
 ```c++
-std::string directory_to_compress = "C:\\some directory"
+std::string directory_to_compress = "C:\\some directory";
 
 // Compress
 char * packageBuffer(nullptr);
@@ -251,7 +251,7 @@ Return:                     true if decompression success, false otherwise.
 
 Example Usage:
 ```c++
-std::string directory_to_write = "C:\\some directory"
+std::string directory_to_write = "C:\\some directory";
 char * packageBuffer = get_package_buffer();
 size_t packageSize = get_package_size();
 
@@ -261,5 +261,38 @@ bool result = DRT::DecompressDirectory(directory_to_write, packageBuffer, packag
 delete[] packageBuffer;
 if (result) {
   // Do something knowing that the package has extracted
+}
+```
+
+### DiffDirectories
+Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
+```c++
+bool DFT::DiffDirectories(
+  const std::string & oldDirectory, 
+  const std::string & newDirectory, 
+  char ** diffBuffer, 
+  size_t & diffSize, 
+  size_t & instructionCount
+);
+```
+Parameter:  `oldDirectory`      the older directory, or path to an .npack file.  
+Parameter:  `newDirectory`      the newer directory, or path to an .npack file.  
+Parameter:  `diffBuffer`        pointer to the diff buffer, which will hold compressed diff instructions.  
+Parameter:  `diffSize`          reference updated with the size in bytes of the diff buffer.  
+Parameter:  `instructionCount`  (optional) pointer updated with the number of instructions compressed into the diff buffer.  
+Return:                         true if diff success, false otherwise.  
+
+Example Usage:
+```c++
+std::string oldDirectory = "C:\\old software";
+std::string newDirectory = "C:\\new software";
+
+// Diff the 2 directories
+char * diffBuffer(nullptr);
+size_t diffSize(0ull), instructionCount(0ull);
+bool result = DRT::DiffDirectories(oldDirectory, newDirectory, &diffBuffer, diffSize, &instructionCount);
+if (result) {
+  // Do something with the diffBuffer (size of diffSize)
+  delete[] diffBuffer;
 }
 ```
