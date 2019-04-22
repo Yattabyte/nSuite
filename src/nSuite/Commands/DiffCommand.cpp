@@ -22,11 +22,11 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
-			oldDirectory = std::string(&argv[x][5]);
+			oldDirectory = sanitize_path(std::string(&argv[x][5]));
 		else if (command == "-new=")
-			newDirectory = std::string(&argv[x][5]);
+			newDirectory = sanitize_path(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = std::string(&argv[x][5]);
+			dstDirectory = sanitize_path(std::string(&argv[x][5]));
 		else
 			exit_program(
 				" Arguments Expected:\r\n"
@@ -42,10 +42,7 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 		const auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::tm bt;
 		localtime_s(&bt, &time);
-		dstDirectory =
-			dstDirectory
-			+ "\\"
-			+ std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);		
+		dstDirectory = sanitize_path(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
 	}
 
 	// Ensure a file-extension is chosen

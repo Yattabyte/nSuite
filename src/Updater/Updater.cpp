@@ -26,7 +26,7 @@ int main()
 	});
 
 	// Find all patch files?
-	const auto dstDirectory(get_current_directory());
+	const auto dstDirectory = sanitize_path(get_current_directory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure

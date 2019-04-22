@@ -23,9 +23,9 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = std::string(&argv[x][5]);
+			srcDirectory = sanitize_path(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = std::string(&argv[x][5]);
+			dstDirectory = sanitize_path(std::string(&argv[x][5]));
 		else
 			exit_program(
 				" Arguments Expected:\r\n"
@@ -36,8 +36,8 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	}
 
 	// If user provides a directory only, append a filename
-	if (std::filesystem::is_directory(dstDirectory))
-		dstDirectory += "\\installer.exe";
+	if (std::filesystem::is_directory(dstDirectory)) 
+		dstDirectory = sanitize_path(dstDirectory) + "\\installer.exe";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())

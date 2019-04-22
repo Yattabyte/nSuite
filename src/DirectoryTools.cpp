@@ -24,12 +24,16 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	files.reserve(directoryArray.size());
 
 	// Get path name
-	const auto srcPath = std::filesystem::path(srcDirectory);
-	if (!std::filesystem::is_directory(srcPath) || !srcPath.has_stem()) {
+	if (!directoryArray.size()) {
 		TaskLogger::PushText("Critical failure: the source path specified \"" + srcDirectory + "\" is not a (useable) directory.\r\n");
 		return false;
 	}
-	const auto folderName = srcPath.stem().string();
+	std::filesystem::path srcPath = std::filesystem::path(srcDirectory);
+	std::string folderName = srcPath.stem().string();
+	while (folderName.empty()) {
+		srcPath = srcPath.parent_path();
+		folderName = srcPath.stem().string();
+	};
 
 	// Calculate final file size using all the files in this directory,
 	// and make a list containing all relevant files and their attributes
@@ -42,20 +46,16 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		for each (const auto & excl in exclusions) {
 			if (excl.empty())
 				continue;
-			if (excl[0] == '\\') {
-				// Compare Paths
-				if (path == excl) {
-					useEntry = false;
-					break;
-				}
+			// Compare Paths
+			if (path == excl) {
+				useEntry = false;
+				break;
 			}
-			else if (excl[0] == '.') {
-				// Compare Extensions
-				if (extension == excl) {
-					useEntry = false;
-					break;
-				}
-			}
+			// Compare Extensions
+			else if (extension == excl) {
+				useEntry = false;
+				break;
+			}			
 		}
 		if (useEntry) {
 			const auto pathSize = path.size();
@@ -150,7 +150,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
 	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
 	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
-	const auto finalDestionation = dstDirectory + "\\" + std::string(folderArray, folderSize);
+	const auto finalDestionation = sanitize_path(dstDirectory + "\\" + std::string(folderArray, folderSize));
 	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
 
 	char * decompressedBuffer(nullptr);

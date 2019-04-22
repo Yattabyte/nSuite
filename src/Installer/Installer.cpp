@@ -209,8 +209,7 @@ void Installer::beginInstallation()
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = getDirectory();
-			sanitize_path(directory);
+			auto directory = sanitize_path(getDirectory());
 			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
 				invalidate();
 			else {

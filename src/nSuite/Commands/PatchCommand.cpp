@@ -22,9 +22,9 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = std::string(&argv[x][5]);
+			srcDirectory = sanitize_path(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = std::string(&argv[x][5]);
+			dstDirectory = sanitize_path(std::string(&argv[x][5]));
 		else
 			exit_program(
 				" Arguments Expected:\r\n"
@@ -33,6 +33,9 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 				"\r\n"
 			);
 	}
+	// Ensure a file-extension is chosen
+	if (!std::filesystem::path(dstDirectory).has_extension())
+		dstDirectory += ".ndiff";
 
 	// Open diff file
 	std::ifstream diffFile(srcDirectory, std::ios::binary | std::ios::beg);

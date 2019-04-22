@@ -150,9 +150,8 @@ std::wstring Uninstaller::getDirectory() const
 void Uninstaller::beginUninstallation()
 {
 	m_threader.addJob([&]() {
-		const auto directory = from_wideString(m_directory);
-
 		// Find all installed files
+		const auto directory = sanitize_path(from_wideString(m_directory));
 		const auto entries = get_file_paths(directory);
 
 		// Find all shortcuts

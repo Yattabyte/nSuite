@@ -94,14 +94,17 @@ inline static void * PTR_ADD(void *const ptr, const size_t & offset)
 	return static_cast<std::byte*>(ptr) + offset;
 };
 
-/** Cleans up a target string representing a file path, removing leading and trailing quotes.
-@param	path		reference to the path to be sanitized. */
-inline static void sanitize_path(std::string & path)
+/** Cleans up a target string representing a file path
+@param	path		reference to the path to be sanitized. 
+@return				sanitized version of path. */
+inline static std::string sanitize_path(const std::string & path)
 {
-	if (path.front() == '"' || path.front() == '\'')
-		path.erase(0ull, 1ull);
-	if (path.back() == '"' || path.back() == '\'')
-		path.erase(path.size() - 1ull);
+	std::string cpy(path);
+	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')
+		cpy.erase(0ull, 1ull);
+	while (cpy.back() == '"' || cpy.back() == '\'' || cpy.back() == '\"' || cpy.back() == '\\')
+		cpy.erase(cpy.size() - 1ull);
+	return cpy;
 }
 
 /** Return file-info for all files within the directory specified.
@@ -163,7 +166,7 @@ inline static void exit_program(const char * message)
 @param	message		pause message to show the user. */
 inline static void pause_program(const char * message)
 {
-	TaskLogger::PushText(message + ' ');
+	TaskLogger::PushText(std::string(message) + ' ');
 	system("pause");
 	std::printf("\033[A\33[2K\r");
 	std::printf("\033[A\33[2K\r\n");

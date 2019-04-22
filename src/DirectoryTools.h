@@ -19,7 +19,7 @@ namespace DRT {
 	@param	packSize			reference updated with the size in bytes of the compressed packBuffer.
 	@param	byteCount			(optional) pointer updated with the number of bytes written into the package
 	@param	fileCount			(optional) pointer updated with the number of files written into the package.
-	@param	exclusions			(optional) list of filenames/types to skip. "\\string" match relative path, ".ext" match extension.
+	@param	exclusions			(optional) list of filenames/types to skip. "string" match relative path, ".ext" match extension.
 	@return						true if compression success, false otherwise. */
 	bool CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t * byteCount = nullptr, size_t * fileCount = nullptr, const std::vector<std::string> & exclusions = std::vector<std::string>());
 	/** Decompresses an .npack - package formatted buffer into its component files in the destination directory.

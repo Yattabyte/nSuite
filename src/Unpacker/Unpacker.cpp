@@ -22,7 +22,7 @@ int main()
 
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
-	const std::string dstDirectory(get_current_directory());
+	const auto dstDirectory = sanitize_path(get_current_directory());
 	size_t fileCount(0ull), byteCount(0ull);
 	Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	if (!archive.exists())
