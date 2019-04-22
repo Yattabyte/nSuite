@@ -296,3 +296,37 @@ if (result) {
   delete[] diffBuffer;
 }
 ```
+
+### PatchDirectory
+Decompresses and executes the instructions contained within a previously-generated diff buffer.  
+Transforms the contents of an 'old' directory into that of the 'new' directory.  
+```c++
+bool DFT::PatchDirectory(
+  const std::string & dstDirectory, 
+  char * diffBuffer, 
+  const size_t & diffSizeComp, 
+  size_t * bytesWritten, 
+  size_t * instructionsUsed = nullptr
+);
+```
+Parameter:  `dstDirectory`      the destination directory to transform.  
+Parameter:  `diffBuffer`        the buffer containing the compressed diff instructions.  
+Parameter:  `diffSize`          the size in bytes of the compressed diff buffer.  
+Parameter:  `bytesWritten`      (optional) pointer updated with the number of bytes written to disk.  
+Parameter:  `instructionCount`  (optional) pointer updated with the number of instructions executed.  
+Return:                         true if patch success, false otherwise.  
+
+Example Usage:
+```c++
+std::string dstDirectory = "C:\\old software";
+char * diffBuffer = get_diff_buffer();
+size_t diffSize = get_diff_size();
+
+// Diff the 2 directories
+size_t bytesWritten(0ull), instructionsExecuted(0ull);
+bool result = DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten, &instructionsExecuted);
+delete[] diffBuffer;
+if (result) {
+  // Do something with the knowledge that the destination directory just updated to a new version
+}
+```
