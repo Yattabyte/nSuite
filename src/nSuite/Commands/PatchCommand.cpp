@@ -45,7 +45,7 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 	diffFile.read(diffBuffer, std::streamsize(diffSize));
 	diffFile.close();
 	size_t bytesWritten(0ull), instructionsUsed(0ull);
-	if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, bytesWritten, instructionsUsed))
+	if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten, &instructionsUsed))
 		exit_program("aborting...\r\n");
 	delete[] diffBuffer;
 

@@ -13,6 +13,7 @@
 #include <vector>
 #include <windows.h>
 
+
 /** Changes an input string to lower case, and returns it.
 @param	string		the input string.
 @return				lower case version of the string. */

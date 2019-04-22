@@ -1,6 +1,6 @@
 #pragma once
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef TASK_LOGGER_H
+#define TASK_LOGGER_H
 
 #include <functional>
 #include <string>
@@ -109,4 +109,4 @@ private:
 	std::vector<std::function<void(const size_t &, const size_t & size_t)>> m_progressCallbacks;
 };
 
-#endif // LOGGER_H
+#endif // TASK_LOGGER_H

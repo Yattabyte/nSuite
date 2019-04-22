@@ -11,17 +11,6 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 static HRESULT CreateDialogEventHandler(REFIID, void **);
 static HRESULT OpenFileDialog(std::string &);
 
-static std::string directory_and_package(const std::string & dir, const std::string & pack)
-{
-	std::string directory = dir;
-	// Ensure last character is a backslash
-	if (dir.size() && dir[dir.size() - 1ull] != '\\')
-		directory += '\\' + pack;
-	else
-		directory += pack;
-	return directory;
-}
-
 Directory::~Directory()
 {
 	UnregisterClass("DIRECTORY_SCREEN", m_hinstance);

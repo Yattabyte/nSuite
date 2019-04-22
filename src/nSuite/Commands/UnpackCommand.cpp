@@ -46,8 +46,8 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 	packFile.close();
 
 	// Unpackage using the resource file
-	size_t fileCount(0ull), byteCount(0ull);
-	if (!DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, byteCount, fileCount))
+	size_t byteCount(0ull), fileCount(0ull);
+	if (!DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, &byteCount, &fileCount))
 		exit_program("Cannot decompress package file, aborting...\r\n");
 	delete[] packBuffer;
 

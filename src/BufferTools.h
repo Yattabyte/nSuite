@@ -47,10 +47,10 @@ namespace BFT {
 	@param	size_new			reference updated with the size of the new buffer.
 	@param	buffer_diff			the compressed diff buffer (instruction set).
 	@param	size_diff			the size of the compressed diff buffer.
-	@param	instructionCount	pointer to update with the number of instructions processed. (optional)
+	@param	instructionCount	(optional) pointer to update with the number of instructions processed.
 	@return						true if patch success, false otherwise. */
 	bool PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount = nullptr);
-	/** Generate a hash value for the buffer provided. 
+	/** Generates a hash value for the buffer provided, using the buffers' contents.
 	@param	buffer				pointer to the buffer to hash.
 	@param	size				the size of the buffer.
 	@return						hash value for the buffer. */

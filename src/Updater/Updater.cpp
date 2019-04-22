@@ -44,7 +44,7 @@ int main()
 
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();
-		size_t bytesWritten(0ull), instructionsUsed(0ull), patchesApplied(0ull);
+		size_t bytesWritten(0ull), patchesApplied(0ull);
 		for each (const auto & patch in patches) {
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
@@ -58,7 +58,7 @@ int main()
 				char * diffBuffer = new char[diffSize];
 				diffFile.read(diffBuffer, std::streamsize(diffSize));
 				diffFile.close();
-				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, bytesWritten, instructionsUsed)) {
+				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten)) {
 					TaskLogger::PushText("skipping patch...\r\n");
 					delete[] diffBuffer;
 					continue;

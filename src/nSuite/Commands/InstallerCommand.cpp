@@ -45,8 +45,8 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 
 	// Compress the directory specified
 	char * packBuffer(nullptr);
-	size_t packSize(0ull), fileCount(0ull);
-	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount, {"\\manifest.nman"}))
+	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
+	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount, {"\\manifest.nman"}))
 		exit_program("Cannot create installer from the directory specified, aborting...\r\n");
 
 	// Acquire installer resource
@@ -88,7 +88,8 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	TaskLogger::PushText(
-		"Files packaged: " + std::to_string(fileCount) + "\r\n" +
-		"Bytes packaged: " + std::to_string(packSize) + "\r\n"
+		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
+		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
+		"Compressed Size: " + std::to_string(packSize) + "\r\n"
 	);
 }

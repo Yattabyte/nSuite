@@ -42,7 +42,7 @@ int main()
 	);
 
 	// Unpackage using the resource file
-	if (!DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), byteCount, fileCount))
+	if (!DRT::DecompressDirectory(dstDirectory, reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), &byteCount, &fileCount))
 		exit_program("Cannot decompress embedded package resource, aborting...\r\n");
 
 	// Success, report results

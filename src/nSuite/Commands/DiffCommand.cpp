@@ -55,7 +55,7 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	// Diff the 2 directories specified
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull), instructionCount(0ull);
-	if (!DRT::DiffDirectory(oldDirectory, newDirectory, &diffBuffer, diffSize, instructionCount))
+	if (!DRT::DiffDirectories(oldDirectory, newDirectory, &diffBuffer, diffSize, &instructionCount))
 		exit_program("aborting...\r\n");
 	
 	// Create diff file

@@ -45,9 +45,9 @@ void PackagerCommand::execute(const int & argc, char * argv[]) const
 
 	// Compress the directory specified
 	char * packBuffer(nullptr);
-	size_t packSize(0ull), fileCount(0ull);
-	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, fileCount))
-		exit_program("Cannot create installer from the directory specified, aborting...\r\n");
+	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
+	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount))
+		exit_program("Cannot create package from the directory specified, aborting...\r\n");
 
 	// Acquire installer resource
 	Resource unpacker(IDR_UNPACKER, "UNPACKER");
@@ -71,7 +71,8 @@ void PackagerCommand::execute(const int & argc, char * argv[]) const
 
 	// Output results
 	TaskLogger::PushText(
-		"Files packaged: " + std::to_string(fileCount) + "\r\n" +
-		"Bytes packaged: " + std::to_string(packSize) + "\r\n"
+		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
+		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
+		"Compressed Size: " + std::to_string(packSize) + "\r\n"
 	);
 }

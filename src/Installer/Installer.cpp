@@ -209,10 +209,9 @@ void Installer::beginInstallation()
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			size_t byteCount(0ull), fileCount(0ull);
 			auto directory = getDirectory();
 			sanitize_path(directory);
-			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), byteCount, fileCount))
+			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
 				invalidate();
 			else {
 				// Write uninstaller to disk

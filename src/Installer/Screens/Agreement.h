@@ -21,8 +21,6 @@ public:
 	// Public Methods
 	/** Check the 'I agree' button. */
 	void checkYes();
-	/** Check the 'I doon't agree' button. */
-	void checkNo();
 	/** Switch to the previous state. */
 	void goPrevious();
 	/** Switch to the next state. */
