@@ -2,6 +2,7 @@
 #include "BufferTools.h"
 #include "Common.h"
 #include "Instructions.h"
+#include "Resource.h"
 #include "Threader.h"
 #include "TaskLogger.h"
 #include <atomic>
@@ -259,52 +260,75 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 				size += srcFile.file_size();
 				files.push_back(new File(path, getRelativePath(path, directory), srcFile.file_size()));
 			}
+			return true;
+		}
+		// See if the file is actually a program with an embedded archive
+		char * packBuffer(nullptr);
+		size_t packSize(0ull);
+		bool canLoad = LoadLibraryA(directory.c_str());
+		auto handle = GetModuleHandle(directory.c_str());
+		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
+		if (canLoad && handle != NULL && fileResource.exists()) {
+			// Extract the archive
+			packBuffer = reinterpret_cast<char*>(fileResource.getPtr());
+			packSize = fileResource.getSize();
 		}
 		else {
-			// Treat as a snapshot file if it isn't a directory
+			// Last resort, treat as a snapshot file if it isn't a directory
 			// Open diff file
 			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
-			const size_t packSize = std::filesystem::file_size(directory);
+			packSize = std::filesystem::file_size(directory);
 			if (!packFile.is_open()) {
 				TaskLogger::PushText("Critical failure: cannot read package file.\r\n");
 				return false;
 			}
-			char * compBuffer = new char[packSize];
-			packFile.read(compBuffer, std::streamsize(packSize));
+			packBuffer = new char[packSize];
+			packFile.read(packBuffer, std::streamsize(packSize));
 			packFile.close();
-
-			// Decompress
-			size_t snapSize(0ull);
-			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize)) {
-				TaskLogger::PushText("Critical failure: cannot decompress package file.\r\n");
-				return false;
-			}
-			delete[] compBuffer;
-
-			// Get lists of all files involved
-			size_t bytesRead(0ull);
-			void * ptr = *snapshot;
-			while (bytesRead < snapSize) {
-				// Read the total number of characters from the path string, from the archive
-				const auto pathSize = *reinterpret_cast<size_t*>(ptr);
-				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
-
-				// Read the file path string, from the archive
-				const char * path_array = reinterpret_cast<char*>(ptr);
-				const auto path = std::string(path_array, pathSize);
-				ptr = PTR_ADD(ptr, pathSize);
-
-				// Read the file size in bytes, from the archive 
-				const auto fileSize = *reinterpret_cast<size_t*>(ptr);
-				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
-
-				files.push_back(new FileMem(path, path, fileSize, ptr));
-				ptr = PTR_ADD(ptr, fileSize);
-				bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
-				size += fileSize;
-			}
 		}
-		return true;
+		// We don't care about the package's header (folder name + name size)
+		char * packBufferOffset = packBuffer;
+		const auto folderSize = *reinterpret_cast<size_t*>(packBuffer);
+		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+
+		// Decompress
+		size_t snapSize(0ull);
+		if (!BFT::DecompressBuffer(packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), snapshot, snapSize)) {
+			TaskLogger::PushText("Critical failure: cannot decompress package file.\r\n");
+			return false;
+		}
+
+		// Check if we need to delete the packBuffer, or if it is an embedded resource
+		// If it's an embedded resource, the fileResource's destructor will satisfy, else do below
+		if (!canLoad || handle == NULL || !fileResource.exists())
+			delete[] packBuffer;
+		else if (canLoad && handle != NULL)
+			FreeLibrary(handle);
+
+		// Get lists of all files involved
+		size_t bytesRead(0ull);
+		void * ptr = *snapshot;
+		while (bytesRead < snapSize) {
+			// Read the total number of characters from the path string, from the archive
+			const auto pathSize = *reinterpret_cast<size_t*>(ptr);
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+			// Read the file path string, from the archive
+			const char * path_array = reinterpret_cast<char*>(ptr);
+			const auto path = std::string(path_array, pathSize);
+			ptr = PTR_ADD(ptr, pathSize);
+
+			// Read the file size in bytes, from the archive 
+			const auto fileSize = *reinterpret_cast<size_t*>(ptr);
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+			files.push_back(new FileMem(path, path, fileSize, ptr));
+			ptr = PTR_ADD(ptr, fileSize);
+			bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
+			size += fileSize;
+		}
+		return true;		
 	};
 	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, size_t & reserveSize, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
 		// Get files
