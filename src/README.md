@@ -10,14 +10,13 @@ The core of this library can be found between 2 namespaces:
 - [PatchBuffer](#PatchBuffer)
 - [HashBuffer](#HashBuffer)
 
-### The DirectoryTools namespace exposes 4 similar helper functions:
+#### The DirectoryTools namespace exposes 4 similar helper functions:
 - [CompressDirectory](#CompressDirectory)
 - [DecompressDirectory](#DecompressDirectory)
 - [DiffDirectory](#DiffDirectory)
 - [PatchDirectory](#PatchDirectory)
 
 # Functions
-## BFT namespace
 ### CompressBuffer
 Compresses a source buffer into an equal or smaller-sized destination buffer.  
 After compression, it applies a small header describing how large the uncompressed buffer is.
@@ -194,5 +193,73 @@ size_t hashB = BFT::HashBuffer(fileB, 255);
 
 if (hashA != hashB) {
   // Diff the buffers or do something with the knowledge that they differ
+}
+```
+
+### CompressDirectory
+Compresses all disk contents found within a source directory into an .npack - package formatted buffer.  
+After compression, it applies a small header dictating packaged folders' name.  
+```c++
+bool DFT::CompressDirectory(
+  const std::string & srcDirectory, 
+  char ** packBuffer, 
+  size_t & packSize, 
+  size_t * byteCount = nullptr,
+  size_t * fileCount = nullptr,
+  const std::vector<std::string> & exclusions = std::vector<std::string>()
+);
+```
+Parameter:  `srcDirectory`  the absolute path to the directory to compress.  
+Parameter:  `packBuffer`    pointer to the destination buffer, which will hold compressed contents.  
+Parameter:  `packSize`      reference updated with the size in bytes of the compressed packBuffer.  
+Parameter:  `byteCount`     (optional) pointer updated with the number of bytes written into the package.  
+Parameter:  `fileCount`     (optional) pointer updated with the number of files written into the package.  
+Parameter:  `exclusions`    (optional) list of filenames/types to skip "\\string" match relative path, ".ext" match extension.  
+Return:                     true if compression success, false otherwise.  
+
+Example Usage:
+```c++
+std::string directory_to_compress = "C:\\some directory"
+
+// Compress
+char * packageBuffer(nullptr);
+size_t packageSize(0ull), maxSize(0ull), fileCount(0ull);
+bool result = DRT::CompressDirectory(directory_to_compress, &packageBuffer, packageSize, &maxSize, &fileCount, {"\\cache.txt", ".cache"});
+if (result) {
+  // Do something with packageBuffer (size of packageSize)
+  delete[] packageBuffer;
+}
+```
+
+### DecompressDirectory
+Decompresses an .npack - package formatted buffer into its component files in the destination directory.
+```c++
+bool DFT::DecompressDirectory(
+  const std::string & dstDirectory, 
+  char * packBuffer, 
+  const size_t & packSize, 
+  size_t * byteCount = nullptr,
+  size_t * fileCount = nullptr
+);
+```
+Parameter:  `dstDirectory`  the absolute path to the directory to compress.  
+Parameter:  `packBuffer`    the buffer containing the compressed package contents.  
+Parameter:  `packSize`      the size of the buffer in bytes.  
+Parameter:  `byteCount`     (optional) pointer updated with the number of bytes written to disk.   
+Parameter:  `fileCount`     (optional) pointer updated with the number of files written to disk.  
+Return:                     true if decompression success, false otherwise.  
+
+Example Usage:
+```c++
+std::string directory_to_write = "C:\\some directory"
+char * packageBuffer = get_package_buffer();
+size_t packageSize = get_package_size();
+
+// Compress
+size_t byteCount(0ull), fileCount(0ull);
+bool result = DRT::DecompressDirectory(directory_to_write, packageBuffer, packageSize, &byteCount, &fileCount);
+delete[] packageBuffer;
+if (result) {
+  // Do something knowing that the package has extracted
 }
 ```
