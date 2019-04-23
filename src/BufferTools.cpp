@@ -1,4 +1,5 @@
 #include "BufferTools.h"
+#include "Common.h"
 #include "Instructions.h"
 #include "Threader.h"
 #include "lz4.h"
@@ -7,32 +8,40 @@
 
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
-	// Allocate enough room for the compressed buffer (2 size_t bigger than source buffer)
-	destinationSize = (sourceSize * 2ull) + size_t(sizeof(size_t));
-	*destinationBuffer = new char[destinationSize];
+	// Pre-allocate a huge buffer to allow for compression OPS
+	char * compressedBuffer = new char[sourceSize * 2ull];
 
-	// First chunk of data = the total uncompressed size
-	*reinterpret_cast<size_t*>(*destinationBuffer) = sourceSize;
-
-	// Increment pointer so that the compression works on the remaining part of the buffer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) + size_t(sizeof(size_t));
-
-	// Compress the buffer
+	// Try to compress the source buffer
 	auto result = LZ4_compress_default(
 		sourceBuffer,
-		*destinationBuffer,
+		compressedBuffer,
 		int(sourceSize),
-		int(destinationSize - size_t(sizeof(size_t)))
+		int(sourceSize * 2ull)
 	);
 
-	// Decrement pointer
-	*destinationBuffer = reinterpret_cast<char*>(*destinationBuffer) - size_t(sizeof(size_t));
-	destinationSize = size_t(result) + sizeof(size_t);
+	// Create the final buffer (done separate b/c we now know the final reduced buffer size)
+	constexpr size_t HEADER_SIZE = size_t(sizeof(size_t));
+	destinationSize = HEADER_SIZE + size_t(result);
+	*destinationBuffer = new char[destinationSize];
+	char * HEADER_ADDRESS = *destinationBuffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
+
+	// Header = the total uncompressed size
+	*reinterpret_cast<size_t*>(HEADER_ADDRESS) = sourceSize;
+
+	// Data = compressed source buffer
+	std::memcpy(DATA_ADDRESS, compressedBuffer, size_t(result));	
+	delete[] compressedBuffer;
+
 	return (result > 0);
 }
 
 bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
+	// Ensure buffer at least *exists*
+	if (sourceSize <= size_t(sizeof(size_t)) || sourceBuffer == nullptr)
+		return false;
+
 	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
 	*destinationBuffer = new char[destinationSize];
 	auto result = LZ4_decompress_safe(
@@ -48,7 +57,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
 {
 	std::vector<InstructionTypes> instructions;
-	instructions.reserve(std::max(size_old, size_new) / 8ull);
+	instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
 	Threader threader;
 	constexpr size_t amount(4096);
@@ -186,7 +195,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 				// We only care about repeats larger than 36 bytes.
 				if (inst->newData.size() > 36ull) {
 					// Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-					size_t max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
+					size_t max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
 					for (size_t x = 0ull; x < max; ++x) {
 						const auto & value_at_x = inst->newData[x];
 						if (inst->newData[x + 36ull] != value_at_x)
@@ -227,7 +236,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 							writeGuard.release();
 
 							x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
-							max = std::min(inst->newData.size(), inst->newData.size() - 37ull);
+							max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
 							break;
 						}
 						x = y - 1;

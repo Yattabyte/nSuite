@@ -19,8 +19,9 @@ public:
 		shutdown();
 	}
 	/** Creates a threader object and generates as many worker threads as the system allows. */
-	inline Threader() {
-		for (size_t x = 0; x < std::thread::hardware_concurrency(); ++x) {
+	inline Threader(const size_t & maxThreads = std::thread::hardware_concurrency()) {
+		m_maxThreads = maxThreads;
+		for (size_t x = 0; x < m_maxThreads; ++x) {
 			std::thread thread([&]() {
 				while (m_alive) {
 					// Check if there is a job to do
@@ -56,15 +57,20 @@ public:
 		m_jobs.emplace_back(func);
 		m_jobsStarted++;
 	}
+	/** Check if the threader has completed all its jobs.
+	@return			true if finished, false otherwise. */
 	inline bool isFinished() const {
 		return m_jobsStarted == m_jobsFinished;
 	}
+	/** Prepare the threader for shutdown, notifying threads to complete early. */
 	inline void prepareForShutdown() {
 		m_keepOpen = false;
 	}
+	/** Shutsdown the threader, forcing threads to close. */
 	inline void shutdown() {
 		m_alive = false;
-		for (size_t x = 0; x < std::thread::hardware_concurrency() && x < m_threads.size(); ++x) {
+		m_keepOpen = false;
+		for (size_t x = 0; x < m_maxThreads && x < m_threads.size(); ++x) {
 			if (m_threads[x].joinable())
 				m_threads[x].join();
 		}
@@ -81,6 +87,7 @@ private:
 	std::vector<std::thread> m_threads;
 	std::deque<std::function<void()>> m_jobs;
 	std::atomic_size_t m_threadsActive = 0ull, m_jobsStarted = 0ull, m_jobsFinished = 0ull;
+	size_t m_maxThreads = 0ull;
 };
 
 #endif // THREADER_H

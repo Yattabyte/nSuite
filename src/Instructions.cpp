@@ -44,7 +44,7 @@ size_t Insert_Instruction::SIZE() const {
 	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * newData.size());
 }
 
-void Insert_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const bufferOld, const size_t & oldSize) const {
+void Insert_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const, const size_t &) const {
 	for (auto i = index, x = size_t(0ull), length = newData.size(); i < newSize && x < length; ++i, ++x)
 		bufferNew[i] = newData[x];
 }
@@ -89,7 +89,7 @@ size_t Repeat_Instruction::SIZE() const {
 	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
 }
 
-void Repeat_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const bufferOld, const size_t & oldSize) const {
+void Repeat_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const, const size_t &) const {
 	for (auto i = index, x = size_t(0ull); i < newSize && x < amount; ++i, ++x)
 		bufferNew[i] = value;
 }

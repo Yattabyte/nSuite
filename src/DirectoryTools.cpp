@@ -2,14 +2,16 @@
 #include "BufferTools.h"
 #include "Common.h"
 #include "Instructions.h"
+#include "Resource.h"
 #include "Threader.h"
+#include "TaskLogger.h"
 #include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <vector>
 
 
-bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t & fileCount)
+bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t * byteCount, size_t * fileCount, const std::vector<std::string> & exclusions)
 {
 	// Variables
 	Threader threader;
@@ -23,45 +25,63 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	files.reserve(directoryArray.size());
 
 	// Get path name
-	const auto srcPath = std::filesystem::path(srcDirectory);
-	if (!std::filesystem::is_directory(srcPath) || !srcPath.has_stem()) {
-		std::cout << "Critical failure: the source path specified \"" << srcDirectory << "\" is not a (useable) directory.\n";
+	if (!directoryArray.size()) {
+		TaskLogger::PushText("Critical failure: the source path specified \"" + srcDirectory + "\" is not a (useable) directory.\r\n");
 		return false;
 	}
-	const auto folderName = srcPath.stem().string();
+	std::filesystem::path srcPath = std::filesystem::path(srcDirectory);
+	std::string folderName = srcPath.stem().string();
+	while (folderName.empty()) {
+		srcPath = srcPath.parent_path();
+		folderName = srcPath.stem().string();
+	};
 
 	// Calculate final file size using all the files in this directory,
 	// and make a list containing all relevant files and their attributes
-	size_t archiveSize = sizeof(size_t) + folderName.size();	// include size of the root folder name
+	size_t archiveSize(0ull);
 	for each (const auto & entry in directoryArray) {
+		const auto extension = std::filesystem::path(entry).extension();
 		auto path = entry.path().string();
 		path = path.substr(absolute_path_length, path.size() - absolute_path_length);
-		const auto pathSize = path.size();
+		bool useEntry = true;
+		for each (const auto & excl in exclusions) {
+			if (excl.empty())
+				continue;
+			// Compare Paths
+			if (path == excl) {
+				useEntry = false;
+				break;
+			}
+			// Compare Extensions
+			else if (extension == excl) {
+				useEntry = false;
+				break;
+			}			
+		}
+		if (useEntry) {
+			const auto pathSize = path.size();
 
-		const size_t unitSize =
-			size_t(sizeof(size_t)) +							// size of path size variable in bytes
-			pathSize +											// the actual path data
-			size_t(sizeof(size_t)) +							// size of the file size variable in bytes
-			entry.file_size();									// the actual file data
-		archiveSize += unitSize;
-		files.push_back({ entry.path().string(), path, entry.file_size(), unitSize });
+			const size_t unitSize =
+				size_t(sizeof(size_t)) +							// size of path size variable in bytes
+				pathSize +											// the actual path data
+				size_t(sizeof(size_t)) +							// size of the file size variable in bytes
+				entry.file_size();									// the actual file data
+			archiveSize += unitSize;
+			files.push_back({ entry.path().string(), path, entry.file_size(), unitSize });
+		}
 	}
-	fileCount = files.size();
+
+	// Update optional parameters
+	if (byteCount != nullptr)
+		*byteCount = archiveSize;
+	if (fileCount != nullptr)
+		*fileCount = files.size();
 
 	// Create buffer for final file data
 	char * filebuffer = new char[archiveSize];
 
-	// Begin writing data into buffer
-	void * pointer = filebuffer;
-
-	// Write root folder name and size
-	auto pathSize = folderName.size();
-	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
-	memcpy(pointer, folderName.data(), pathSize);
-	pointer = PTR_ADD(pointer, pathSize);
-
 	// Write file data into the buffer
+	void * pointer = filebuffer;
 	for each (const auto & file in files) {
 		threader.addJob([file, pointer]() {
 			// Write the total number of characters in the path string, into the archive
@@ -95,39 +115,57 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	threader.shutdown();
 
 	// Compress the archive
-	if (!BFT::CompressBuffer(filebuffer, archiveSize, packBuffer, packSize)) {
-		std::cout << "Critical failure: cannot perform compression operation on the set of joined files.\n";
+	char * compBuffer(nullptr);
+	size_t compSize(0ull);
+	if (!BFT::CompressBuffer(filebuffer, archiveSize, &compBuffer, compSize)) {
+		TaskLogger::PushText("Critical failure: cannot perform compression operation on the set of joined files.\r\n");
 		return false;
 	}
-
-	// Clean up
 	delete[] filebuffer;
+
+	// Move compressed buffer data to a new buffer that has a special header
+	packSize = compSize + sizeof(size_t) + folderName.size();
+	*packBuffer = new char[packSize];
+	memcpy(&(*packBuffer)[sizeof(size_t) + folderName.size()], compBuffer, compSize);
+	delete[] compBuffer;
+
+	// Write the header (root folder name and size)
+	pointer = *packBuffer;
+	auto pathSize = folderName.size();	
+	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
+	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
+	memcpy(pointer, folderName.data(), pathSize);
 	return true;
 }
 
-bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t & byteCount, size_t & fileCount)
+bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount, size_t * fileCount)
 {
 	Threader threader;
+	if (packSize <= 0ull) {
+		TaskLogger::PushText("Critical failure: package buffer has no content.\r\n");
+		return false;
+	}
+
+	// Read the directory header
+	char * packBufferOffset = packBuffer;
+	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
+	const auto finalDestionation = sanitize_path(dstDirectory + "\\" + std::string(folderArray, folderSize));
+	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	if (!BFT::DecompressBuffer(packBuffer, packSize, &decompressedBuffer, decompressedSize)) {
-		std::cout << "Critical failure: cannot decompress package file.\n";
+	if (!BFT::DecompressBuffer(packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), &decompressedBuffer, decompressedSize)) {
+		TaskLogger::PushText("Critical failure: cannot decompress package file.\r\n");
 		return false;
 	}
 
 	// Begin reading the archive
 	void * readingPtr = decompressedBuffer;
-
-	// Read the root folder name and size
-	const auto folderSize = *reinterpret_cast<size_t*>(readingPtr);
-	readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
-	const char * folderArray = reinterpret_cast<char*>(readingPtr);
-	const auto finalDestionation = dstDirectory + "\\" + std::string(folderArray, folderSize);
-	readingPtr = PTR_ADD(readingPtr, folderSize);
-
-	// Read the archive
-	size_t bytesRead = sizeof(size_t) + folderSize;
-	std::atomic_size_t filesWritten(0ull), bytesWritten(0ull);
+	size_t bytesRead(0ull);
+	std::atomic_size_t filesWritten(0ull);
+	TaskLogger::SetRange(decompressedSize + 100);
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
@@ -135,7 +173,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
-		const auto path = finalDestionation + std::string(path_array, pathSize);
+		std::string fullPath = finalDestionation + std::string(path_array, pathSize);
 		readingPtr = PTR_ADD(readingPtr, pathSize);
 
 		// Read the file size in bytes, from the archive 
@@ -144,35 +182,44 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 		// Write file out to disk, from the archive
 		void * ptrCopy = readingPtr; // needed for lambda, since readingPtr gets incremented
-		threader.addJob([ptrCopy, path, fileSize, &filesWritten, &bytesWritten]() {	
+		threader.addJob([ptrCopy, fullPath, fileSize, &filesWritten]() {
 			// Write-out the file if it doesn't exist yet, if the size is different, or if it's older
-			std::filesystem::create_directories(std::filesystem::path(path).parent_path());
-			std::ofstream file(path, std::ios::binary | std::ios::out);
-			if (file.is_open())
+			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
+			std::ofstream file(fullPath, std::ios::binary | std::ios::out);
+			if (!file.is_open())
+				TaskLogger::PushText("Error writing file: \"" + fullPath + "\" to disk");
+			else {
 				file.write(reinterpret_cast<char*>(ptrCopy), (std::streamsize)fileSize);
-			file.close();
-			bytesWritten += fileSize;
+				file.close();
+			}
 			filesWritten++;			
 		});
 
 		readingPtr = PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
+		TaskLogger::PushText("Writing file: \"" + std::string(path_array, pathSize) + "\"\r\n");
+		TaskLogger::SetProgress(bytesRead);
 	}
 
 	// Wait for threaded operations to complete
 	threader.prepareForShutdown();
 	while (!threader.isFinished())
-		continue;
+		continue;	
 	threader.shutdown();
+	TaskLogger::SetProgress(bytesRead + 100);
+
+	// Update optional parameters
+	if (byteCount != nullptr)
+		*byteCount = bytesRead;
+	if (fileCount != nullptr)
+		*fileCount = filesWritten;
 
 	// Success
-	fileCount = filesWritten;
-	byteCount = bytesWritten;
 	delete[] decompressedBuffer;
 	return true;
 }
 
-bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t & instructionCount)
+bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t * instructionCount)
 {
 	// Declarations that will only be used here	
 	struct File {
@@ -213,52 +260,75 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 				size += srcFile.file_size();
 				files.push_back(new File(path, getRelativePath(path, directory), srcFile.file_size()));
 			}
+			return true;
+		}
+		// See if the file is actually a program with an embedded archive
+		char * packBuffer(nullptr);
+		size_t packSize(0ull);
+		bool canLoad = LoadLibraryA(directory.c_str());
+		auto handle = GetModuleHandle(directory.c_str());
+		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
+		if (canLoad && handle != NULL && fileResource.exists()) {
+			// Extract the archive
+			packBuffer = reinterpret_cast<char*>(fileResource.getPtr());
+			packSize = fileResource.getSize();
 		}
 		else {
-			// Treat as a snapshot file if it isn't a directory
+			// Last resort, treat as a snapshot file if it isn't a directory
 			// Open diff file
 			std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
-			const size_t packSize = std::filesystem::file_size(directory);
+			packSize = std::filesystem::file_size(directory);
 			if (!packFile.is_open()) {
-				std::cout << "Critical failure: cannot read package file.\n";
+				TaskLogger::PushText("Critical failure: cannot read package file.\r\n");
 				return false;
 			}
-			char * compBuffer = new char[packSize];
-			packFile.read(compBuffer, std::streamsize(packSize));
+			packBuffer = new char[packSize];
+			packFile.read(packBuffer, std::streamsize(packSize));
 			packFile.close();
-
-			// Decompress
-			size_t snapSize(0ull);
-			if (!BFT::DecompressBuffer(compBuffer, packSize, snapshot, snapSize)) {
-				std::cout << "Critical failure: cannot decompress package file.\n";
-				return false;
-			}
-			delete[] compBuffer;
-
-			// Get lists of all files involved
-			size_t bytesRead(0ull);
-			void * ptr = *snapshot;
-			while (bytesRead < snapSize) {
-				// Read the total number of characters from the path string, from the archive
-				const auto pathSize = *reinterpret_cast<size_t*>(ptr);
-				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
-
-				// Read the file path string, from the archive
-				const char * path_array = reinterpret_cast<char*>(ptr);
-				const auto path = std::string(path_array, pathSize);
-				ptr = PTR_ADD(ptr, pathSize);
-
-				// Read the file size in bytes, from the archive 
-				const auto fileSize = *reinterpret_cast<size_t*>(ptr);
-				ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
-
-				files.push_back(new FileMem(path, path, fileSize, ptr));
-				ptr = PTR_ADD(ptr, fileSize);
-				bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
-				size += fileSize;
-			}
 		}
-		return true;
+		// We don't care about the package's header (folder name + name size)
+		char * packBufferOffset = packBuffer;
+		const auto folderSize = *reinterpret_cast<size_t*>(packBuffer);
+		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+
+		// Decompress
+		size_t snapSize(0ull);
+		if (!BFT::DecompressBuffer(packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), snapshot, snapSize)) {
+			TaskLogger::PushText("Critical failure: cannot decompress package file.\r\n");
+			return false;
+		}
+
+		// Check if we need to delete the packBuffer, or if it is an embedded resource
+		// If it's an embedded resource, the fileResource's destructor will satisfy, else do below
+		if (!canLoad || handle == NULL || !fileResource.exists())
+			delete[] packBuffer;
+		else if (canLoad && handle != NULL)
+			FreeLibrary(handle);
+
+		// Get lists of all files involved
+		size_t bytesRead(0ull);
+		void * ptr = *snapshot;
+		while (bytesRead < snapSize) {
+			// Read the total number of characters from the path string, from the archive
+			const auto pathSize = *reinterpret_cast<size_t*>(ptr);
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+			// Read the file path string, from the archive
+			const char * path_array = reinterpret_cast<char*>(ptr);
+			const auto path = std::string(path_array, pathSize);
+			ptr = PTR_ADD(ptr, pathSize);
+
+			// Read the file size in bytes, from the archive 
+			const auto fileSize = *reinterpret_cast<size_t*>(ptr);
+			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+
+			files.push_back(new FileMem(path, path, fileSize, ptr));
+			ptr = PTR_ADD(ptr, fileSize);
+			bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
+			size += fileSize;
+		}
+		return true;		
 	};
 	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, size_t & reserveSize, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
 		// Get files
@@ -342,6 +412,7 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 	vecBuffer.reserve(reserveSize);
 
 	// These files are common, maybe some have changed
+	size_t instructionNum(0ull);
 	for each (const auto & cFiles in commonFiles) {
 		char * oldBuffer(nullptr), * newBuffer(nullptr);
 		size_t oldHash(0ull), newHash(0ull);
@@ -350,8 +421,8 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 				// Files are different versions
 				char * buffer(nullptr);
 				size_t size(0ull);
-				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionCount)) {
-					std::cout << "diffing file \"" << cFiles.first->relative << "\"\n";
+				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionNum)) {
+					TaskLogger::PushText("Diffing file: \"" + cFiles.first->relative + "\"\r\n");
 					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', vecBuffer);
 				}
 				delete[] buffer;
@@ -371,8 +442,8 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		if (nFile->open(&newBuffer, newHash)) {
 			char * buffer(nullptr);
 			size_t size(0ull);
-			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionCount)) {
-				std::cout << "adding file \"" << nFile->relative << "\"\n";
+			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionNum)) {
+				TaskLogger::PushText("Adding file: \"" + nFile->relative + "\"\r\n");
 				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', vecBuffer);
 			}
 			delete[] buffer;
@@ -388,8 +459,8 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 		char * oldBuffer(nullptr);
 		size_t oldHash(0ull);
 		if (oFile->open(&oldBuffer, oldHash)) {
-			instructionCount++;
-			std::cout << "removing file \"" << oFile->relative << "\"\n";
+			instructionNum++;
+			TaskLogger::PushText("Removing file: \"" + oFile->relative + "\"\r\n");
 			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', vecBuffer);
 		}
 		delete[] oldBuffer;
@@ -400,18 +471,22 @@ bool DRT::DiffDirectory(const std::string & oldDirectory, const std::string & ne
 
 	// Compress final buffer
 	if (!BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), diffBuffer, diffSize)) {
-		std::cout << "Critical failure: cannot compress diff file.\n";
+		TaskLogger::PushText("Critical failure: cannot compress diff file.\r\n");
 		return false;
 	}
+
+	// Update optional parameters
+	if (instructionCount != nullptr)
+		*instructionCount = instructionNum;
 	return true;
 }
 
-bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t & bytesWritten, size_t & instructionsUsed)
+bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferCompressed, const size_t & diffSizeCompressed, size_t * bytesWritten, size_t * instructionsUsed)
 {
 	char * diffBuffer(nullptr);
 	size_t diffSize(0ull);
 	if (!BFT::DecompressBuffer(diffBufferCompressed, diffSizeCompressed, &diffBuffer, diffSize)) {
-		std::cout << "Critical failure: cannot decompress diff file.\n";
+		TaskLogger::PushText("Critical failure: cannot decompress diff file.\r\n");
 		return false;
 	}
 
@@ -486,6 +561,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	}
 
 	// Patch all files first
+	size_t byteNum(0ull), instructionNum(0ull);
 	for each (const auto & file in diffFiles) {
 		// Try to read the target file
 		char *oldBuffer(nullptr), *newBuffer(nullptr);
@@ -493,39 +569,43 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	
 		// Try to read source file
 		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash)) {
-			std::cout << "Critical failure: Cannot read source file from disk.\n";
+			TaskLogger::PushText("Critical failure: Cannot read source file from disk.\r\n");
 			return false;
 		}
 
 		// Patch if this source file hasn't been patched yet
 		if (oldHash == file.diff_newHash)
-			std::cout << "The file \"" << file.path << "\" is already up to date, skipping...\n";
+			TaskLogger::PushText("The file \"" + file.path + "\" is already up to date, skipping...\r\n");
 		else if (oldHash != file.diff_oldHash) {
-			std::cout << "Critical failure: the file \"" << file.path << "\" is of an unexpected version. \n";
+			TaskLogger::PushText("Critical failure: the file \"" + file.path + "\" is of an unexpected version. \r\n");
 			return false;
 		}
 		else {
 			// Patch buffer
-			std::cout << "patching file \"" << file.path << "\"\n";
+			TaskLogger::PushText("patching file \"" + file.path + "\"\r\n");
 			size_t newSize(0ull);
-			BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
+			if (!BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum)) {
+				TaskLogger::PushText("Critical failure: patching failed!.\r\n");
+				return false;
+			}
+
 			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
 
 			// Confirm new hashes match
 			if (newHash != file.diff_newHash) {
-				std::cout << "Critical failure: patched file is corrupted (hash mismatch).\n";
+				TaskLogger::PushText("Critical failure: patched file is corrupted (hash mismatch).\r\n");
 				return false;
 			}
 
 			// Write patched buffer to disk
 			std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 			if (!newFile.is_open()) {
-				std::cout << "Critical failure: cannot write patched file to disk.\n";
+				TaskLogger::PushText("Critical failure: cannot write patched file to disk.\r\n");
 				return false;
 			}
 			newFile.write(newBuffer, std::streamsize(newSize));
 			newFile.close();
-			bytesWritten += newSize;
+			byteNum += newSize;
 		}
 
 		// Cleanup and finish
@@ -537,30 +617,30 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	// By this point all files matched, safe to add new ones
 	for each (const auto & file in addedFiles) {
 		std::filesystem::create_directories(std::filesystem::path(file.fullPath).parent_path());
-		std::cout << "adding file \"" << file.path << "\"\n";
+		TaskLogger::PushText("Writing file: \"" + file.path + "\"\r\n");
 		
 		// Write the 'insert' instructions
 		// Remember that we use the diff/patch function to add new files too
 		char * newBuffer(nullptr);
 		size_t newSize(0ull);
-		BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionsUsed);
+		BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum);
 		const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
 
 		// Confirm new hashes match
 		if (newHash != file.diff_newHash) {
-			std::cout << "Critical failure: new file is corrupted (hash mismatch).\n";
+			TaskLogger::PushText("Critical failure: new file is corrupted (hash mismatch).\r\n");
 			return false;
 		}
 
 		// Write new file to disk
 		std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 		if (!newFile.is_open()) {
-			std::cout << "Critical failure: cannot write new file to disk.\n";
+			TaskLogger::PushText("Critical failure: cannot write new file to disk.\r\n");
 			return false;
 		}
 		newFile.write(newBuffer, std::streamsize(newSize));
 		newFile.close();
-		bytesWritten += newSize;
+		byteNum += newSize;
 
 		// Cleanup and finish
 		delete[] file.instructionSet;
@@ -575,14 +655,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 
 		// Try to read source file
 		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash))
-			std::cout << "The file \"" << file.path << "\" has already been removed, skipping...\n";
+			TaskLogger::PushText("The file \"" + file.path + "\" has already been removed, skipping...\r\n");
 		else {
 			// Only remove source files if they match entirely
 			if (oldHash == file.diff_oldHash)
 				if (!std::filesystem::remove(file.fullPath))
-					std::cout << "Error: cannot delete file \"" << file.path << "\" from disk, delete this file manually if you can. \n";
+					TaskLogger::PushText("Error: cannot delete file \"" + file.path + "\" from disk, delete this file manually if you can. \r\n");
 				else
-					std::cout << "removing file \"" << file.path << "\"\n";
+					TaskLogger::PushText("Removing file: \"" + file.path + "\"\r\n");
 		}
 
 		// Cleanup and finish
@@ -590,5 +670,10 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		delete[] oldBuffer;
 	}
 
+	// Update optional parameters
+	if (bytesWritten != nullptr)
+		*bytesWritten = byteNum;
+	if (instructionsUsed != nullptr)
+		*instructionsUsed = instructionNum;
 	return true;
 }

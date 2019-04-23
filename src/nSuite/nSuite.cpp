@@ -1,9 +1,11 @@
 #include "Common.h"
+#include "TaskLogger.h"
 #include <map>
 
 // Command inclusions
 #include "Commands/Command.h"
 #include "Commands/InstallerCommand.h"
+#include "Commands/PackagerCommand.h"
 #include "Commands/DiffCommand.h"
 #include "Commands/PatchCommand.h"
 #include "Commands/PackCommand.h"
@@ -18,36 +20,43 @@ int main(int argc, char *argv[])
 	struct compare_string { bool operator()(const char * a, const char * b) const { return strcmp(a, b) < 0; } };
 	const std::map<const char *, Command*, compare_string> commandMap{ 
 		{	"-installer"	,	new InstallerCommand()	},
+		{	"-packager"		,	new PackagerCommand()	},
 		{	"-pack"			,	new PackCommand()		},
 		{	"-unpack"		,	new UnpackCommand()		},
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		}
 	};
+	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+		std::cout << message;
+	});
 
 	// Check for valid arguments
 	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end())
 		exit_program(
-			"                      ~\n"
-			"    nStallr Help:    /\n"
-			"  ~-----------------~\n"
-			" /\n"
-			"~\n\n"
-			" Operations Supported:\n"
-			" -installer	(To package and compress an entire directory into an executable file)\n"
-			" -pack			(To compress an entire directory into a single .npack file)\n"
-			" -unpack		(To decompress an entire directory from a .npack file)\n"
-			" -diff			(To diff an entire directory into a single .ndiff file)\n"
-			" -patch		(To patch an entire directory from a .ndiff file)\n"
-			"\n\n"
+			"                      ~\r\n"
+			"    nSuite Help:     /\r\n"
+			"  ~-----------------~\r\n"
+			" /\r\n"
+			"~\r\n\r\n"
+			" Operations Supported:\r\n"
+			" -installer	(Packages a directory into a GUI Installer (for Windows))\r\n"
+			" -packager		(Packages a directory into a portable package executable (like a mini installer))\r\n"
+			" -pack			(Packages a directory into an .npack file)\r\n"
+			" -unpack		(Unpackages into a directory from an .npack file)\r\n"
+			" -diff			(Diff. 2 directories into an .ndiff file)\r\n"
+			" -patch		(Patches a directory from an .ndiff file)\r\n"
+			"\r\n\r\n"
 		);
 	
 	// Command exists in command map, execute it
 	commandMap.at(argv[1])->execute(argc, argv);
 
-	// Output results and finish
+	// Success, report results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "Total duration: " << elapsed_seconds.count() << " seconds\n\n";
+	TaskLogger::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
+
+	// Pause and exit
 	system("pause");
 	exit(EXIT_SUCCESS);
 }
