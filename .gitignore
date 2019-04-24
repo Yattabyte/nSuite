@@ -71,7 +71,3 @@ CMakeDoxyfile.tpl.bak
 CMakeDoxyfile.in
 PredictedInputCache_Debug_x64.dat
 PredictedInputCache_Release_x64.dat
-
-# Exceptions
-!Dist x64/nSuite.exe
-!Dist x64/nUpdater.exe
