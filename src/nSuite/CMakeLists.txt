@@ -1,43 +1,42 @@
-##############
-### nSuite ###
-##############
+######################
+### nSuite Library ###
+######################
 set (Module nSuite)
 
-# Get source files
-file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")
-# Mimic the file-folder structure
-foreach(source IN LISTS ROOT)
-    get_filename_component(source_path "${source}" PATH)
-    string(REPLACE "/" "\\" source_path_msvc "${source_path}")
-    source_group("${source_path_msvc}" FILES "${source}")
-endforeach()
-
-# Add source files
-add_executable(${Module} 	
-	${ROOT} 
-	${CORE_DIR}/Common.h	
-	${CORE_DIR}/Resource.h
-	${CORE_DIR}/Threader.h 					
-	${CORE_DIR}/Instructions.h 							
-	${CORE_DIR}/Instructions.cpp 	
-	${CORE_DIR}/BufferTools.h 
-	${CORE_DIR}/BufferTools.cpp
-	${CORE_DIR}/DirectoryTools.h 
-	${CORE_DIR}/DirectoryTools.cpp	
-	${CORE_DIR}/TaskLogger.h	
+# Create Library
+add_library(${Module}
+	# Source files
+	src/BufferTools.cpp
+	src/DirectoryTools.cpp
+	src/Instructions.cpp	
+	
+	# Header files
+	include/BufferTools.h
+	include/Common.h
+	include/DirectoryTools.h
+	include/Instructions.h	
+	include/Resource.h
+	include/TaskLogger.h
+	include/Threader.h	
 )
 
-# This module requires the installer and updater to be built first
-add_dependencies(nSuite Installer Updater Unpacker)
+# Add library dependencies
+target_link_libraries(${Module} PRIVATE 
+	debug		${LZ4_DIR}/x64_Debug/liblz4_static.lib
+	optimized	${LZ4_DIR}/x64_Release/liblz4_static.lib
+)
+target_include_directories(${Module} 
+	PUBLIC include 
+	PRIVATE ${LZ4_DIR}/lib
+)
 
-# Set visual studio settings
-target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
+# Set all project settings
 set_target_properties(${Module} PROPERTIES 	
 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
-	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"
+	VERSION ${PROJECT_VERSION}	
 )
 
 # Force highest c++ version supported
@@ -46,7 +45,9 @@ if (MSVC_VERSION GREATER_EQUAL "1900")
     CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
     if (_cpp_latest_flag_supported)
         add_compile_options("/std:c++latest")
-		set_target_properties(${Module} PROPERTIES CXX_STANDARD 17)
-		set_target_properties(${Module} PROPERTIES CXX_STANDARD_REQUIRED ON)
+		set_target_properties(${Module} PROPERTIES 
+			CXX_STANDARD 17
+			CXX_STANDARD_REQUIRED ON
+		)
     endif()
 endif()

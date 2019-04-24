@@ -1,4 +1,4 @@
-#include "PatchCommand.h"
+#include "Commands/PatchCommand.h"
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"

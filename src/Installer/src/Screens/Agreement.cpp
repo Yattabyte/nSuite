@@ -1,5 +1,5 @@
-#include "Agreement.h"
-#include "../Installer.h"
+#include "Screens/Agreement.h"
+#include "Installer.h"
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

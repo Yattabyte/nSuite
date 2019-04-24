@@ -3,49 +3,48 @@
 #################
 set (Module Installer)
 
-# Get source files
-file (GLOB_RECURSE ROOT RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cpp" "*.c" "*.h" "*.rc")
-# Mimic the file-folder structure
-foreach(source IN LISTS ROOT)
-    get_filename_component(source_path "${source}" PATH)
-    string(REPLACE "/" "\\" source_path_msvc "${source_path}")
-    source_group("${source_path_msvc}" FILES "${source}")
-endforeach()
-
-# Add source files
+# Create Executable
 add_executable(${Module} 	
-	${ROOT} 
-	${CORE_DIR}/Common.h	
-	${CORE_DIR}/Resource.h
-	${CORE_DIR}/Threader.h 					
-	${CORE_DIR}/Instructions.h 							
-	${CORE_DIR}/Instructions.cpp 	
-	${CORE_DIR}/BufferTools.h 
-	${CORE_DIR}/BufferTools.cpp
-	${CORE_DIR}/DirectoryTools.h 
-	${CORE_DIR}/DirectoryTools.cpp	
-	${CORE_DIR}/TaskLogger.h	
+	# Source Files
+	Installer.rc
+	src/Installer.cpp
+	src/Screens/Agreement.cpp
+	src/Screens/Directory.cpp
+	src/Screens/Fail.cpp
+	src/Screens/Finish.cpp
+	src/Screens/Install.cpp
+	src/Screens/Welcome.cpp
+
+	# Header Files
+	include/Installer.h
+	include/Screens/Agreement.h
+	include/Screens/Directory.h
+	include/Screens/Fail.h
+	include/Screens/Finish.h
+	include/Screens/Install.h
+	include/Screens/Welcome.h
 )
 
-# Add libraries
-target_link_libraries(${Module} 
+# Add library dependencies
+add_dependencies(${Module} nSuite Uninstaller)
+target_link_libraries(${Module} PUBLIC nSuite)
+target_link_libraries(${Module} PRIVATE
 	"Comctl32.lib" 
 	"propsys.lib" 
 	"Shlwapi.lib"
+	"Gdiplus.lib"
 )
+target_include_directories(${Module} PRIVATE include)
 
-# This module requires the uninstaller to be built first
-add_dependencies(Installer Uninstaller)
-
-# Set windows/visual studio settings
+# Set all project settings
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
 set_target_properties(${Module} PROPERTIES 	
 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
-	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"
+	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"	
+	VERSION ${PROJECT_VERSION}
 	LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\""
 )
 
@@ -55,7 +54,9 @@ if (MSVC_VERSION GREATER_EQUAL "1900")
     CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
     if (_cpp_latest_flag_supported)
         add_compile_options("/std:c++latest")
-		set_target_properties(${Module} PROPERTIES CXX_STANDARD 17)
-		set_target_properties(${Module} PROPERTIES CXX_STANDARD_REQUIRED ON)
+		set_target_properties(${Module} PROPERTIES 
+			CXX_STANDARD 17
+			CXX_STANDARD_REQUIRED ON
+		)
     endif()
 endif()

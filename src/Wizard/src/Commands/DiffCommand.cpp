@@ -1,4 +1,4 @@
-#include "DiffCommand.h"
+#include "Commands/DiffCommand.h"
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"

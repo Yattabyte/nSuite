@@ -1,5 +1,5 @@
-#include "Directory.h"
-#include "../Installer.h"
+#include "Screens/Directory.h"
+#include "Installer.h"
 #include <iomanip>
 #include <shlobj.h>
 #include <shlwapi.h>

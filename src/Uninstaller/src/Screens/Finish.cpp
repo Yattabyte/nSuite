@@ -1,6 +1,6 @@
-#include "Finish.h"
+#include "Screens/Finish.h"
 #include "Common.h"
-#include "../Uninstaller.h"
+#include "Uninstaller.h"
 #include <algorithm>
 #include <filesystem>
 #include <shlobj.h>

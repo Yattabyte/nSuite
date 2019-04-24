@@ -1,39 +1,35 @@
-###################
-### Uninstaller ###
-###################
-set (Module Uninstaller)
+##############
+### Wizard ###
+##############
+set (Module Wizard)
 
 # Create Executable
-add_executable(${Module}
+add_executable(${Module}	
 	# Source Files
-	Uninstaller.rc
-	src/Uninstaller.cpp
-	src/Screens/Fail.cpp
-	src/Screens/Finish.cpp
-	src/Screens/Uninstall.cpp
-	src/Screens/Welcome.cpp
- 
-	# Header Files
-	include/Uninstaller.h
-	include/Screens/Fail.h
-	include/Screens/Finish.h
-	include/Screens/Uninstall.h
-	include/Screens/Welcome.h
+	Wizard.rc
+	src/Wizard.cpp
+	src/Commands/DiffCommand.cpp
+	src/Commands/InstallerCommand.cpp
+	src/Commands/PackagerCommand.cpp
+	src/Commands/PackCommand.cpp
+	src/Commands/PatchCommand.cpp
+	src/Commands/UnpackCommand.cpp
+
+	# Header files
+	include/Commands/DiffCommand.h
+	include/Commands/InstallerCommand.h
+	include/Commands/PackagerCommand.h
+	include/Commands/PackCommand.h
+	include/Commands/PatchCommand.h
+	include/Commands/UnpackCommand.h
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite)
+add_dependencies(${Module} nSuite Installer Unpacker)
 target_link_libraries(${Module} PUBLIC nSuite)
-target_link_libraries(${Module} PRIVATE
-	"Comctl32.lib" 
-	"propsys.lib" 
-	"Shlwapi.lib"
-	"Gdiplus.lib"
-)
 target_include_directories(${Module} PRIVATE include)
 
 # Set all project settings
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 set_target_properties(${Module} PROPERTIES 	
 	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -41,7 +37,6 @@ set_target_properties(${Module} PROPERTIES
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app"
 	VERSION ${PROJECT_VERSION}
-	LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\""
 )
 
 # Force highest c++ version supported

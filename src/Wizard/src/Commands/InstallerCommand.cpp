@@ -1,4 +1,4 @@
-#include "InstallerCommand.h"
+#include "Commands/InstallerCommand.h"
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"

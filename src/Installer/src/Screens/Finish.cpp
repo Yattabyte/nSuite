@@ -1,6 +1,6 @@
-#include "Finish.h"
+#include "Screens/Finish.h"
 #include "Common.h"
-#include "../Installer.h"
+#include "Installer.h"
 #include <algorithm>
 #include <filesystem>
 #include <shlobj.h>

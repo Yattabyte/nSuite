@@ -1,4 +1,4 @@
-#include "PackCommand.h"
+#include "Commands/PackCommand.h"
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"
