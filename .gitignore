@@ -41,6 +41,7 @@ src/nSuite/nSuite.dir/
 src/Uninstaller/Uninstaller.dir/
 src/Unpacker/Unpacker.dir/
 src/Updater/Updater.dir/
+src/Wizard/Wizard.dir/
 app/
 
 # Other
