@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <chrono>
 #include <fstream>
 
@@ -21,7 +21,7 @@ static auto get_patches(const std::string & srcDirectory)
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	auto index = Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
 	});
 
@@ -30,7 +30,7 @@ int main()
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	TaskLogger::PushText(
+	Log::PushText(
 		"                       ~\r\n"
 		"        Updater       /\r\n"
 		"  ~------------------~\r\n"
@@ -50,7 +50,7 @@ int main()
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
 			const size_t diffSize = std::filesystem::file_size(patch);
 			if (!diffFile.is_open()) {
-				TaskLogger::PushText("Cannot read diff file, skipping...\r\n");
+				Log::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
 			else {
@@ -59,14 +59,14 @@ int main()
 				diffFile.read(diffBuffer, std::streamsize(diffSize));
 				diffFile.close();
 				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten)) {
-					TaskLogger::PushText("skipping patch...\r\n");
+					Log::PushText("skipping patch...\r\n");
 					delete[] diffBuffer;
 					continue;
 				}
 
 				// Delete patch file at very end
 				if (!std::filesystem::remove(patch))
-					TaskLogger::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
+					Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
 				patchesApplied++;
 				delete[] diffBuffer;
 			}
@@ -75,7 +75,7 @@ int main()
 		// Success, report results
 		const auto end = std::chrono::system_clock::now();
 		const std::chrono::duration<double> elapsed_seconds = end - start;
-		TaskLogger::PushText(
+		Log::PushText(
 			"Patches used:   " + std::to_string(patchesApplied) + " out of " + std::to_string(patches.size()) + "\r\n" +
 			"Bytes written:  " + std::to_string(bytesWritten) + "\r\n" +
 			"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
@@ -83,6 +83,7 @@ int main()
 	}
 
 	// Pause and exit
+	Log::RemoveObserver(index);
 	system("pause");
 	exit(EXIT_SUCCESS);	
 }

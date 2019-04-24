@@ -1,6 +1,6 @@
 #include "Screens/Fail.h"
 #include "Common.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include "Installer.h"
 #include <ctime>
 #include <fstream>
@@ -16,7 +16,7 @@ Fail::~Fail()
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_hwndLog);
 	DestroyWindow(m_btnClose);
-	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
+	Log::RemoveObserver(m_logIndex);
 }
 
 Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
@@ -44,7 +44,7 @@ Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, 
 	// Create error log
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)"Error Log:\r\n");
-	m_logIndex = TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	m_logIndex = Log::AddObserver([&](const std::string & message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
 	});
 

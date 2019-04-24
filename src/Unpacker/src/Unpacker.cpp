@@ -8,11 +8,11 @@
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	auto index = Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
 	});
 
-	TaskLogger::PushText(
+	Log::PushText(
 		"                       ~\r\n"
 		"       Unpackager     /\r\n"
 		"  ~------------------~\r\n"
@@ -35,7 +35,7 @@ int main()
 	const auto folderName = std::string(reinterpret_cast<char*>(packBufferOffset), folderSize);
 	
 	// Report where we're unpacking to
-	TaskLogger::PushText(
+	Log::PushText(
 		"Unpacking to the following directory:\r\n"
 		"\t> " + dstDirectory + "\\" + folderName +
 		"\r\n"
@@ -48,13 +48,14 @@ int main()
 	// Success, report results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	TaskLogger::PushText(
+	Log::PushText(
 		"Files written:  " + std::to_string(fileCount) + "\r\n" +
 		"Bytes written:  " + std::to_string(byteCount) + "\r\n" +
 		"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
 	);
 
 	// Pause and exit
+	Log::RemoveObserver(index);
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

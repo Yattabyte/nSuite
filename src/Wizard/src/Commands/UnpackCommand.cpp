@@ -2,14 +2,14 @@
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <fstream>
 
 
 void UnpackCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	Log::PushText(
 		"                      ~\r\n"
 		"       Unpacker      /\r\n"
 		"  ~-----------------~\r\n"
@@ -56,7 +56,7 @@ void UnpackCommand::execute(const int & argc, char * argv[]) const
 	delete[] packBuffer;
 
 	// Output results
-	TaskLogger::PushText(
+	Log::PushText(
 		"Files written:   " + std::to_string(fileCount) + "\r\n" +
 		"Bytes processed: " + std::to_string(byteCount) + "\r\n"
 	);

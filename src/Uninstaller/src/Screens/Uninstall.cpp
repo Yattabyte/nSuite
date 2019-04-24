@@ -1,5 +1,6 @@
 #include "Screens/Uninstall.h"
 #include "Common.h"
+#include "Progress.h"
 #include "Uninstaller.h"
 
 
@@ -12,8 +13,8 @@ Uninstall::~Uninstall()
 	DestroyWindow(m_hwndLog);
 	DestroyWindow(m_hwndPrgsBar);
 	DestroyWindow(m_btnFinish);
-	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
-	TaskLogger::RemoveCallback_ProgressUpdated(m_taskIndex);
+	Log::RemoveObserver(m_logIndex);
+	Progress::RemoveObserver(m_taskIndex);
 }
 
 Uninstall::Uninstall(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
@@ -41,10 +42,10 @@ Uninstall::Uninstall(Uninstaller * uninstaller, const HINSTANCE hInstance, const
 	// Create log box and progress bar
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	m_hwndPrgsBar = CreateWindowEx(WS_EX_CLIENTEDGE, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE | WS_OVERLAPPED | WS_DLGFRAME | WS_CLIPCHILDREN | PBS_SMOOTH, 10, size.y - 40, size.x - 115, 30, m_hwnd, NULL, hInstance, NULL);
-	m_logIndex = TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	m_logIndex = Log::AddObserver([&](const std::string & message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
 	});
-	m_taskIndex = TaskLogger::AddCallback_ProgressUpdated([&](const size_t & position, const size_t & range) {
+	m_taskIndex = Progress::AddObserver([&](const size_t & position, const size_t & range) {
 		SendMessage(m_hwndPrgsBar, PBM_SETRANGE32, 0, LPARAM(int_fast32_t(range)));
 		SendMessage(m_hwndPrgsBar, PBM_SETPOS, WPARAM(int_fast32_t(position)), 0);
 		RECT rc = { 580, 410, 800, 450 };

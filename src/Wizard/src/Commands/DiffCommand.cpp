@@ -2,14 +2,14 @@
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <fstream>
 
 
 void DiffCommand::execute(const int & argc, char * argv[]) const 
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	Log::PushText(
 		"                      ~\r\n"
 		"      Patch Maker    /\r\n"
 		"  ~-----------------~\r\n"
@@ -67,7 +67,7 @@ void DiffCommand::execute(const int & argc, char * argv[]) const
 	delete[] diffBuffer;
 
 	// Output results
-	TaskLogger::PushText(
+	Log::PushText(
 		"Instruction(s): " + std::to_string(instructionCount) + "\r\n" +
 		"Bytes written:  " + std::to_string(diffSize) + "\r\n"
 	);

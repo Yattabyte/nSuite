@@ -1,7 +1,7 @@
 #include "Installer.h"
 #include "Common.h"
 #include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <CommCtrl.h>
 #include <fstream>
 #include <regex>
@@ -72,7 +72,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	
 	// Check archive integrity
 	if (!m_archive.exists()) {
-		TaskLogger::PushText("Critical failure: archive doesn't exist!\r\n");
+		Log::PushText("Critical failure: archive doesn't exist!\r\n");
 		success = false;
 	}
 	else {
@@ -104,7 +104,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
-		TaskLogger::PushText("Critical failure: could not create main window.\r\n");
+		Log::PushText("Critical failure: could not create main window.\r\n");
 		success = false;
 	}
 	else {
@@ -204,7 +204,7 @@ void Installer::beginInstallation()
 		// Acquire the uninstaller resource
 		Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
 		if (!uninstaller.exists()) {
-			TaskLogger::PushText("Cannot access installer resource, aborting...\r\n");
+			Log::PushText("Cannot access installer resource, aborting...\r\n");
 			setScreen(Installer::FAIL_SCREEN);
 		}
 		else {
@@ -219,10 +219,10 @@ void Installer::beginInstallation()
 				std::filesystem::create_directories(std::filesystem::path(uninstallerPath).parent_path());
 				std::ofstream file(uninstallerPath, std::ios::binary | std::ios::out);
 				if (!file.is_open()) {
-					TaskLogger::PushText("Cannot write uninstaller to disk, aborting...\r\n");
+					Log::PushText("Cannot write uninstaller to disk, aborting...\r\n");
 					invalidate();
 				}
-				TaskLogger::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
+				Log::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
 				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
 				file.close();
 
@@ -234,7 +234,7 @@ void Installer::beginInstallation()
 				);
 				auto handle = BeginUpdateResource(uninstallerPath.c_str(), false);
 				if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPVOID)newManifest.c_str(), (DWORD)newManifest.size())) {
-					TaskLogger::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
+					Log::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
 					invalidate();
 				}
 				EndUpdateResource(handle, FALSE);
@@ -282,13 +282,13 @@ void Installer::dumpErrorLog()
 		logData += "Installer error log:\r\n";
 
 	// Add remaining log data
-	logData += std::string(dateData) + TaskLogger::PullText() + "\r\n";
+	logData += std::string(dateData) + Log::PullText() + "\r\n";
 
 	// Try to create the file
 	std::filesystem::create_directories(std::filesystem::path(dir).parent_path());
 	std::ofstream file(dir, std::ios::binary | std::ios::out | std::ios::app);
 	if (!file.is_open())
-		TaskLogger::PushText("Cannot dump error log to disk...\r\n");
+		Log::PushText("Cannot dump error log to disk...\r\n");
 	else
 		file.write(logData.c_str(), (std::streamsize)logData.size());
 	file.close();

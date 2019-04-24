@@ -1,5 +1,5 @@
 #include "Common.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <map>
 
 // Command inclusions
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		}
 	};
-	TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	auto index = Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
 	});
 
@@ -54,9 +54,10 @@ int main(int argc, char *argv[])
 	// Success, report results
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	TaskLogger::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
+	Log::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
 
 	// Pause and exit
+	Log::RemoveObserver(index);
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

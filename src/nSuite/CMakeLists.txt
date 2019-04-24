@@ -15,8 +15,9 @@ add_library(${Module}
 	include/Common.h
 	include/DirectoryTools.h
 	include/Instructions.h	
-	include/Resource.h
-	include/TaskLogger.h
+	include/Log.h
+	include/Progress.h
+	include/Resource.h	
 	include/Threader.h	
 )
 

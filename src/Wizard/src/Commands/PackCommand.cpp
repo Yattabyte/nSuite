@@ -2,14 +2,14 @@
 #include "BufferTools.h"
 #include "Common.h"
 #include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Log.h"
 #include <fstream>
 
 
 void PackCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	Log::PushText(
 		"                     ~\r\n"
 		"       Packager     /\r\n"
 		"  ~----------------~\r\n"
@@ -58,7 +58,7 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 	delete[] packBuffer;
 
 	// Output results
-	TaskLogger::PushText(
+	Log::PushText(
 		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
 		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
 		"Compressed Size: " + std::to_string(packSize) + "\r\n"
