@@ -1,7 +1,7 @@
 # Library
 The core of this library can be found between 2 namespaces:  
 - BFT (BufferTools)
-- DFT (DirectoryTools)
+- DRT (DirectoryTools)
 
 #### The BufferTools namespace provides the following 5 functions:
 - [CompressBuffer](#CompressBuffer)
@@ -10,11 +10,16 @@ The core of this library can be found between 2 namespaces:
 - [PatchBuffer](#PatchBuffer)
 - [HashBuffer](#HashBuffer)
 
-#### The DirectoryTools namespace exposes 4 similar helper functions:
+#### The DirectoryTools namespace exposes similar helper functions:
 - [CompressDirectory](#CompressDirectory)
 - [DecompressDirectory](#DecompressDirectory)
 - [DiffDirectories](#DiffDirectories)
 - [PatchDirectory](#PatchDirectory)
+- [GetFilePaths](#GetFilePaths)
+- [GetStartMenuPath](#GetStartMenuPath)
+- [GetDesktopPath](#GetDesktopPath)
+- [GetRunningDirectory](#GetRunningDirectory)
+- [SanitizePath](#SanitizePath)
 
 # Functions
 ### CompressBuffer
@@ -200,7 +205,7 @@ if (hashA != hashB) {
 Compresses all disk contents found within a source directory into an .npack - package formatted buffer.  
 After compression, it applies a small header dictating packaged folders' name.  
 ```c++
-bool DFT::CompressDirectory(
+bool DRT::CompressDirectory(
   const std::string & srcDirectory, 
   char ** packBuffer, 
   size_t & packSize, 
@@ -234,7 +239,7 @@ if (result) {
 ### DecompressDirectory
 Decompresses an .npack - package formatted buffer into its component files in the destination directory.
 ```c++
-bool DFT::DecompressDirectory(
+bool DRT::DecompressDirectory(
   const std::string & dstDirectory, 
   char * packBuffer, 
   const size_t & packSize, 
@@ -267,7 +272,7 @@ if (result) {
 ### DiffDirectories
 Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
 ```c++
-bool DFT::DiffDirectories(
+bool DRT::DiffDirectories(
   const std::string & oldDirectory, 
   const std::string & newDirectory, 
   char ** diffBuffer, 
@@ -301,7 +306,7 @@ if (result) {
 Decompresses and executes the instructions contained within a previously-generated diff buffer.  
 Transforms the contents of an 'old' directory into that of the 'new' directory.  
 ```c++
-bool DFT::PatchDirectory(
+bool DRT::PatchDirectory(
   const std::string & dstDirectory, 
   char * diffBuffer, 
   const size_t & diffSizeComp, 
@@ -329,4 +334,86 @@ delete[] diffBuffer;
 if (result) {
   // Do something with the knowledge that the destination directory just updated to a new version
 }
+```
+
+### GetFilePaths
+Returns a list of file information for all files within the directory specified.  
+```c++
+std::vector<std::filesystem::directory_entry> DRT::GetFilePaths(const std::string & directory);
+```
+Parameter:  `directory`      the directory to retrieve file-info from.  
+Return:                      a vector of file information, including file names, sizes, meta-data, etc.    
+
+Example Usage:
+```c++
+std::string directory = "C:\\Folder\\Files";
+const auto fileList = DRT::GetFilePaths(directory);
+
+// Do something with the files
+for each (const auto & file in fileList) {
+	readFile(file.path().string());
+	deleteParentFolder(file.path().parentPath().string());
+}
+```
+
+### GetStartMenuPath
+Retrieves the path to the user's start-menu folder.  
+```c++
+std::string GetStartMenuPath();
+```
+Return: the path to the user's start-menu folder.    
+
+Example Usage:
+```c++
+// Write a file to the start-menu
+std::string startMenuPath = DRT::GetStartMenuPath();
+writeFile( startMenuPath + "\\Program_Shortcut.lnk" );
+```
+
+### GetDesktopPath
+Retrieve the path to the user's desktop.  
+```c++
+std::string GetDesktopPath();
+```
+Return: the path to the user's desktop folder.  
+
+Example Usage:
+```c++
+// Write a file to the user's desktop
+std::string desktopPath = DRT::GetDesktopPath();
+writeFile( desktopPath + "\\Program_Shortcut.lnk" );
+```
+
+### GetRunningDirectory
+Retrieve the path to the directory this application is running from.  
+```c++
+std::string GetRunningDirectory();
+```
+Return: the running directory for this program.  
+
+Example Usage:
+```c++
+// Read a config-file adjacent to this program
+std::string appPath = DRT::GetRunningDirectory();
+readFile( appPath + "\\app_config.cfg" );
+```
+
+### SanitizePath
+Cleans up the target string representing a file path, specifically targeting the number of slashes.  
+```c++
+std::string SanitizePath( const std::string & path);
+```
+Parameter:  `path`   the path to be sanitized.  
+Return:              the sanitized version of path.  
+
+Example Usage:
+```c++
+// Acquire some path that may not be perfectly formatted (e.g. user input)
+std::string somePath = "C:\\Folder\\\\\\"
+
+// Try to correct it before using it elsewhere
+somePath = DRT::SanitizePath(somePath);
+
+// Use the path
+writeFile(somePath);
 ```

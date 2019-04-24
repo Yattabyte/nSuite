@@ -49,21 +49,21 @@ namespace DRT {
 	@param	instructionsUsed	(optional) pointer updated with the number of instructions executed.
 	@return						true if patch success, false otherwise. */
 	bool PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten = nullptr, size_t * instructionsUsed = nullptr);
-	/** Return file-info for all files within the directory specified.
+	/** Returns a list of file information for all files within the directory specified.
 	@param	directory			the directory to retrieve file-info from.
 	@return						a vector of file information, including file names, sizes, meta-data, etc. */
 	std::vector<std::filesystem::directory_entry> GetFilePaths(const std::string & directory);
-	/** Retrieve the start menu directory.
-	@return						path to the user's start menu. */
+	/** Retrieves the path to the user's start-menu folder.
+	@return						the path to the user's start menu folder. */
 	std::string GetStartMenuPath();
-	/** Retrieve the desktop directory.
-	@return						path to the user's desktop. */
+	/** Retrieve the path to the user's desktop.
+	@return						the path to the user's desktop folder. */
 	std::string GetDesktopPath();
-	/** Retrieve the directory this executable is running out-of.
-	@return						the current directory of this program. */
+	/** Retrieve the directory this executable is running from.
+	@return						the current directory for this program. */
 	std::string GetRunningDirectory();
-	/** Cleans up a target string representing a file path
-	@param	path				reference to the path to be sanitized.
+	/** Cleans up the target string representing a file path, specifically targeting the number of slashes.
+	@param	path				the path to be sanitized.
 	@return						sanitized version of path. */
 	std::string SanitizePath(const std::string & path);
 };
