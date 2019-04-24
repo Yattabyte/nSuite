@@ -64,7 +64,7 @@ namespace DRT {
 	std::string GetRunningDirectory();
 	/** Cleans up the target string representing a file path, specifically targeting the number of slashes.
 	@param	path				the path to be sanitized.
-	@return						sanitized version of path. */
+	@return						the sanitized version of path. */
 	std::string SanitizePath(const std::string & path);
 };
 

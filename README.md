@@ -1,10 +1,19 @@
 # nSuite Directory Tools
 
-This toolset provides users with the ability to package and diff directories and files.
+This library allows users to package and diff directories and files.
 
+In addition to the library, this project comes equipped with example programs that directly implement all the packing, unpacking, diffing, and patching operations supported.
 
-## Packaging
-nSuite can package directories in 3 ways:
+## Library
+The core of this library can be found between 2 namespaces:  
+- BFT (BufferTools)
+  - Provides buffer compression, decompression, diff, patch, and hash functions
+- DRT (DirectoryTools)
+  - Provides directory compression, decompression, diff, patch, and other utility functions
+
+## Example tools
+### Packaging
+The nSuite Wizard can package directories in 3 ways:
 - A fully fledged installer with a GUI (Windows)
   - Customizable by writing attributes into a manifest file
   - Generates an uninstaller (adds it to the registry)
@@ -17,15 +26,11 @@ nSuite can package directories in 3 ways:
   - .npack file embedded within
   
 - A .npack file
-  - Can be unpacked using nSuite
+  - Can be unpacked using the nSuite wizard
 
   
-## Diffing
-nSuite can also be used to generate patch files. These can be applied to a directory using nSuite, or by using our stand-alone updater tool (also provided).
-
-The updater tool automatically applies all .ndiff files it can find next to it, and if successfull, deletes them afterwards. This tool is a naiive implementation of an updater, and would ideally be expanded on by other developers for real-world use. 
-
-The tool and diff files should be kept at the root of an affected directory. It will attempt to apply all patches it can find, even if the patched version is technically 'older'.
+### Diffing
+The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.
 
 # Dependencies/Requirements
  - C++ 17

@@ -351,15 +351,15 @@ const auto fileList = DRT::GetFilePaths(directory);
 
 // Do something with the files
 for each (const auto & file in fileList) {
-	readFile(file.path().string());
-	deleteParentFolder(file.path().parentPath().string());
+  readFile(file.path().string());
+  deleteParentFolder(file.path().parentPath().string());
 }
 ```
 
 ### GetStartMenuPath
 Retrieves the path to the user's start-menu folder.  
 ```c++
-std::string GetStartMenuPath();
+std::string DRT::GetStartMenuPath();
 ```
 Return: the path to the user's start-menu folder.    
 
@@ -373,7 +373,7 @@ writeFile( startMenuPath + "\\Program_Shortcut.lnk" );
 ### GetDesktopPath
 Retrieve the path to the user's desktop.  
 ```c++
-std::string GetDesktopPath();
+std::string DRT::GetDesktopPath();
 ```
 Return: the path to the user's desktop folder.  
 
@@ -387,7 +387,7 @@ writeFile( desktopPath + "\\Program_Shortcut.lnk" );
 ### GetRunningDirectory
 Retrieve the path to the directory this application is running from.  
 ```c++
-std::string GetRunningDirectory();
+std::string DRT::GetRunningDirectory();
 ```
 Return: the running directory for this program.  
 
@@ -401,7 +401,7 @@ readFile( appPath + "\\app_config.cfg" );
 ### SanitizePath
 Cleans up the target string representing a file path, specifically targeting the number of slashes.  
 ```c++
-std::string SanitizePath( const std::string & path);
+std::string DRT::SanitizePath( const std::string & path);
 ```
 Parameter:  `path`   the path to be sanitized.  
 Return:              the sanitized version of path.  
