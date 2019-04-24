@@ -1,7 +1,7 @@
 # Library
 The core of this library can be found between 2 namespaces:  
 - BFT (BufferTools)
-- DFT (DirectoryTools)
+- DRT (DirectoryTools)
 
 #### The BufferTools namespace provides the following 5 functions:
 - [CompressBuffer](#CompressBuffer)
@@ -200,7 +200,7 @@ if (hashA != hashB) {
 Compresses all disk contents found within a source directory into an .npack - package formatted buffer.  
 After compression, it applies a small header dictating packaged folders' name.  
 ```c++
-bool DFT::CompressDirectory(
+bool DRT::CompressDirectory(
   const std::string & srcDirectory, 
   char ** packBuffer, 
   size_t & packSize, 
@@ -234,7 +234,7 @@ if (result) {
 ### DecompressDirectory
 Decompresses an .npack - package formatted buffer into its component files in the destination directory.
 ```c++
-bool DFT::DecompressDirectory(
+bool DRT::DecompressDirectory(
   const std::string & dstDirectory, 
   char * packBuffer, 
   const size_t & packSize, 
@@ -267,7 +267,7 @@ if (result) {
 ### DiffDirectories
 Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
 ```c++
-bool DFT::DiffDirectories(
+bool DRT::DiffDirectories(
   const std::string & oldDirectory, 
   const std::string & newDirectory, 
   char ** diffBuffer, 
@@ -301,7 +301,7 @@ if (result) {
 Decompresses and executes the instructions contained within a previously-generated diff buffer.  
 Transforms the contents of an 'old' directory into that of the 'new' directory.  
 ```c++
-bool DFT::PatchDirectory(
+bool DRT::PatchDirectory(
   const std::string & dstDirectory, 
   char * diffBuffer, 
   const size_t & diffSizeComp, 
