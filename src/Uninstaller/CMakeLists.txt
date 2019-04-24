@@ -17,6 +17,7 @@ add_executable(${Module}
 	include/Uninstaller.h
 	include/Screens/Fail.h
 	include/Screens/Finish.h
+	include/Screens/Screen.h
 	include/Screens/Uninstall.h
 	include/Screens/Welcome.h
 )

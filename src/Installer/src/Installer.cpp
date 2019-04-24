@@ -1,11 +1,10 @@
 #include "Installer.h"
-#include "Common.h"
+#include "StringConversions.h"
 #include "DirectoryTools.h"
+#include "BufferTools.h"
 #include "Log.h"
-#include <CommCtrl.h>
 #include <fstream>
 #include <regex>
-#include <Shlobj.h>
 #include <sstream>
 #pragma warning(push)
 #pragma warning(disable:4458)
@@ -64,13 +63,13 @@ Installer::Installer()
 
 Installer::Installer(const HINSTANCE hInstance) : Installer()
 {
-	bool success = true;
 	// Get user's program files directory
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
 	setDirectory(std::string(pf));
 	
 	// Check archive integrity
+	bool success = true;
 	if (!m_archive.exists()) {
 		Log::PushText("Critical failure: archive doesn't exist!\r\n");
 		success = false;
@@ -79,9 +78,9 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		// Read directory header data
 		void * pointer = m_archive.getPtr();
 		const auto folderSize = *reinterpret_cast<size_t*>(pointer);
-		pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
+		pointer = BFT::PTR_ADD(pointer, size_t(sizeof(size_t)));
 		m_packageName = std::string(reinterpret_cast<char*>(pointer), folderSize);
-		pointer = PTR_ADD(pointer, folderSize);
+		pointer = BFT::PTR_ADD(pointer, folderSize);
 		// Read compressed package header
 		m_maxSize = *reinterpret_cast<size_t*>(reinterpret_cast<char*>(pointer));
 
@@ -209,7 +208,7 @@ void Installer::beginInstallation()
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = sanitize_path(getDirectory());
+			auto directory = DRT::SanitizePath(getDirectory());
 			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
 				invalidate();
 			else {
@@ -271,7 +270,7 @@ void Installer::beginInstallation()
 void Installer::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = get_current_directory() + "\\error_log.txt";
+	const auto dir = DRT::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);

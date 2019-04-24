@@ -1,8 +1,9 @@
 #include "Screens/Install.h"
-#include "Common.h"
+#include "Log.h"
 #include "Progress.h"
 #include "Resource.h"
 #include "Installer.h"
+#include <shlobj.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

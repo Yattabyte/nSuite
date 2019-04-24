@@ -1,10 +1,7 @@
 #include "Screens/Finish.h"
-#include "Common.h"
 #include "Uninstaller.h"
 #include <algorithm>
 #include <filesystem>
-#include <shlobj.h>
-#include <shlwapi.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

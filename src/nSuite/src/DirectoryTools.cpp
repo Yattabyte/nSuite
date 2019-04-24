@@ -1,14 +1,14 @@
 #include "DirectoryTools.h"
 #include "BufferTools.h"
-#include "Common.h"
-#include "Instructions.h"
 #include "Resource.h"
 #include "Threader.h"
 #include "Log.h"
 #include "Progress.h"
 #include <atomic>
+#include <direct.h>
 #include <filesystem>
 #include <fstream>
+#include <shlobj.h>
 #include <vector>
 
 
@@ -17,7 +17,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	// Variables
 	Threader threader;
 	const auto absolute_path_length = srcDirectory.size();
-	const auto directoryArray = get_file_paths(srcDirectory);
+	const auto directoryArray = GetFilePaths(srcDirectory);
 	struct FileData {
 		std::string fullpath, trunc_path;
 		size_t size, unitSize;
@@ -89,16 +89,16 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 			void * ptr = pointer;
 			auto pathSize = file.trunc_path.size();
 			memcpy(ptr, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			// Write the file path string, into the archive
 			memcpy(ptr, file.trunc_path.data(), pathSize);
-			ptr = PTR_ADD(ptr, pathSize);
+			ptr = BFT::PTR_ADD(ptr, pathSize);
 
 			// Write the file size in bytes, into the archive
 			auto size = file.size;
 			memcpy(ptr, reinterpret_cast<char*>(&size), size_t(sizeof(size_t)));
-			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			// Read the file
 			std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
@@ -106,7 +106,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 			fileOnDisk.close();
 		});
 
-		pointer = PTR_ADD(pointer, file.unitSize);
+		pointer = BFT::PTR_ADD(pointer, file.unitSize);
 	}
 
 	// Wait for threaded operations to complete
@@ -134,7 +134,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	pointer = *packBuffer;
 	auto pathSize = folderName.size();	
 	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-	pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
+	pointer = BFT::PTR_ADD(pointer, size_t(sizeof(size_t)));
 	memcpy(pointer, folderName.data(), pathSize);
 	return true;
 }
@@ -150,10 +150,10 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	// Read the directory header
 	char * packBufferOffset = packBuffer;
 	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
-	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+	packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
 	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
-	const auto finalDestionation = sanitize_path(dstDirectory + "\\" + std::string(folderArray, folderSize));
-	packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + std::string(folderArray, folderSize));
+	packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, folderSize));
 
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
@@ -170,16 +170,16 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	while (bytesRead < decompressedSize) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = BFT::PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 
 		// Read the file path string, from the archive
 		const char * path_array = reinterpret_cast<char*>(readingPtr);
 		std::string fullPath = finalDestionation + std::string(path_array, pathSize);
-		readingPtr = PTR_ADD(readingPtr, pathSize);
+		readingPtr = BFT::PTR_ADD(readingPtr, pathSize);
 
 		// Read the file size in bytes, from the archive 
 		const auto fileSize = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = BFT::PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 
 		// Write file out to disk, from the archive
 		void * ptrCopy = readingPtr; // needed for lambda, since readingPtr gets incremented
@@ -196,7 +196,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 			filesWritten++;			
 		});
 
-		readingPtr = PTR_ADD(readingPtr, fileSize);
+		readingPtr = BFT::PTR_ADD(readingPtr, fileSize);
 		bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
 		Log::PushText("Writing file: \"" + std::string(path_array, pathSize) + "\"\r\n");
 		Progress::SetProgress(bytesRead);
@@ -256,7 +256,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	};
 	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, size_t & size, std::vector<File*> & files) -> bool {		
 		if (std::filesystem::is_directory(directory)) {
-			for each (const auto & srcFile in get_file_paths(directory)) {
+			for each (const auto & srcFile in GetFilePaths(directory)) {
 				const std::string path = srcFile.path().string();
 				size += srcFile.file_size();
 				files.push_back(new File(path, getRelativePath(path, directory), srcFile.file_size()));
@@ -290,8 +290,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		// We don't care about the package's header (folder name + name size)
 		char * packBufferOffset = packBuffer;
 		const auto folderSize = *reinterpret_cast<size_t*>(packBuffer);
-		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
-		packBufferOffset = reinterpret_cast<char*>(PTR_ADD(packBufferOffset, folderSize));
+		packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
+		packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, folderSize));
 
 		// Decompress
 		size_t snapSize(0ull);
@@ -313,19 +313,19 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		while (bytesRead < snapSize) {
 			// Read the total number of characters from the path string, from the archive
 			const auto pathSize = *reinterpret_cast<size_t*>(ptr);
-			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			// Read the file path string, from the archive
 			const char * path_array = reinterpret_cast<char*>(ptr);
 			const auto path = std::string(path_array, pathSize);
-			ptr = PTR_ADD(ptr, pathSize);
+			ptr = BFT::PTR_ADD(ptr, pathSize);
 
 			// Read the file size in bytes, from the archive 
 			const auto fileSize = *reinterpret_cast<size_t*>(ptr);
-			ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 			files.push_back(new FileMem(path, path, fileSize, ptr));
-			ptr = PTR_ADD(ptr, fileSize);
+			ptr = BFT::PTR_ADD(ptr, fileSize);
 			bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
 			size += fileSize;
 		}
@@ -369,35 +369,35 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		const size_t instructionSize = (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + bufferSize;
 		const size_t bufferOldSize = vecBuffer.size();
 		vecBuffer.resize(bufferOldSize + instructionSize);
-		void * ptr = PTR_ADD(vecBuffer.data(), bufferOldSize);
+		void * ptr = BFT::PTR_ADD(vecBuffer.data(), bufferOldSize);
 
 		// Write file path length
 		std::memcpy(ptr, reinterpret_cast<char*>(&pathLength), size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Write file path
 		std::memcpy(ptr, path.data(), pathLength);
-		ptr = PTR_ADD(ptr, pathLength);
+		ptr = BFT::PTR_ADD(ptr, pathLength);
 
 		// Write operation flag
 		std::memcpy(ptr, &flag, size_t(sizeof(char)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(char)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(char)));
 
 		// Write old hash
 		std::memcpy(ptr, reinterpret_cast<char*>(const_cast<size_t*>(&oldHash)), size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Write new hash
 		std::memcpy(ptr, reinterpret_cast<char*>(const_cast<size_t*>(&newHash)), size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Write buffer size
 		std::memcpy(ptr, reinterpret_cast<char*>(const_cast<size_t*>(&bufferSize)), size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Write buffer
 		std::memcpy(ptr, buffer, bufferSize);
-		ptr = PTR_ADD(ptr, bufferSize);
+		ptr = BFT::PTR_ADD(ptr, bufferSize);
 	};
 
 	// Retrieve all common, added, and removed files
@@ -519,35 +519,35 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		// Read file path length
 		size_t pathLength(0ull);
 		std::memcpy(reinterpret_cast<char*>(&pathLength), ptr, size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 		FI.path.resize(pathLength);
 
 		// Read file path
 		std::memcpy(FI.path.data(), ptr, pathLength);
-		ptr = PTR_ADD(ptr, pathLength);
+		ptr = BFT::PTR_ADD(ptr, pathLength);
 		FI.fullPath = dstDirectory + FI.path;
 
 		// Read operation flag
 		char flag;
 		std::memcpy(&flag, ptr, size_t(sizeof(char)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(char)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(char)));
 
 		// Read old hash
 		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.diff_oldHash)), ptr, size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read new hash
 		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.diff_newHash)), ptr, size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer size
 		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.instructionSize)), ptr, size_t(sizeof(size_t)));
-		ptr = PTR_ADD(ptr, size_t(sizeof(size_t)));
+		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer
 		FI.instructionSet = new char[FI.instructionSize];
 		std::memcpy(FI.instructionSet, ptr, FI.instructionSize);
-		ptr = PTR_ADD(ptr, FI.instructionSize);
+		ptr = BFT::PTR_ADD(ptr, FI.instructionSize);
 
 		// Update range of memory read
 		bytesRead += (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + FI.instructionSize;
@@ -677,4 +677,48 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 	if (instructionsUsed != nullptr)
 		*instructionsUsed = instructionNum;
 	return true;
+}
+
+std::vector<std::filesystem::directory_entry> DRT::GetFilePaths(const std::string & directory)
+{
+	std::vector<std::filesystem::directory_entry> paths;
+	if (std::filesystem::is_directory(directory))
+		for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+			if (entry.is_regular_file())
+				paths.emplace_back(entry);
+	return paths;
+}
+
+std::string DRT::GetStartMenuPath()
+{
+	char cPath[FILENAME_MAX];
+	if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_COMMON_PROGRAMS, NULL, 0, cPath)))
+		return std::string(cPath);
+	return std::string();
+}
+
+std::string DRT::GetDesktopPath()
+{
+	char cPath[FILENAME_MAX];
+	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE))
+		return std::string(cPath);
+	return std::string();
+}
+
+std::string DRT::GetRunningDirectory()
+{
+	char cCurrentPath[FILENAME_MAX];
+	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
+		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
+	return std::string(cCurrentPath);
+}
+
+std::string DRT::SanitizePath(const std::string & path)
+{
+	std::string cpy(path);
+	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')
+		cpy.erase(0ull, 1ull);
+	while (cpy.back() == '"' || cpy.back() == '\'' || cpy.back() == '\"' || cpy.back() == '\\')
+		cpy.erase(cpy.size() - 1ull);
+	return cpy;
 }

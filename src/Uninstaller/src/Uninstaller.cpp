@@ -1,12 +1,10 @@
 #include "Uninstaller.h"
-#include "Common.h"
+#include "StringConversions.h"
 #include "DirectoryTools.h"
 #include "Log.h"
 #include "Progress.h"
-#include <CommCtrl.h>
 #include <fstream>
 #include <regex>
-#include <Shlobj.h>
 #include <sstream>
 #pragma warning(push)
 #pragma warning(disable:4458)
@@ -73,7 +71,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	// Acquire the installation directory
 	m_directory = m_mfStrings[L"directory"];
 	if (m_directory.empty())
-		m_directory = to_wideString(get_current_directory());
+		m_directory = to_wideString(DRT::GetRunningDirectory());
 
 	// Create window class
 	WNDCLASSEX wcex;
@@ -152,8 +150,8 @@ void Uninstaller::beginUninstallation()
 {
 	m_threader.addJob([&]() {
 		// Find all installed files
-		const auto directory = sanitize_path(from_wideString(m_directory));
-		const auto entries = get_file_paths(directory);
+		const auto directory = DRT::SanitizePath(from_wideString(m_directory));
+		const auto entries = DRT::GetFilePaths(directory);
 
 		// Find all shortcuts
 		const auto desktopStrings = m_mfStrings[L"shortcut"], startmenuStrings = m_mfStrings[L"startmenu"];
@@ -212,13 +210,13 @@ void Uninstaller::beginUninstallation()
 
 		// Remove all shortcuts
 		for each (const auto & shortcut in shortcuts_d) {
-			const auto path = get_users_desktop() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			const auto path = DRT::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			Log::PushText("Deleting desktop shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
 		}
 		for each (const auto & shortcut in shortcuts_s) {
-			const auto path = get_users_startmenu() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			const auto path = DRT::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			Log::PushText("Deleting start-menu shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
@@ -237,7 +235,7 @@ void Uninstaller::beginUninstallation()
 void Uninstaller::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = get_current_directory() + "\\error_log.txt";
+	const auto dir = DRT::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);

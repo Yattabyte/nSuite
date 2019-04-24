@@ -5,11 +5,11 @@
 #include "Command.h"
 
 
-/** Command to compress an entire directory into a portable installer. */
+/** Command to compress an entire directory into a fully-fledged installer. */
 class InstallerCommand : public Command {
 public:
 	// Public interface implementation
-	virtual void execute(const int & argc, char * argv[]) const override;
+	virtual int execute(const int & argc, char * argv[]) const override;
 };
 
 #endif // INSTALLERCOMMAND_H

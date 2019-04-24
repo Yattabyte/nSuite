@@ -1,8 +1,9 @@
 #pragma once
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
-#include "Common.h"
+
 #include <variant>
+#include <vector>
 
 
 /** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */

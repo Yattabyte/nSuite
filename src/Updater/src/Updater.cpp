@@ -1,8 +1,8 @@
-#include "Common.h"
 #include "DirectoryTools.h"
 #include "Log.h"
 #include <chrono>
 #include <fstream>
+#include <iostream>
 
 
 /** Fetch all patch files from the directory supplied.
@@ -26,7 +26,7 @@ int main()
 	});
 
 	// Find all patch files?
-	const auto dstDirectory = sanitize_path(get_current_directory());
+	const auto dstDirectory = DRT::SanitizePath(DRT::GetRunningDirectory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
@@ -40,7 +40,10 @@ int main()
 		"\r\n"
 	);
 	if (patches.size()) {
-		pause_program("Ready to update?");
+		Log::PushText(std::string("Ready to update?") + ' ');
+		system("pause");
+		std::printf("\033[A\33[2K\r");
+		std::printf("\033[A\33[2K\r\n");
 
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();

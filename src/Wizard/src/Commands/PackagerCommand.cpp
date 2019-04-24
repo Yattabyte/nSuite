@@ -1,13 +1,13 @@
 #include "Commands/PackagerCommand.h"
 #include "BufferTools.h"
-#include "Common.h"
 #include "DirectoryTools.h"
+#include "StringConversions.h"
 #include "Log.h"
 #include "Resource.h"
 #include <fstream>
 
 
-void PackagerCommand::execute(const int & argc, char * argv[]) const
+int PackagerCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
 	Log::PushText(
@@ -18,61 +18,79 @@ void PackagerCommand::execute(const int & argc, char * argv[]) const
 		"~\r\n\r\n"
 	);
 
-	// Check command line arguments
+	// Create common variables
+	bool success = false;
+	HANDLE handle(nullptr);
+	std::ofstream file;
+	char * packBuffer(nullptr);
+	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
 	std::string srcDirectory(""), dstDirectory("");
+	const Resource unpacker(IDR_UNPACKER, "UNPACKER");
+
+	// Check command line arguments
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = sanitize_path(std::string(&argv[x][5]));
+			srcDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = sanitize_path(std::string(&argv[x][5]));
-		else
-			exit_program(
+			dstDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
+		else {
+			Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the directory to package]\r\n"
 				" -dst=[path to write the portable package] (can omit filename)\r\n"
 				"\r\n"
 			);
+			return EXIT_FAILURE;
+		}
 	}
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory))
-		dstDirectory = sanitize_path(dstDirectory) + "\\package.exe";
+		dstDirectory = DRT::SanitizePath(dstDirectory) + "\\package.exe";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".exe";
-
-	// Compress the directory specified
-	char * packBuffer(nullptr);
-	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
+	
+	// Try to compress the directory specified
 	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount))
-		exit_program("Cannot create package from the directory specified, aborting...\r\n");
+		Log::PushText("Cannot create package from the directory specified, aborting...\r\n");
+	else {
+		// Ensure resource exists
+		if (!unpacker.exists())
+			Log::PushText("Cannot access unpacker resource, aborting...\r\n");
+		else {
+			// Try to create package file
+			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
+			file = std::ofstream(dstDirectory, std::ios::binary | std::ios::out);
+			if (!file.is_open())
+				Log::PushText("Cannot write package to disk, aborting...\r\n");
+			else {
+				// Write packager to disk
+				file.write(reinterpret_cast<char*>(unpacker.getPtr()), (std::streamsize)unpacker.getSize());
+				file.close();
 
-	// Acquire installer resource
-	Resource unpacker(IDR_UNPACKER, "UNPACKER");
-	if (!unpacker.exists())
-		exit_program("Cannot access unpacker resource, aborting...\r\n");
+				// Try to update packager's resource
+				handle = BeginUpdateResource(dstDirectory.c_str(), false);
+				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
+					Log::PushText("Cannot write archive contents to the package, aborting...\r\n");				
+				else {
+					// Output results
+					Log::PushText(
+						"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
+						"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
+						"Compressed Size: " + std::to_string(packSize) + "\r\n"
+					);
+					success = true;
+				}
+			}
+		}
+	}
 
-	// Write installer to disk
-	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-	std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
-	if (!file.is_open())
-		exit_program("Cannot write package to disk, aborting...\r\n");
-	file.write(reinterpret_cast<char*>(unpacker.getPtr()), (std::streamsize)unpacker.getSize());
+	// Clean-up
 	file.close();
-
-	// Update installer's resource
-	auto handle = BeginUpdateResource(dstDirectory.c_str(), false);
-	if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
-		exit_program("Cannot write archive contents to the package, aborting...\r\n");	
-	EndUpdateResource(handle, FALSE);	
+	EndUpdateResource(handle, !success);
 	delete[] packBuffer;
-
-	// Output results
-	Log::PushText(
-		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
-		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
-		"Compressed Size: " + std::to_string(packSize) + "\r\n"
-	);
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

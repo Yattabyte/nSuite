@@ -21,7 +21,6 @@
 #endif
 
 #include "Windows.h"
-#include <string>
 
 
 /** Utility class encapsulating resource files embedded in a application. */
@@ -34,8 +33,8 @@ public:
 		FreeResource(m_hMemory);
 	}
 	/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
-	inline Resource(const int & resourceID, const std::string & resourceClass, const HMODULE & moduleHandle = nullptr) {
-		m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass.c_str());
+	inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
+		m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
 		m_hMemory = LoadResource(moduleHandle, m_hResource);
 		m_ptr = LockResource(m_hMemory);
 		m_size = SizeofResource(moduleHandle, m_hResource);

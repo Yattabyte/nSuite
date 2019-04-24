@@ -3,6 +3,7 @@
 #define FINISH_H
 
 #include "Screen.h"
+#include <string>
 #include <vector>
 
 
@@ -22,6 +23,11 @@ public:
 	// Public Methods
 	/** Switch to the next state. */
 	void goClose();
+	/** Creates a shortcut file for the paths chosen.
+	@param	srcPath		path to the target file that the shortcut will link to.
+	@param	wrkPath		path to the working directory for the shortcut.
+	@param	dstPath		path to where the shortcut should be placed. */
+	void createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath);
 
 
 	// Public Attributes

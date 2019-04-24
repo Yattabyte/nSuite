@@ -13,7 +13,7 @@ set(FILES
 	
 	# Header files
 	include/BufferTools.h
-	include/Common.h
+	include/StringConversions.h
 	include/DirectoryTools.h
 	include/Instructions.h	
 	include/Log.h

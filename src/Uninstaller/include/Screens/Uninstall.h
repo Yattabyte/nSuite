@@ -3,8 +3,6 @@
 #define UNINSTALL_H
 
 #include "Screen.h"
-#include <string>
-#include <thread>
 
 
 /** This state encapuslates the "Uninstalling - Screen" state. */

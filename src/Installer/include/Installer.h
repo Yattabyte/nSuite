@@ -6,7 +6,6 @@
 #include "Threader.h"
 #include <map>
 #include <string>
-#include <Windows.h>
 
 
 class Screen;

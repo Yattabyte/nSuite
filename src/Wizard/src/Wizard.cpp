@@ -1,5 +1,6 @@
-#include "Common.h"
 #include "Log.h"
+#include <chrono>
+#include <iostream>
 #include <map>
 
 // Command inclusions
@@ -31,8 +32,8 @@ int main(int argc, char *argv[])
 	});
 
 	// Check for valid arguments
-	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end())
-		exit_program(
+	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end()) {
+		Log::PushText(
 			"                       ~\r\n"
 			"      Wizard Help:    /\r\n"
 			"  ~------------------~\r\n"
@@ -47,17 +48,17 @@ int main(int argc, char *argv[])
 			" -patch		(Patches a directory from an .ndiff file)\r\n"
 			"\r\n\r\n"
 		);
+		return EXIT_FAILURE;
+	}
 	
-	// Command exists in command map, execute it
-	commandMap.at(argv[1])->execute(argc, argv);
-
-	// Success, report results
+	// Command exists in command map, execute it, report results
+	auto result = commandMap.at(argv[1])->execute(argc, argv);
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	Log::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");
+	Log::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");	
 
 	// Pause and exit
 	Log::RemoveObserver(index);
 	system("pause");
-	exit(EXIT_SUCCESS);
+	exit(result);
 }

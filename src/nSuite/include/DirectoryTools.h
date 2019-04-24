@@ -2,6 +2,7 @@
 #ifndef DIRECTORY_TOOLS_H
 #define DIRECTORY_TOOLS_H
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,23 @@ namespace DRT {
 	@param	instructionsUsed	(optional) pointer updated with the number of instructions executed.
 	@return						true if patch success, false otherwise. */
 	bool PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten = nullptr, size_t * instructionsUsed = nullptr);
+	/** Return file-info for all files within the directory specified.
+	@param	directory			the directory to retrieve file-info from.
+	@return						a vector of file information, including file names, sizes, meta-data, etc. */
+	std::vector<std::filesystem::directory_entry> GetFilePaths(const std::string & directory);
+	/** Retrieve the start menu directory.
+	@return						path to the user's start menu. */
+	std::string GetStartMenuPath();
+	/** Retrieve the desktop directory.
+	@return						path to the user's desktop. */
+	std::string GetDesktopPath();
+	/** Retrieve the directory this executable is running out-of.
+	@return						the current directory of this program. */
+	std::string GetRunningDirectory();
+	/** Cleans up a target string representing a file path
+	@param	path				reference to the path to be sanitized.
+	@return						sanitized version of path. */
+	std::string SanitizePath(const std::string & path);
 };
 
 #endif // DIRECTORY_TOOLS_H

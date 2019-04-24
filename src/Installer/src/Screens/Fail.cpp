@@ -1,11 +1,8 @@
 #include "Screens/Fail.h"
-#include "Common.h"
 #include "Log.h"
 #include "Installer.h"
 #include <ctime>
 #include <fstream>
-#include <shlobj.h>
-#include <shlwapi.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

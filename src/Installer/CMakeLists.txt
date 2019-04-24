@@ -21,6 +21,7 @@ add_executable(${Module}
 	include/Screens/Directory.h
 	include/Screens/Fail.h
 	include/Screens/Finish.h
+	include/Screens/Screen.h
 	include/Screens/Install.h
 	include/Screens/Welcome.h
 )

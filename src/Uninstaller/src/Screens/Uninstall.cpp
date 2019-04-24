@@ -1,7 +1,8 @@
 #include "Screens/Uninstall.h"
-#include "Common.h"
+#include "Log.h"
 #include "Progress.h"
 #include "Uninstaller.h"
+#include <shlobj.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

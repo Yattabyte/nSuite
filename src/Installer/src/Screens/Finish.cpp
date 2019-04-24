@@ -1,10 +1,7 @@
 #include "Screens/Finish.h"
-#include "Common.h"
+#include "StringConversions.h"
+#include "DirectoryTools.h"
 #include "Installer.h"
-#include <algorithm>
-#include <filesystem>
-#include <shlobj.h>
-#include <shlwapi.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -153,8 +150,8 @@ void Finish::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = get_users_desktop() + "\\" + std::filesystem::path(srcPath).filename().string();
-			create_shortcut(srcPath, instDir, dstPath);
+			const auto dstPath = DRT::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
 	}
@@ -166,12 +163,39 @@ void Finish::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = get_users_startmenu() + "\\" + std::filesystem::path(srcPath).filename().string();
-			create_shortcut(srcPath, instDir, dstPath);
+			const auto dstPath = DRT::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
 	}
 	PostQuitMessage(0);	
+}
+
+void Finish::createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
+{
+	IShellLink* psl;
+	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
+		IPersistFile* ppf;
+
+		// Set the path to the shortcut target and add the description. 
+		psl->SetPath(srcPath.c_str());
+		psl->SetWorkingDirectory(wrkPath.c_str());
+		psl->SetIconLocation(srcPath.c_str(), 0);
+
+		// Query IShellLink for the IPersistFile interface, used for saving the 
+		// shortcut in persistent storage. 
+		if (SUCCEEDED(psl->QueryInterface(IID_IPersistFile, (LPVOID*)&ppf))) {
+			WCHAR wsz[MAX_PATH];
+
+			// Ensure that the string is Unicode. 
+			MultiByteToWideChar(CP_ACP, 0, (dstPath + ".lnk").c_str(), -1, wsz, MAX_PATH);
+
+			// Save the link by calling IPersistFile::Save. 
+			ppf->Save(wsz, TRUE);
+			ppf->Release();
+		}
+		psl->Release();
+	}
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

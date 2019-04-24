@@ -55,6 +55,11 @@ namespace BFT {
 	@param	size				the size of the buffer.
 	@return						hash value for the buffer. */
 	size_t HashBuffer(char * buffer, const size_t & size);
+	/** Increment a pointer's address by the offset provided.
+	@param	ptr					the pointer to increment by the offset amount.
+	@param	offset				the offset amount to apply to the pointer's address.
+	@return						the modified pointer address. */
+	void * PTR_ADD(void *const ptr, const size_t & offset);
 };
 
 #endif // BUFFER_TOOLS_H

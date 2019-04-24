@@ -1,5 +1,4 @@
 #include "BufferTools.h"
-#include "Common.h"
 #include "Instructions.h"
 #include "Threader.h"
 #include "lz4.h"
@@ -74,8 +73,8 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 			};
 			size_t bestContinuous(0ull), bestMatchCount(windowSize);
 			std::vector<MatchInfo> bestSeries;
-			auto buffer_slice_old = reinterpret_cast<std::byte*>(PTR_ADD(buffer_old, bytesUsed_old));
-			auto buffer_slice_new = reinterpret_cast<std::byte*>(PTR_ADD(buffer_new, bytesUsed_new));
+			auto buffer_slice_old = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_old, bytesUsed_old));
+			auto buffer_slice_new = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_new, bytesUsed_new));
 			for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
 				const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
 				std::vector<MatchInfo> matches;
@@ -265,7 +264,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	void * writingPtr = buffer_patch;
 	// Write-out source file size
 	std::memcpy(writingPtr, &size_new, sizeof(size_t));
-	writingPtr = PTR_ADD(writingPtr, sizeof(size_t));
+	writingPtr = BFT::PTR_ADD(writingPtr, sizeof(size_t));
 	// Write-out instructions
 	const auto CallWrite = [&writingPtr](const auto & obj) { obj.WRITE(&writingPtr); };
 	for (auto & instruction : instructions) 
@@ -288,7 +287,7 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 		size_t bytesRead(0ull);
 		void * readingPtr = buffer_diff_full;
 		size_new = *reinterpret_cast<size_t*>(readingPtr);
-		readingPtr = PTR_ADD(readingPtr, size_t(sizeof(size_t)));
+		readingPtr = BFT::PTR_ADD(readingPtr, size_t(sizeof(size_t)));
 		bytesRead += sizeof(size_t);
 		*buffer_new = new char[size_new];
 		constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
@@ -335,4 +334,9 @@ size_t BFT::HashBuffer(char * buffer, const size_t & size)
 		value = ((value << 5) + value) + buffer[x]; // compare remaining bytes
 
 	return value;
+}
+
+void * BFT::PTR_ADD(void * const ptr, const size_t & offset)
+{
+	return static_cast<std::byte*>(ptr) + offset;
 }
