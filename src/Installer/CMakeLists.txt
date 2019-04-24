@@ -26,8 +26,8 @@ add_executable(${Module}
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite Uninstaller)
-target_link_libraries(${Module} PUBLIC nSuite)
+add_dependencies(${Module} nSuite-Static Uninstaller)
+target_link_libraries(${Module} PUBLIC nSuite-Static)
 target_link_libraries(${Module} PRIVATE
 	"Comctl32.lib" 
 	"propsys.lib" 

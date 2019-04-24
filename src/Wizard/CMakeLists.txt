@@ -25,8 +25,8 @@ add_executable(${Module}
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite Installer Unpacker)
-target_link_libraries(${Module} PUBLIC nSuite)
+add_dependencies(${Module} nSuite-Static Installer Unpacker)
+target_link_libraries(${Module} PUBLIC nSuite-Static)
 target_include_directories(${Module} PRIVATE include)
 
 # Set all project settings

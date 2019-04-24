@@ -19,7 +19,7 @@ add_subdirectory( "src/Updater" )
 add_subdirectory( "src/Wizard" )
 
 # Visual studio specific setting: make nSuite the startup project
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nSuite)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nSuite-Static)
 # Set Global Properties
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)

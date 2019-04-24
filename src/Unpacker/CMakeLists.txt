@@ -10,8 +10,8 @@ add_executable(${Module}
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite)
-target_link_libraries(${Module} PUBLIC nSuite)
+add_dependencies(${Module} nSuite-Static)
+target_link_libraries(${Module} PUBLIC nSuite-Static)
 
 # Set all project settings
 set_target_properties(${Module} PROPERTIES 	
