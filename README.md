@@ -1,6 +1,8 @@
 # nSuite Data Tools
 
-This library allows users to package and diff directories and files.
+This library allows users to package and diff directories, files, and buffers. This project's focus is on the following 2 sets of 2 functions, in respect to both directories and buffers:
+- compression/decompression
+- diffing/patching
 
 In addition to the library, this project comes equipped with example programs that directly implement all the packing, unpacking, diffing, and patching operations supported.
 
