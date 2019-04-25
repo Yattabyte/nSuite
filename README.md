@@ -1,4 +1,4 @@
-# nSuite Directory Tools
+# nSuite Data Tools
 
 This library allows users to package and diff directories and files.
 
