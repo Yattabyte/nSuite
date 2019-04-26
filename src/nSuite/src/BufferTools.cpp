@@ -10,12 +10,13 @@
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
 {
 	// Pre-allocate a huge buffer to allow for compression OPS
-	char * compressedBuffer = new char[sourceSize * 2ull];
+	char * lz4_compressionWorkingBuffer = new char[sourceSize * 2ull];
 
 	// Try to compress the source buffer
+	bool success = false;
 	if (auto compressedSize = LZ4_compress_default(
 		sourceBuffer,
-		compressedBuffer,
+		lz4_compressionWorkingBuffer,
 		int(sourceSize),
 		int(sourceSize * 2ull)
 	)) {
@@ -35,12 +36,13 @@ bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char **
 		std::memcpy(HEADER_ADDRESS, &sourceSize, size_t(sizeof(size_t)));
 
 		// Copy compressed data over
-		std::memcpy(DATA_ADDRESS, compressedBuffer, size_t(compressedSize));
-		delete[] compressedBuffer;
-
-		return true;
+		std::memcpy(DATA_ADDRESS, lz4_compressionWorkingBuffer, size_t(compressedSize));
+		success = true;
 	}
-	return false;
+
+	// Clean up and exit
+	delete[] lz4_compressionWorkingBuffer;
+	return success;
 }
 
 bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
@@ -55,7 +57,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	constexpr const size_t HEADER_SIZE = size_t(HEADER_TITLE_SIZE + sizeof(size_t));
 	char headerTitle_In[HEADER_TITLE_SIZE];
 
-	// Read in the header title of this buffer, ensure it matches
+	// Read in the header title of this buffer, ENSURE it matches
 	char * HEADER_ADDRESS = sourceBuffer;
 	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
 	if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
@@ -66,12 +68,19 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 		
 		// Get data
 		const char * DATA_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));
-		return (LZ4_decompress_safe(
+		if (LZ4_decompress_safe(
 			DATA_ADDRESS,
 			reinterpret_cast<char*>(*destinationBuffer),
 			int(sourceSize - HEADER_SIZE),
 			int(destinationSize)
-		) > 0);
+		)) {			
+			return true; // Success
+		}
+
+		// Failed to decompress, delete destination buffer since it won't be used
+		delete[] * destinationBuffer;
+		destinationSize = 0ull;
+		return false;		
 	}
 
 	// Unexpected buffer header
@@ -80,6 +89,10 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
 {
+	// Ensure that at least ONE of the two source buffers exists
+	if ((buffer_old == nullptr && buffer_new == nullptr) || (size_old == 0ull && size_new == 0ull))
+		return false;
+
 	std::vector<InstructionTypes> instructions;
 	instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
@@ -292,11 +305,11 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	for (auto & instruction : instructions)
 		std::visit(CallWrite, instruction);
 
-	// Compress the diff buffer'
+	// Try to compress the diff buffer'
+	bool success = false;
 	char * compressed_patchBuffer(nullptr);
 	size_t compressedSize(0ull);
 	if (BFT::CompressBuffer(buffer_patch, size_patch, &compressed_patchBuffer, compressedSize)) {
-		delete[] buffer_patch;
 		// We now want to prepend a header
 		// Calculate the size of the header, then generate a DECORATED compressed diff buffer
 		constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
@@ -315,11 +328,12 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 		// Copy compressed data over
 		std::memcpy(DATA_ADDRESS, compressed_patchBuffer, size_t(compressedSize));
 		delete[] compressed_patchBuffer;
-
-		return true;
+		success = true;
 	}
+
+	// Clean up and exit
 	delete[] buffer_patch;
-	return false;
+	return success;
 }
 
 bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount)
@@ -334,7 +348,7 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	constexpr const size_t HEADER_SIZE = size_t(HEADER_TITLE_SIZE + sizeof(size_t));
 	char headerTitle_In[HEADER_TITLE_SIZE];
 	
-	// Read in the header title of this buffer, ensure it matches
+	// Read in the header title of this buffer, ENSURE it matches
 	char * HEADER_ADDRESS = buffer_diff;
 	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
 	if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
@@ -372,18 +386,22 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 			while (!threader.isFinished())
 				continue;
 			threader.shutdown();
-			delete[] buffer_diff_full;
 
 			if (instructionCount != nullptr)
 				*instructionCount += count;
+
+			// Success, clean up and exit
+			delete[] buffer_diff_full;
 			return true;
 		}
-		
-		// Cannot decompress
-		return false;
+
+		// Failed to decompress, delete destination buffer since it won't be used
+		delete[] buffer_new;
+		size_new = 0ull;
+		return false;		
 	}
 
-	// Unexpected buffer header
+	// Failure
 	return false;
 }
 
@@ -396,7 +414,7 @@ size_t BFT::HashBuffer(char * buffer, const size_t & size)
 	for (; x < max; ++x)
 		value = ((value << 5) + value) + pointer[x];
 
-	// in case size isn't a multiple of 8, data will be leftover
+	// in-case size isn't a multiple of 8, data will be leftover
 	x *= 8ull; // modify index so we can compare byte-wise
 	for (; x < size; ++x)
 		value = ((value << 5) + value) + buffer[x]; // compare remaining bytes
