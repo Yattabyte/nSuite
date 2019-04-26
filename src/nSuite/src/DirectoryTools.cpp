@@ -586,7 +586,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 			Log::PushText("patching file \"" + file.path + "\"\r\n");
 			size_t newSize(0ull);
 			if (!BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum)) {
-				Log::PushText("Critical failure: patching failed!.\r\n");
+				Log::PushText("Critical failure: patching failed!\r\n");
 				return false;
 			}
 
@@ -624,10 +624,13 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		// Remember that we use the diff/patch function to add new files too
 		char * newBuffer(nullptr);
 		size_t newSize(0ull);
-		BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum);
-		const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+		if (!BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum)) {
+			Log::PushText("Critical failure: cannot derive new file from patch instructions.\r\n");
+			return false;
+		}
 
 		// Confirm new hashes match
+		const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
 		if (newHash != file.diff_newHash) {
 			Log::PushText("Critical failure: new file is corrupted (hash mismatch).\r\n");
 			return false;
@@ -641,11 +644,11 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBufferComp
 		}
 		newFile.write(newBuffer, std::streamsize(newSize));
 		newFile.close();
-		byteNum += newSize;
+		byteNum += newSize;		
 
 		// Cleanup and finish
 		delete[] file.instructionSet;
-		delete[] newBuffer;		
+		delete[] newBuffer;
 	}
 
 	// If we made it this far, it should be safe to delete all files
