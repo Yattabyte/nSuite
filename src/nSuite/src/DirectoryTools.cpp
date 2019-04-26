@@ -1,8 +1,8 @@
 #include "DirectoryTools.h"
 #include "BufferTools.h"
 #include "Resource.h"
-#include "Threader.h"
 #include "Log.h"
+#include "Threader.h"
 #include "Progress.h"
 #include <atomic>
 #include <direct.h>
@@ -10,12 +10,13 @@
 #include <fstream>
 #include <shlobj.h>
 #include <vector>
+#define CDIRECTORY_HEADER_TEXT "nSuite package"
+#define DDIRECTORY_HEADER_TEXT "nSuite patch"
 
 
 bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t * byteCount, size_t * fileCount, const std::vector<std::string> & exclusions)
 {
 	// Variables
-	Threader threader;
 	const auto absolute_path_length = srcDirectory.size();
 	const auto directoryArray = GetFilePaths(srcDirectory);
 	struct FileData {
@@ -25,11 +26,13 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	std::vector<FileData> files;
 	files.reserve(directoryArray.size());
 
-	// Get path name
+	// Ensure the source-directory has files
 	if (!directoryArray.size()) {
-		Log::PushText("Critical failure: the source path specified \"" + srcDirectory + "\" is not a (useable) directory.\r\n");
+		Log::PushText("Error: the source path specified \"" + srcDirectory + "\" is not a (useable) directory.\r\n");
 		return false;
 	}
+
+	// Get a folder name, to name the package after
 	std::filesystem::path srcPath = std::filesystem::path(srcDirectory);
 	std::string folderName = srcPath.stem().string();
 	while (folderName.empty()) {
@@ -72,16 +75,21 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		}
 	}
 
-	// Update optional parameters
+	// Ensure we have a non-zero sized archive
+	if (archiveSize <= 0ull) {
+		Log::PushText("Error: the chosen source directory has no useable files\r\n");
+		return false;
+	}
+
+	// Update optional parameter
 	if (byteCount != nullptr)
 		*byteCount = archiveSize;
-	if (fileCount != nullptr)
-		*fileCount = files.size();
 
-	// Create buffer for final file data
+	// Create file buffer to contain all the file data
 	char * filebuffer = new char[archiveSize];
 
 	// Write file data into the buffer
+	Threader threader;
 	void * pointer = filebuffer;
 	for each (const auto & file in files) {
 		threader.addJob([file, pointer]() {
@@ -115,54 +123,90 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		continue;
 	threader.shutdown();
 
+	// Update optional parameters
+	if (fileCount != nullptr)
+		*fileCount = files.size();
+
+	// Free up memory
+	files.clear();
+	files.shrink_to_fit();
+
 	// Compress the archive
-	char * compBuffer(nullptr);
-	size_t compSize(0ull);
-	if (!BFT::CompressBuffer(filebuffer, archiveSize, &compBuffer, compSize)) {
-		Log::PushText("Critical failure: cannot perform compression operation on the set of joined files.\r\n");
+	char * compressedBuffer(nullptr);
+	size_t compressedSize(0ull);
+	if (!BFT::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize)) {
+		Log::PushText("Error: cannot compress the file-buffer for the chosen source directory.\r\n");		
+		delete[] filebuffer;
 		return false;
 	}
-	delete[] filebuffer;
 
-	// Move compressed buffer data to a new buffer that has a special header
-	packSize = compSize + sizeof(size_t) + folderName.size();
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = CDIRECTORY_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CDIRECTORY_HEADER_TEXT) / sizeof(*CDIRECTORY_HEADER_TEXT));
+	const size_t HEADER_SIZE = HEADER_TITLE_SIZE + folderName.size() + size_t(sizeof(size_t));
+	packSize = HEADER_SIZE + size_t(compressedSize);
 	*packBuffer = new char[packSize];
-	memcpy(&(*packBuffer)[sizeof(size_t) + folderName.size()], compBuffer, compSize);
-	delete[] compBuffer;
+	char * HEADER_ADDRESS = *packBuffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-	// Write the header (root folder name and size)
-	pointer = *packBuffer;
-	auto pathSize = folderName.size();	
-	memcpy(pointer, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
-	pointer = BFT::PTR_ADD(pointer, size_t(sizeof(size_t)));
-	memcpy(pointer, folderName.data(), pathSize);
+	// Write header information
+	std::memcpy(HEADER_ADDRESS, &HEADER_TITLE[0], HEADER_TITLE_SIZE); // Header Title
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+	auto pathSize = folderName.size();
+	std::memcpy(HEADER_ADDRESS, &pathSize, size_t(sizeof(size_t))); // Folder character num
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));	
+	std::memcpy(HEADER_ADDRESS, folderName.data(), pathSize); // Folder name
+
+	// Copy compressed data over
+	std::memcpy(DATA_ADDRESS, compressedBuffer, compressedSize);	
+	delete[] compressedBuffer;
+
+	// Success
 	return true;
 }
 
 bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount, size_t * fileCount)
 {
-	Threader threader;
-	if (packSize <= 0ull) {
-		Log::PushText("Critical failure: package buffer has no content.\r\n");
+	// Ensure buffer at least *exists*
+	if (packSize <= size_t(sizeof(size_t)) || packBuffer == nullptr) {
+		Log::PushText("Error: package buffer doesn't exist or has no content.\r\n");
 		return false;
 	}
 
-	// Read the directory header
-	char * packBufferOffset = packBuffer;
-	const auto folderSize = *reinterpret_cast<size_t*>(packBufferOffset);
-	packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, size_t(sizeof(size_t))));
-	const char * folderArray = reinterpret_cast<char*>(packBufferOffset);
-	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + std::string(folderArray, folderSize));
-	packBufferOffset = reinterpret_cast<char*>(BFT::PTR_ADD(packBufferOffset, folderSize));
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = CDIRECTORY_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CDIRECTORY_HEADER_TEXT) / sizeof(*CDIRECTORY_HEADER_TEXT));
+	size_t HEADER_SIZE = HEADER_TITLE_SIZE;
+	char headerTitle_In[HEADER_TITLE_SIZE];
+	char * HEADER_ADDRESS = packBuffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS;
 
+	// Read in the header title of this buffer, ENSURE it matches
+	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
+		Log::PushText("Error: the package buffer specified is not a valid nSuite package buffer.\r\n");
+		return false;
+	}
+
+	// Get the folder size + name
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+	const auto folderSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+	HEADER_SIZE += folderSize + size_t(sizeof(size_t));
+	DATA_ADDRESS += HEADER_SIZE;
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));
+	const char * folderArray = reinterpret_cast<char*>(HEADER_ADDRESS);
+	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + std::string(folderArray, folderSize));
+
+	// Try to decompress the buffer
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	if (!BFT::DecompressBuffer(packBufferOffset, packSize - (size_t(sizeof(size_t)) + folderSize), &decompressedBuffer, decompressedSize)) {
-		Log::PushText("Critical failure: cannot decompress package file.\r\n");
+	if (!BFT::DecompressBuffer(DATA_ADDRESS, packSize - HEADER_SIZE, &decompressedBuffer, decompressedSize)) {
+		Log::PushText("Error: cannot complete directory decompression, as the package file cannot be decompressed.\r\n");
 		return false;
 	}
 
 	// Begin reading the archive
+	Threader threader;
 	void * readingPtr = decompressedBuffer;
 	size_t bytesRead(0ull);
 	std::atomic_size_t filesWritten(0ull);
@@ -188,7 +232,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
 			std::ofstream file(fullPath, std::ios::binary | std::ios::out);
 			if (!file.is_open())
-				Log::PushText("Error writing file: \"" + fullPath + "\" to disk");
+				Log::PushText("Error writing file: \"" + fullPath + "\" to disk.\r\n");
 			else {
 				file.write(reinterpret_cast<char*>(ptrCopy), (std::streamsize)fileSize);
 				file.close();
