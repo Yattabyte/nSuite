@@ -3,6 +3,7 @@
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
+#define BUFFER_HEADER_TEXT "nSuite cbuffer"
 
 
 bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
@@ -11,28 +12,34 @@ bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char **
 	char * compressedBuffer = new char[sourceSize * 2ull];
 
 	// Try to compress the source buffer
-	auto result = LZ4_compress_default(
+	if (auto compressedSize = LZ4_compress_default(
 		sourceBuffer,
 		compressedBuffer,
 		int(sourceSize),
 		int(sourceSize * 2ull)
-	);
+	)) {
+		// We now know the actual compressed buffer size
+		// Calculate the size of the header, then generate a DECORATED compressed buffer
+		constexpr const char HEADER_TITLE[] = BUFFER_HEADER_TEXT;
+		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(BUFFER_HEADER_TEXT) / sizeof(*BUFFER_HEADER_TEXT));
+		constexpr const size_t HEADER_SIZE = size_t(HEADER_TITLE_SIZE + sizeof(size_t));
+		destinationSize = HEADER_SIZE + size_t(compressedSize);
+		*destinationBuffer = new char[destinationSize];
+		char * HEADER_ADDRESS = *destinationBuffer;
+		char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-	// Create the final buffer (done separate b/c we now know the final reduced buffer size)
-	constexpr size_t HEADER_SIZE = size_t(sizeof(size_t));
-	destinationSize = HEADER_SIZE + size_t(result);
-	*destinationBuffer = new char[destinationSize];
-	char * HEADER_ADDRESS = *destinationBuffer;
-	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
+		// Write header information
+		std::memcpy(HEADER_ADDRESS, &HEADER_TITLE[0], HEADER_TITLE_SIZE);
+		HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+		std::memcpy(HEADER_ADDRESS, &sourceSize, size_t(sizeof(size_t)));
 
-	// Header = the total uncompressed size
-	*reinterpret_cast<size_t*>(HEADER_ADDRESS) = sourceSize;
+		// Copy compressed data over
+		std::memcpy(DATA_ADDRESS, compressedBuffer, size_t(compressedSize));
+		delete[] compressedBuffer;
 
-	// Data = compressed source buffer
-	std::memcpy(DATA_ADDRESS, compressedBuffer, size_t(result));	
-	delete[] compressedBuffer;
-
-	return (result > 0);
+		return true;
+	}
+	return false;
 }
 
 bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
@@ -41,16 +48,33 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	if (sourceSize <= size_t(sizeof(size_t)) || sourceBuffer == nullptr)
 		return false;
 
-	destinationSize = *reinterpret_cast<size_t*>(sourceBuffer);
-	*destinationBuffer = new char[destinationSize];
-	auto result = LZ4_decompress_safe(
-		reinterpret_cast<char*>(reinterpret_cast<unsigned char*>(sourceBuffer) + size_t(sizeof(size_t))),
-		reinterpret_cast<char*>(*destinationBuffer),
-		int(sourceSize - size_t(sizeof(size_t))),
-		int(destinationSize)
-	);
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = BUFFER_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(BUFFER_HEADER_TEXT) / sizeof(*BUFFER_HEADER_TEXT));
+	constexpr const size_t HEADER_SIZE = size_t(HEADER_TITLE_SIZE + sizeof(size_t));
+	char headerTitle_In[HEADER_TITLE_SIZE];
 
-	return (result > 0);
+	// Read in the header title of this buffer, ensure it matches
+	char * HEADER_ADDRESS = sourceBuffer;
+	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+	if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
+		// Get data size
+		HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+		destinationSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+		*destinationBuffer = new char[destinationSize];
+		
+		// Get data
+		const char * DATA_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));
+		return (LZ4_decompress_safe(
+			DATA_ADDRESS,
+			reinterpret_cast<char*>(*destinationBuffer),
+			int(sourceSize - HEADER_SIZE),
+			int(destinationSize)
+		) > 0);
+	}
+
+	// Unexpected buffer header
+	return false;
 }
 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
