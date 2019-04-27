@@ -87,15 +87,15 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 		*byteCount = archiveSize;
 
 	// Create file buffer to contain all the file data
-	char * filebuffer = new char[archiveSize];
+	Buffer filebuffer(archiveSize);
 
 	// Write file data into the buffer
 	Threader threader;
-	void * pointer = filebuffer;
+	void * dataPtr = filebuffer.data();
 	for each (const auto & file in files) {
-		threader.addJob([file, pointer]() {
+		threader.addJob([file, dataPtr]() {
 			// Write the total number of characters in the path string, into the archive
-			void * ptr = pointer;
+			void * ptr = dataPtr;
 			auto pathSize = file.trunc_path.size();
 			memcpy(ptr, reinterpret_cast<char*>(&pathSize), size_t(sizeof(size_t)));
 			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
@@ -115,7 +115,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 			fileOnDisk.close();
 		});
 
-		pointer = BFT::PTR_ADD(pointer, file.unitSize);
+		dataPtr = BFT::PTR_ADD(dataPtr, file.unitSize);
 	}
 
 	// Wait for threaded operations to complete
@@ -133,10 +133,9 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	files.shrink_to_fit();
 
 	// Compress the archive
-	char * compressedBuffer(nullptr);
-	size_t compressedSize(0ull);
-	const bool result = BFT::CompressBuffer(filebuffer, archiveSize, &compressedBuffer, compressedSize);
-	delete[] filebuffer;
+	Buffer compressedBuffer;
+	const bool result = BFT::CompressBuffer(filebuffer, compressedBuffer);
+	filebuffer.release();
 	if (!result) {
 		Log::PushText("Error: cannot compress the file-buffer for the chosen source directory.\r\n");		
 		return false;
@@ -146,7 +145,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	constexpr const char HEADER_TITLE[] = PDIRECTORY_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(PDIRECTORY_HEADER_TEXT) / sizeof(*PDIRECTORY_HEADER_TEXT));
 	const size_t HEADER_SIZE = HEADER_TITLE_SIZE + folderName.size() + size_t(sizeof(size_t));
-	packSize = HEADER_SIZE + size_t(compressedSize);
+	packSize = HEADER_SIZE + compressedBuffer.size();
 	*packBuffer = new char[packSize];
 	char * HEADER_ADDRESS = *packBuffer;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -160,8 +159,8 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	std::memcpy(HEADER_ADDRESS, folderName.data(), pathSize); // Folder name
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, compressedBuffer, compressedSize);	
-	delete[] compressedBuffer;
+	std::memcpy(DATA_ADDRESS, compressedBuffer.cArray(), compressedBuffer.size());
+	compressedBuffer.release();
 
 	// Success
 	return true;
@@ -328,12 +327,11 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	static constexpr auto getRelativePath = [](const std::string & filePath, const std::string & directory) -> std::string {
 		return filePath.substr(directory.length(), filePath.length() - directory.length());
 	};
-	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, size_t & size, std::vector<File*> & files) -> bool {		
+	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, std::vector<File*> & files) -> bool {		
 		// See if the input path is a directory
 		if (std::filesystem::is_directory(directory)) {
 			for each (const auto & srcFile in GetFilePaths(directory)) {
 				const std::string path = srcFile.path().string();
-				size += srcFile.file_size();
 				files.push_back(new File(path, getRelativePath(path, directory), srcFile.file_size()));
 			}
 			return true;
@@ -410,19 +408,16 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 			files.push_back(new FileMem(path, path, fileSize, ptr));
 			ptr = BFT::PTR_ADD(ptr, fileSize);
 			bytesRead += size_t(sizeof(size_t)) + pathSize + size_t(sizeof(size_t)) + fileSize;
-			size += fileSize;
 		}
 		return true;		
 	};
-	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, size_t & reserveSize, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
+	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
 		// Get files
-		size_t size1(0ull), size2(0ull);
 		std::vector<File*> srcOld_Files, srcNew_Files;
-		if (!getFiles(oldDirectory, oldSnapshot, size1, srcOld_Files) || !getFiles(newDirectory, newSnapshot, size2, srcNew_Files)) {
+		if (!getFiles(oldDirectory, oldSnapshot, srcOld_Files) || !getFiles(newDirectory, newSnapshot, srcNew_Files)) {
 			Log::PushText("Error: cannot retrieve both lists of files.\r\n");
 			return false;
 		}
-		reserveSize = std::max<size_t>(size1, size2);
 
 		// Find all common and new files first
 		for each (const auto & nFile in srcNew_Files) {
@@ -449,12 +444,12 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		delFiles = srcOld_Files;
 		return true;
 	};
-	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, char * buffer, const size_t & bufferSize, const char & flag, std::vector<char> & vecBuffer) {
+	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, char * buffer, const size_t & bufferSize, const char & flag, Buffer & instructionBuffer) {
 		auto pathLength = path.length();
 		const size_t instructionSize = (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + bufferSize;
-		const size_t bufferOldSize = vecBuffer.size();
-		vecBuffer.resize(bufferOldSize + instructionSize);
-		void * ptr = BFT::PTR_ADD(vecBuffer.data(), bufferOldSize);
+		const size_t bufferOldSize = instructionBuffer.size();
+		instructionBuffer.resize(bufferOldSize + instructionSize);
+		void * ptr = BFT::PTR_ADD(instructionBuffer.data(), bufferOldSize);
 
 		// Write file path length
 		std::memcpy(ptr, reinterpret_cast<char*>(&pathLength), size_t(sizeof(size_t)));
@@ -489,15 +484,13 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	PathPairList commonFiles;
 	PathList addedFiles, removedFiles;
 	char * oldSnap(nullptr), * newSnap(nullptr);
-	size_t reserveSize(0ull);
-	if (!getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, reserveSize, commonFiles, addedFiles, removedFiles)) {
+	if (!getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, commonFiles, addedFiles, removedFiles)) {
 		Log::PushText("Error: could not retrieve all requisite file lists for diffing.\r\n");
 		return false;
 	}
 
 	// Generate Instructions from file lists, store them in this expanding buffer
-	std::vector<char> vecBuffer;
-	vecBuffer.reserve(reserveSize);
+	Buffer instructionBuffer;
 
 	// These files are common, maybe some have changed
 	size_t fileCount(0ull), instructionNum(0ull);
@@ -511,7 +504,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 				size_t size(0ull);
 				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionNum)) {
 					Log::PushText("Diffing file: \"" + cFiles.first->relative + "\"\r\n");
-					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', vecBuffer);
+					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', instructionBuffer);
 					fileCount++;
 				}
 				delete[] buffer;
@@ -534,7 +527,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 			size_t size(0ull);
 			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionNum)) {
 				Log::PushText("Adding file: \"" + nFile->relative + "\"\r\n");
-				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', vecBuffer);
+				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', instructionBuffer);
 				fileCount++;
 			}
 			delete[] buffer;
@@ -553,7 +546,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		if (oFile->open(&oldBuffer, oldHash)) {
 			instructionNum++;
 			Log::PushText("Removing file: \"" + oFile->relative + "\"\r\n");
-			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', vecBuffer);
+			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', instructionBuffer);
 			fileCount++;
 		}
 		delete[] oldBuffer;
@@ -563,20 +556,12 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	removedFiles.shrink_to_fit();
 	delete[] oldSnap;
 
-	// Ensure we have data in the instruction buffer
-	if (vecBuffer.size() <= size_t(sizeof(size_t))) {
-		Log::PushText("Error: diff instruction buffer is empty!\r\n");
-		return false;
-	}
-
 	// Try to compress the instruction buffer
-	char * compressedBuffer(nullptr);
-	size_t compressedSize(0ull);
-	const bool compressedResult = BFT::CompressBuffer(vecBuffer.data(), vecBuffer.size(), &compressedBuffer, compressedSize);
-	vecBuffer.clear();
-	vecBuffer.shrink_to_fit();
+	Buffer compressedBuffer;
+	const bool compressedResult = BFT::CompressBuffer(instructionBuffer, compressedBuffer);
+	instructionBuffer.release();
 	if (!compressedResult) {
-		Log::PushText("Critical failure: cannot compress diff file.\r\n");
+		Log::PushText("Critical failure: cannot compress diff instructions.\r\n");
 		return false;
 	}
 
@@ -584,7 +569,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	constexpr const char HEADER_TITLE[] = DDIRECTORY_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DDIRECTORY_HEADER_TEXT) / sizeof(*DDIRECTORY_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	diffSize = HEADER_SIZE + compressedSize;
+	diffSize = HEADER_SIZE + compressedBuffer.size();
 	*diffBuffer = new char[diffSize];
 	char * HEADER_ADDRESS = *diffBuffer;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -595,8 +580,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	std::memcpy(HEADER_ADDRESS, &fileCount, size_t(sizeof(size_t)));
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, compressedBuffer, compressedSize);
-	delete[] compressedBuffer;
+	std::memcpy(DATA_ADDRESS, compressedBuffer.data(), compressedBuffer.size());
+	compressedBuffer.release();
 
 	// Update optional parameter
 	if (instructionCount != nullptr)

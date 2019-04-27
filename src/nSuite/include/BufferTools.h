@@ -2,6 +2,38 @@
 #ifndef BUFFER_TOOLS_H
 #define BUFFER_TOOLS_H
 
+#include <vector>
+
+/** Generic byte array encapsulation, adaptor for std::vector. */
+class Buffer {
+public:
+	// Public (de)Constructors
+	~Buffer() = default;
+	Buffer() = default;
+	Buffer(const size_t & size);
+
+
+	// Public Methods
+
+	// Query Methods
+	size_t size() const;
+	bool hasData() const;
+
+	// Data Accessor Methods
+	char * cArray() const;
+	std::byte * data();
+
+	// Data Modifying Methods
+	void resize(const size_t & size);
+
+
+	void release();
+
+
+private:
+	std::vector<std::byte> m_data;
+};
+
 
 /** Namespace to keep buffer-related operations grouped together. */
 namespace BFT {
@@ -11,13 +43,10 @@ namespace BFT {
 	------------------------------------------------------------------
 	| header: identifier title, uncompressed size | compressed data  |
 	------------------------------------------------------------------
-	@note						caller expected to clean-up destinationBuffer on their own
-	@param	sourceBuffer		the original buffer to read from.
-	@param	sourceSize			the size of the source buffer in bytes.
-	@param	destinationBuffer	pointer to the destination buffer, which will hold compressed contents.
-	@param	destinationSize		reference updated with the size in bytes of the compressed destinationBuffer.
+	@param	sourceBuffer		the buffer to read from.
+	@param	destinationBuffer	reference updated with a compressed version of the source buffer.
 	@return						true if compression success, false otherwise. */
-	bool CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
+	bool CompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer);
 	/** Decompressess a source buffer into an equal or larger-sized destination buffer.
 	@note						caller expected to clean-up destinationBuffer on their own
 	@param	sourceBuffer		the original buffer to read from.

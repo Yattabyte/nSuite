@@ -9,20 +9,22 @@
 #define DBUFFER_HEADER_TEXT "nSuite dbuffer"
 
 
-bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
-{	
+bool BFT::CompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer)
+{
 	// Ensure buffer at least *exists*
-	if (sourceSize <= size_t(sizeof(size_t)) || sourceBuffer == nullptr) {
-		Log::PushText("Error: source buffer doesn't exist or has no content.\r\n");
+	if (!sourceBuffer.hasData()) {
+		Log::PushText("Error: source buffer is empty.\r\n");
 		return false;
 	}
+
+	const auto sourceSize = sourceBuffer.size();
 
 	// Pre-allocate a huge buffer to allow for compression OPS
 	char * lz4_compressionWorkingBuffer = new char[sourceSize * 2ull];
 
 	// Try to compress the source buffer
 	const auto compressedSize = LZ4_compress_default(
-		sourceBuffer,
+		sourceBuffer.cArray(),
 		lz4_compressionWorkingBuffer,
 		int(sourceSize),
 		int(sourceSize * 2ull)
@@ -34,15 +36,14 @@ bool BFT::CompressBuffer(char * sourceBuffer, const size_t & sourceSize, char **
 		delete[] lz4_compressionWorkingBuffer;
 		return false;
 	}
-	
+
 	// We now know the actual compressed buffer size
 	// Calculate the size of the header, then generate a DECORATED compressed buffer
 	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	destinationSize = HEADER_SIZE + size_t(compressedSize);
-	*destinationBuffer = new char[destinationSize];
-	char * HEADER_ADDRESS = *destinationBuffer;
+	destinationBuffer = Buffer(HEADER_SIZE + size_t(compressedSize));
+	char * HEADER_ADDRESS = destinationBuffer.cArray();
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
 	// Write header information
@@ -340,8 +341,8 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 	for each (const auto & instruction in instructions)
 		size_patch += std::visit(CallSize, instruction);
-	char * buffer_patch = new char[size_patch];
-	void * writingPtr = buffer_patch;
+	Buffer patchBuffer(size_patch);
+	void * writingPtr = patchBuffer.data();
 
 	// Write instruction data to the buffer
 	const auto CallWrite = [&writingPtr](const auto & obj) { obj.WRITE(&writingPtr); };
@@ -357,10 +358,9 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	instructions.shrink_to_fit();
 
 	// Try to compress the diff buffer
-	char * compressed_patchBuffer(nullptr);
-	size_t compressedSize(0ull);
-	const auto result = BFT::CompressBuffer(buffer_patch, size_patch, &compressed_patchBuffer, compressedSize);
-	delete[] buffer_patch;
+	Buffer compressedPatchBuffer;
+	const auto result = BFT::CompressBuffer(patchBuffer, compressedPatchBuffer);
+	patchBuffer.release();
 	if (!result) {
 		Log::PushText("Error: cannot complete buffer diffing, as diff buffer cannot be compressed.\r\n");
 		return false;
@@ -371,7 +371,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	size_diff = HEADER_SIZE + compressedSize;
+	size_diff = HEADER_SIZE + compressedPatchBuffer.size();
 	*buffer_diff = new char[size_diff];
 	char * HEADER_ADDRESS = *buffer_diff;
 	void * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -382,8 +382,8 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	std::memcpy(HEADER_ADDRESS, &size_new, size_t(sizeof(size_t)));
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, compressed_patchBuffer, size_t(compressedSize));
-	delete[] compressed_patchBuffer;
+	std::memcpy(DATA_ADDRESS, compressedPatchBuffer.data(), compressedPatchBuffer.size());
+	compressedPatchBuffer.release();
 
 	// Success
 	return true;
@@ -482,4 +482,37 @@ size_t BFT::HashBuffer(char * buffer, const size_t & size)
 void * BFT::PTR_ADD(void * const ptr, const size_t & offset)
 {
 	return static_cast<std::byte*>(ptr) + offset;
+}
+
+Buffer::Buffer(const size_t & size) : m_data(size) {}
+
+size_t Buffer::size() const
+{
+	return m_data.size();
+}
+
+bool Buffer::hasData() const
+{
+	return !m_data.empty();
+}
+
+char * Buffer::cArray() const
+{
+	return reinterpret_cast<char*>(const_cast<std::byte*>(m_data.data()));
+}
+
+std::byte * Buffer::data()
+{
+	return m_data.data();
+}
+
+void Buffer::resize(const size_t & size)
+{
+	m_data.resize(size);
+}
+
+void Buffer::release()
+{
+	m_data.clear();
+	m_data.shrink_to_fit();
 }
