@@ -179,7 +179,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	std::string packageName("");
 	char * packagedData(nullptr);
 	size_t packagedDataSize(0ull);
-	const bool result = ParsePackage(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
+	const bool result = ParseHeader(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
 	if (!result) {
 		Log::PushText("Error: cannot begin directory decompression, as package header cannot be parsed.\r\n");
 		return false;
@@ -253,7 +253,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	return true;
 }
 
-bool DRT::ParsePackage(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize)
+bool DRT::ParseHeader(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize)
 {
 	// Ensure buffer at least *exists*
 	if (packageSize <= size_t(sizeof(size_t)) || packageBuffer == nullptr) {
@@ -366,7 +366,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		std::string packageName("");
 		char * packagedData(nullptr);
 		size_t packagedDataSize(0ull);
-		const bool result = ParsePackage(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
+		const bool result = ParseHeader(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
 		if (!result) {
 			Log::PushText("Error: cannot begin directory decompression, as package header cannot be parsed.\r\n");
 			return false;

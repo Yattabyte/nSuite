@@ -69,7 +69,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	// Parse the header
 	char * packagedData(nullptr);
 	size_t packagedDataSize(0ull);
-	const bool result = ParsePackage(sourceBuffer, sourceSize, destinationSize, &packagedData, packagedDataSize);
+	const bool result = ParseHeader(sourceBuffer, sourceSize, destinationSize, &packagedData, packagedDataSize);
 	if (!result) {
 		Log::PushText("Error: cannot parse package header.\r\n");
 		return false;
@@ -96,7 +96,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	return true;	
 }
 
-bool BFT::ParsePackage(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize)
+bool BFT::ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize)
 {
 	// Ensure buffer at least *exists*
 	if (bufferSize <= size_t(sizeof(size_t)) || buffer == nullptr) {

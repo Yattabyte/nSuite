@@ -39,7 +39,7 @@ namespace DRT {
 	@param	dataPointer			pointer to the data portion of the package buffer.
 	@param	dataSize			size of the remaining data portion of the package buffer (package size - header size).
 	@return						true if the package is formatted correctly and could be parsed, false otherwise. */
-	bool ParsePackage(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize);
+	bool ParseHeader(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize);
 	/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
 	diffBuffer format:
 	-------------------------------------------------------------------------------

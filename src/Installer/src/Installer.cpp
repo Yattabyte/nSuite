@@ -78,13 +78,13 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		// Parse the header
 		char * packagedData(nullptr);
 		size_t packagedDataSize(0ull);
-		bool result = DRT::ParsePackage(reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), m_packageName, &packagedData, packagedDataSize);
+		bool result = DRT::ParseHeader(reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), m_packageName, &packagedData, packagedDataSize);
 		if (!result) {
 			Log::PushText("Critical failure: cannot parse archive package's header.\r\n");
 			success = false;
 		}
 		else {
-			result = BFT::ParsePackage(packagedData, packagedDataSize, m_maxSize, &packagedData, packagedDataSize);
+			result = BFT::ParseHeader(packagedData, packagedDataSize, m_maxSize, &packagedData, packagedDataSize);
 			if (!result) {
 				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;

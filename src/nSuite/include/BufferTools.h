@@ -33,7 +33,7 @@ namespace BFT {
 	@param	dataPointer			pointer to the data portion of the buffer.
 	@param	dataSize			size of the remaining data portion of the buffer (package size - header size).
 	@return						true if the nSuite compressed buffer is formatted correctly and could be parsed, false otherwise. */
-	bool ParsePackage(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize);
+	bool ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize);
 	/** Processes two input buffers, diffing them.
 	Generates a compressed instruction set dictating how to get from the old buffer to the new buffer.
 	buffer_diff format:

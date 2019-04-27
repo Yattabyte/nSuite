@@ -34,7 +34,7 @@ int main()
 		std::string packageName("");
 		char * packagedData(nullptr);
 		size_t packagedDataSize(0ull);
-		bool result = DRT::ParsePackage(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), packageName, &packagedData, packagedDataSize);
+		bool result = DRT::ParseHeader(reinterpret_cast<char*>(archive.getPtr()), archive.getSize(), packageName, &packagedData, packagedDataSize);
 		if (!result) 
 			Log::PushText("Critical failure: cannot parse archive package's header.\r\n");		
 		else {
