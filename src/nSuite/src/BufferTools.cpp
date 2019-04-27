@@ -69,6 +69,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
+	const size_t DATA_SIZE = sourceSize - HEADER_SIZE;
 	char headerTitle_In[HEADER_TITLE_SIZE];
 	char * HEADER_ADDRESS = sourceBuffer;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -89,7 +90,7 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 	const auto result = LZ4_decompress_safe(
 		DATA_ADDRESS,
 		*destinationBuffer,
-		int(sourceSize - HEADER_SIZE),
+		int(DATA_SIZE),
 		int(destinationSize)
 	);
 
@@ -376,6 +377,7 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
+	const size_t DATA_SIZE = size_diff - HEADER_SIZE;
 	char headerTitle_In[HEADER_TITLE_SIZE];
 	char * HEADER_ADDRESS = buffer_diff;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -391,10 +393,10 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
 	size_new = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
 
-	// Try to decompress the buffer
+	// Try to decompress the diff buffer
 	char * buffer_diff_full(nullptr);
 	size_t size_diff_full(0ull);
-	const auto result = BFT::DecompressBuffer(DATA_ADDRESS, size_diff - HEADER_SIZE, &buffer_diff_full, size_diff_full);
+	const auto result = BFT::DecompressBuffer(DATA_ADDRESS, DATA_SIZE, &buffer_diff_full, size_diff_full);
 	if (!result) {
 		Log::PushText("Error: cannot complete buffer patching, as diff buffer cannot be decompressed.\r\n");
 		size_new = 0ull;

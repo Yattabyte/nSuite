@@ -7,13 +7,10 @@
 namespace BFT {
 	/** Compresses a source buffer into an equal or smaller-sized destination buffer.
 	After compression, it applies a small header describing how large the uncompressed buffer is.
-	---------------
-	| buffer data |
-	---------------	
-	becomes
-	-------------------------------------------------------
-	| header: title, uncompressed size | compressed data  |
-	-------------------------------------------------------
+	destinationBuffer format:
+	------------------------------------------------------------------
+	| header: identifier title, uncompressed size | compressed data  |
+	------------------------------------------------------------------
 	@note						caller expected to clean-up destinationBuffer on their own
 	@param	sourceBuffer		the original buffer to read from.
 	@param	sourceSize			the size of the source buffer in bytes.
@@ -31,10 +28,10 @@ namespace BFT {
 	bool DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
 	/** Processes two input buffers, diffing them.
 	Generates a compressed instruction set dictating how to get from the old buffer to the new buffer.
-	buffer_diff:
-	------------------------------------------------------------------------
-	| header: title, final target file size | compressed instruction data  |
-	------------------------------------------------------------------------
+	buffer_diff format:
+	-----------------------------------------------------------------------------------
+	| header: identifier title, final target file size | compressed instruction data  |
+	-----------------------------------------------------------------------------------
 	@note						caller expected to clean-up buffer_diff on their own
 	@param	buffer_old			the older of the 2 buffers.
 	@param	size_old			the size of the old buffer.

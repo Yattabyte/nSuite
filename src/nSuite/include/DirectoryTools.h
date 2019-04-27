@@ -11,9 +11,10 @@
 namespace DRT {
 	/** Compresses all disk contents found within a source directory into an .npack - package formatted buffer.
 	After compression, it applies a small header dictating packaged folders' name.
-	------------------------------------------------------
-	| Directory name header | compressed directory data  |
-	------------------------------------------------------
+	packBuffer format:
+	-------------------------------------------------------------------------------------------
+	| header: identifier title, package name size, package name  | compressed directory data  |
+	-------------------------------------------------------------------------------------------
 	@note						caller is responsible for cleaning-up packBuffer.
 	@param	srcDirectory		the absolute path to the directory to compress.
 	@param	packBuffer			pointer to the destination buffer, which will hold compressed contents.
@@ -32,6 +33,10 @@ namespace DRT {
 	@return						true if decompression success, false otherwise. */
 	bool DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount = nullptr, size_t * fileCount = nullptr);
 	/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
+	diffBuffer format:
+	-------------------------------------------------------------------------------
+	| header: identifier title, modified file count  | compressed directory data  |
+	-------------------------------------------------------------------------------
 	@note						caller is responsible for cleaning-up diffBuffer.
 	@param	oldDirectory		the older directory or path to an .npack file.  
 	@param	newDirectory		the newer directory or path to an .npack file.  
