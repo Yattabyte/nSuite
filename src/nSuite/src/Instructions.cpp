@@ -5,8 +5,8 @@ size_t Copy_Instruction::SIZE() const {
 	return sizeof(char) + (sizeof(size_t) * 3ull);
 }
 
-void Copy_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const bufferOld, const size_t & oldSize) const {
-	for (auto i = index, x = beginRead; i < newSize && x < endRead && x < oldSize; ++i, ++x)
+void Copy_Instruction::DO(Buffer & bufferNew, const Buffer & bufferOld) const {
+	for (auto i = index, x = beginRead; i < bufferNew.size() && x < endRead && x < bufferOld.size(); ++i, ++x)
 		bufferNew[i] = bufferOld[x];
 }
 
@@ -44,9 +44,9 @@ size_t Insert_Instruction::SIZE() const {
 	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * newData.size());
 }
 
-void Insert_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const, const size_t &) const {
-	for (auto i = index, x = size_t(0ull), length = newData.size(); i < newSize && x < length; ++i, ++x)
-		bufferNew[i] = newData[x];
+void Insert_Instruction::DO(Buffer & bufferNew, const Buffer &) const {
+	for (auto i = index, x = size_t(0ull), length = newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
+		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(newData[x]));
 }
 
 void Insert_Instruction::WRITE(void ** pointer) const {
@@ -89,9 +89,9 @@ size_t Repeat_Instruction::SIZE() const {
 	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
 }
 
-void Repeat_Instruction::DO(char * bufferNew, const size_t & newSize, const char * const, const size_t &) const {
-	for (auto i = index, x = size_t(0ull); i < newSize && x < amount; ++i, ++x)
-		bufferNew[i] = value;
+void Repeat_Instruction::DO(Buffer & bufferNew, const Buffer &) const {
+	for (auto i = index, x = size_t(0ull); i < bufferNew.size() && x < amount; ++i, ++x)
+		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(value));
 }
 
 void Repeat_Instruction::WRITE(void ** pointer) const {

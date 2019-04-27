@@ -77,14 +77,11 @@ namespace BFT {
 	/** Reads from a compressed instruction set, uses it to patch the 'older' buffer into the 'newer' buffer
 	@note						caller expected to clean-up buffer_new on their own
 	@param	buffer_old			the older of the 2 buffers.
-	@param	size_old			the size of the old buffer.
-	@param	buffer_new			pointer to store the newer of the 2 buffers.
-	@param	size_new			reference updated with the size of the new buffer.
+	@param	buffer_new			reference updated with the 'new' buffer, derived from the 'old' + diff instructions.
 	@param	buffer_diff			the compressed diff buffer (instruction set).
-	@param	size_diff			the size of the compressed diff buffer.
 	@param	instructionCount	(optional) pointer to update with the number of instructions processed.
-	@return						true if patch success, false otherwise. */
-	bool PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount = nullptr);
+	@return						true if patch success, false otherwise. */	
+	bool PatchBuffer(const Buffer & buffer_old, Buffer & buffer_new, const Buffer & buffer_diff, size_t * instructionCount = nullptr);
 	/** Generates a hash value for the buffer provided, using the buffers' contents.
 	@param	buffer				pointer to the buffer to hash.
 	@param	size				the size of the buffer.

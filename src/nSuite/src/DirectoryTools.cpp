@@ -626,14 +626,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		return false;
 	}
 
-	static constexpr auto readFile = [](const std::string & path, size_t & size, char ** buffer, size_t & hash) -> bool {
+	static constexpr auto readFile = [](const std::string & path, Buffer & buffer, size_t & hash) -> bool {
 		std::ifstream f(path, std::ios::binary | std::ios::beg);
 		if (f.is_open()) {
-			size = std::filesystem::file_size(path);
-			*buffer = new char[size];
-			f.read(*buffer, std::streamsize(size));
+			const auto size = std::filesystem::file_size(path);
+			buffer = Buffer(size);
+			f.read(buffer.cArray(), std::streamsize(size));
 			f.close();
-			hash = BFT::HashBuffer(*buffer, size);
+			hash = BFT::HashBuffer(buffer.cArray(), size);
 			return true;
 		}
 		return false;
@@ -642,8 +642,8 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	// Start reading diff file
 	struct FileInstruction {
 		std::string path = "", fullPath = "";
-		char * instructionSet = nullptr;
-		size_t instructionSize = 0ull, diff_oldHash = 0ull, diff_newHash = 0ull;
+		Buffer instructionBuffer;
+		size_t diff_oldHash = 0ull, diff_newHash = 0ull;
 	};
 	std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
 	void * ptr = instructionBuffer.data();
@@ -676,13 +676,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer size
-		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&FI.instructionSize)), ptr, size_t(sizeof(size_t)));
+		size_t instructionSize(0ull);
+		std::memcpy(reinterpret_cast<char*>(const_cast<size_t*>(&instructionSize)), ptr, size_t(sizeof(size_t)));
 		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Read buffer
-		FI.instructionSet = new char[FI.instructionSize];
-		std::memcpy(FI.instructionSet, ptr, FI.instructionSize);
-		ptr = BFT::PTR_ADD(ptr, FI.instructionSize);
+		FI.instructionBuffer = Buffer(instructionSize);
+		std::memcpy(FI.instructionBuffer.data(), ptr, instructionSize);
+		ptr = BFT::PTR_ADD(ptr, instructionSize);
 
 		// Sort instructions
 		if (flag == 'U')
@@ -699,11 +700,11 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	size_t byteNum(0ull), instructionNum(0ull);
 	for each (const auto & file in diffFiles) {
 		// Try to read the target file
-		char *oldBuffer(nullptr), *newBuffer(nullptr);
-		size_t oldSize(0ull), oldHash(0ull);
+		Buffer oldBuffer, newBuffer;
+		size_t oldHash(0ull);
 	
 		// Try to read source file
-		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash)) {
+		if (!readFile(file.fullPath, oldBuffer, oldHash)) {
 			Log::PushText("Critical failure: Cannot read source file from disk.\r\n");
 			return false;
 		}
@@ -718,13 +719,12 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		else {
 			// Patch buffer
 			Log::PushText("patching file \"" + file.path + "\"\r\n");
-			size_t newSize(0ull);
-			if (!BFT::PatchBuffer(oldBuffer, oldSize, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum)) {
+			if (!BFT::PatchBuffer(oldBuffer, newBuffer, file.instructionBuffer, &instructionNum)) {
 				Log::PushText("Critical failure: patching failed!\r\n");
 				return false;
 			}
 
-			const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+			const size_t newHash = BFT::HashBuffer(newBuffer.cArray(), newBuffer.size());
 
 			// Confirm new hashes match
 			if (newHash != file.diff_newHash) {
@@ -738,15 +738,10 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 				Log::PushText("Critical failure: cannot write patched file to disk.\r\n");
 				return false;
 			}
-			newFile.write(newBuffer, std::streamsize(newSize));
+			newFile.write(newBuffer.cArray(), std::streamsize(newBuffer.size()));
 			newFile.close();
-			byteNum += newSize;
+			byteNum += newBuffer.size();
 		}
-
-		// Cleanup and finish
-		delete[] file.instructionSet;
-		delete[] newBuffer;
-		delete[] oldBuffer;
 	}
 
 	// By this point all files matched, safe to add new ones
@@ -756,15 +751,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		
 		// Write the 'insert' instructions
 		// Remember that we use the diff/patch function to add new files too
-		char * newBuffer(nullptr);
-		size_t newSize(0ull);
-		if (!BFT::PatchBuffer(nullptr, 0ull, &newBuffer, newSize, file.instructionSet, file.instructionSize, &instructionNum)) {
+		Buffer newBuffer;
+		if (!BFT::PatchBuffer(Buffer(), newBuffer, file.instructionBuffer, &instructionNum)) {
 			Log::PushText("Critical failure: cannot derive new file from patch instructions.\r\n");
 			return false;
 		}
 
 		// Confirm new hashes match
-		const size_t newHash = BFT::HashBuffer(newBuffer, newSize);
+		const size_t newHash = BFT::HashBuffer(newBuffer.cArray(), newBuffer.size());
 		if (newHash != file.diff_newHash) {
 			Log::PushText("Critical failure: new file is corrupted (hash mismatch).\r\n");
 			return false;
@@ -776,23 +770,19 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			Log::PushText("Critical failure: cannot write new file to disk.\r\n");
 			return false;
 		}
-		newFile.write(newBuffer, std::streamsize(newSize));
+		newFile.write(newBuffer.cArray(), std::streamsize(newBuffer.size()));
 		newFile.close();
-		byteNum += newSize;		
-
-		// Cleanup and finish
-		delete[] file.instructionSet;
-		delete[] newBuffer;
+		byteNum += newBuffer.size();
 	}
 
 	// If we made it this far, it should be safe to delete all files
 	for each (const auto & file in removedFiles) {
 		// Try to read the target file (may not exist)
-		char *oldBuffer(nullptr);
-		size_t oldSize(0ull), oldHash(0ull);
+		Buffer oldBuffer;
+		size_t oldHash(0ull);
 
 		// Try to read source file
-		if (!readFile(file.fullPath, oldSize, &oldBuffer, oldHash))
+		if (!readFile(file.fullPath, oldBuffer, oldHash))
 			Log::PushText("The file \"" + file.path + "\" has already been removed, skipping...\r\n");
 		else {
 			// Only remove source files if they match entirely
@@ -805,10 +795,6 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 				}
 			}
 		}
-
-		// Cleanup and finish
-		delete[] file.instructionSet;
-		delete[] oldBuffer;
 	}
 
 	// Update optional parameters

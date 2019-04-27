@@ -130,13 +130,13 @@ bool BFT::ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer &
 bool BFT::DiffBuffers(const Buffer & buffer_old, const Buffer & buffer_new, Buffer & buffer_diff, size_t * instructionCount)
 {
 	// Ensure that at least ONE of the two source buffers exists
-	const auto size_old = buffer_old.size();
-	const auto size_new = buffer_new.size();
-	if ((size_old == 0ull) && (size_new == 0ull)) {
+	if (!buffer_old.hasData() && !buffer_new.hasData()) {
 		Log::PushText("Error: both 'old' and 'new' buffers have no content (one must have data).\r\n");
 		return false;
 	}
 
+	const auto size_old = buffer_old.size();
+	const auto size_new = buffer_new.size();
 	std::vector<InstructionTypes> instructions;
 	instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
 	std::mutex instructionMutex;
@@ -386,10 +386,10 @@ bool BFT::DiffBuffers(const Buffer & buffer_old, const Buffer & buffer_new, Buff
 	return true;
 }
 
-bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer_new, size_t & size_new, char * buffer_diff, const size_t & size_diff, size_t * instructionCount)
+bool BFT::PatchBuffer(const Buffer & buffer_old, Buffer & buffer_new, const Buffer & buffer_diff, size_t * instructionCount)
 {
 	// Ensure diff buffer at least *exists* (ignore old buffer, when empty we treat instruction as a brand new file)
-	if (size_diff <= size_t(sizeof(size_t)) || buffer_diff == nullptr) {
+	if (!buffer_diff.hasData()) {
 		Log::PushText("Error: diff buffer doesn't exist or has no content.\r\n");
 		return false;
 	}
@@ -398,21 +398,21 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	const size_t DATA_SIZE = size_diff - HEADER_SIZE;
+	const size_t DATA_SIZE = buffer_diff.size() - HEADER_SIZE;
 	char headerTitle_In[HEADER_TITLE_SIZE];
-	char * HEADER_ADDRESS = buffer_diff;
+	char * HEADER_ADDRESS = buffer_diff.cArray();
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
-	
+
 	// Read in the header title of this buffer, ENSURE it matches
 	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
 	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
 		Log::PushText("Error: the diff buffer specified is not a valid nSuite diff buffer.\r\n");
 		return false;
 	}
-	
+
 	// Get source file size
 	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-	size_new = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+	const auto NEW_SIZE = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
 
 	// Try to decompress the diff buffer
 	/////////////////////////////////////////////////
@@ -421,17 +421,16 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	Buffer diffInstructionBuffer;
 	const auto result = BFT::DecompressBuffer(DELETE_ME, diffInstructionBuffer);
 	if (!result) {
-		Log::PushText("Error: cannot complete buffer patching, as diff buffer cannot be decompressed.\r\n");
-		size_new = 0ull;
+		Log::PushText("Error: cannot complete buffer patching, as diff buffer cannot be decompressed.\r\n");		
 		return false;
 	}
-		
+
 	// Convert buffer into instructions
-	*buffer_new = new char[size_new];
+	buffer_new = Buffer(NEW_SIZE);
 	size_t bytesRead(0ull);
 	void * readingPtr = diffInstructionBuffer.data();
 	constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
-	const auto CallDo = [&buffer_new, &size_new, &buffer_old, size_old](const auto & obj) { return obj.DO(*buffer_new, size_new, buffer_old, size_old); };
+	const auto CallDo = [&buffer_new, &buffer_old](const auto & obj) { return obj.DO(buffer_new, buffer_old); };
 	size_t count(0ull);
 	Threader threader;
 	while (bytesRead < diffInstructionBuffer.size()) {

@@ -2,6 +2,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
+#include "BufferTools.h"
 #include <variant>
 #include <vector>
 
@@ -13,7 +14,7 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
 	void WRITE(void ** pointer) const;
 	/** Read-in this instruction from a buffer. */
@@ -32,7 +33,7 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
 	void WRITE(void ** pointer) const;
 	/** Read-in this instruction from a buffer. */
@@ -52,7 +53,7 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
 	void WRITE(void ** pointer) const;
 	/** Read-in this instruction from a buffer. */
