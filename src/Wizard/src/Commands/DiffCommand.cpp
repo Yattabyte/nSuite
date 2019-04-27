@@ -21,7 +21,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 	bool success = false;
 	std::ofstream file;
 	char * diffBuffer(nullptr);
-	size_t diffSize(0ull), instructionCount(0ull);
+	size_t diffSize(0ull);
 	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
 
 	// Check command line arguments
@@ -58,7 +58,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".ndiff";
 	
 	// Try to diff the 2 directories specified
-	if (!DRT::DiffDirectories(oldDirectory, newDirectory, &diffBuffer, diffSize, &instructionCount))
+	if (!DRT::DiffDirectories(oldDirectory, newDirectory, &diffBuffer, diffSize))
 		Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
 	else {
 		// Try to create diff file
@@ -71,9 +71,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 			file.write(diffBuffer, std::streamsize(diffSize));
 
 			// Output results
-			Log::PushText(
-				"Instruction(s): " + std::to_string(instructionCount) + "\r\n" +
-				"Bytes written:  " + std::to_string(diffSize) + "\r\n"
+			Log::PushText("Bytes written:  " + std::to_string(diffSize) + "\r\n"
 			);
 			success = true;
 		}

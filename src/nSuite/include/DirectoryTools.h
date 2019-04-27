@@ -50,9 +50,8 @@ namespace DRT {
 	@param	newDirectory		the newer directory or path to an .npack file.  
 	@param	diffBuffer			pointer to the diff buffer, which will hold compressed diff instructions.
 	@param	diffSize			reference updated with the size in bytes of the diff buffer.
-	@param	instructionCount	(optional) pointer updated with the number of instructions compressed into the diff buffer.
 	@return						true if diff success, false otherwise. */
-	bool DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t * instructionCount = nullptr);
+	bool DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize);
 	/** Decompresses and executes the instructions contained within a previously - generated diff buffer.
 	Transforms the contents of an 'old' directory into that of the 'new' directory.
 	@param	dstDirectory		the destination directory to transform.
@@ -61,7 +60,7 @@ namespace DRT {
 	@param	bytesWritten		(optional) pointer updated with the number of bytes written to disk.
 	@param	instructionsUsed	(optional) pointer updated with the number of instructions executed.
 	@return						true if patch success, false otherwise. */
-	bool PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten = nullptr, size_t * instructionsUsed = nullptr);
+	bool PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten = nullptr);
 	/** Returns a list of file information for all files within the directory specified.
 	@param	directory			the directory to retrieve file-info from.
 	@return						a vector of file information, including file names, sizes, meta-data, etc. */

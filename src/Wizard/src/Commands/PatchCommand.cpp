@@ -54,13 +54,12 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 		const size_t diffSize = std::filesystem::file_size(srcDirectory);
 		diffBuffer = new char[diffSize];
 		diffFile.read(diffBuffer, std::streamsize(diffSize));
-		size_t bytesWritten(0ull), instructionsUsed(0ull);
-		if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten, &instructionsUsed))
+		size_t bytesWritten(0ull);
+		if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten))
 			Log::PushText("aborting...\r\n");
 		else {
 			// Output results
 			Log::PushText(
-				"Instruction(s): " + std::to_string(instructionsUsed) + "\r\n" +
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
 			);
 			success = true;

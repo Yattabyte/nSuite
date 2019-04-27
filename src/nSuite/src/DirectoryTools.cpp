@@ -133,10 +133,9 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	files.shrink_to_fit();
 
 	// Compress the archive
-	Buffer compressedBuffer;
-	const bool result = BFT::CompressBuffer(filebuffer, compressedBuffer);
+	auto compressedBuffer = filebuffer.compress();
 	filebuffer.release();
-	if (!result) {
+	if (!compressedBuffer) {
 		Log::PushText("Error: cannot compress the file-buffer for the chosen source directory.\r\n");		
 		return false;
 	}
@@ -145,7 +144,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	constexpr const char HEADER_TITLE[] = PDIRECTORY_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(PDIRECTORY_HEADER_TEXT) / sizeof(*PDIRECTORY_HEADER_TEXT));
 	const size_t HEADER_SIZE = HEADER_TITLE_SIZE + folderName.size() + size_t(sizeof(size_t));
-	packSize = HEADER_SIZE + compressedBuffer.size();
+	packSize = HEADER_SIZE + compressedBuffer->size();
 	*packBuffer = new char[packSize];
 	char * HEADER_ADDRESS = *packBuffer;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -159,8 +158,8 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	std::memcpy(HEADER_ADDRESS, folderName.data(), pathSize); // Folder name
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, compressedBuffer.cArray(), compressedBuffer.size());
-	compressedBuffer.release();
+	std::memcpy(DATA_ADDRESS, compressedBuffer->cArray(), compressedBuffer->size());
+	compressedBuffer->release();
 
 	// Success
 	return true;
@@ -188,20 +187,21 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	/////////////////////////////////////////////////
 	Buffer DELETE_ME(packagedData, packagedDataSize);
 	/////////////////////////////////////////////////
-	Buffer decompressedBuffer;
-	if (!BFT::DecompressBuffer(DELETE_ME, decompressedBuffer)) {
+	auto decompressedBuffer = DELETE_ME.decompress();
+	DELETE_ME.release();
+	if (!decompressedBuffer) {
 		Log::PushText("Error: cannot complete directory decompression, as the package file cannot be decompressed.\r\n");
 		return false;
 	}
 
 	// Begin reading the archive
 	Threader threader;
-	void * readingPtr = decompressedBuffer.data();
+	void * readingPtr = decompressedBuffer->data();
 	size_t bytesRead(0ull);
 	std::atomic_size_t filesWritten(0ull);
-	Progress::SetRange(decompressedBuffer.size() + 100);
+	Progress::SetRange(decompressedBuffer->size() + 100);
 	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + packageName);
-	while (bytesRead < decompressedBuffer.size()) {
+	while (bytesRead < decompressedBuffer->size()) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
 		readingPtr = BFT::PTR_ADD(readingPtr, size_t(sizeof(size_t)));
@@ -241,7 +241,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	while (!threader.isFinished())
 		continue;	
 	threader.shutdown();
-	decompressedBuffer.release();
+	decompressedBuffer->release();
 	Progress::SetProgress(bytesRead + 100);
 
 	// Update optional parameters
@@ -295,7 +295,7 @@ bool DRT::ParseHeader(char * packageBuffer, const size_t & packageSize, std::str
 	return true;
 }
 
-bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize, size_t * instructionCount)
+bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize)
 {
 	// Declarations that will only be used here	
 	struct File {
@@ -308,7 +308,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 				buffer = Buffer(size);
 				f.read(buffer.cArray(), std::streamsize(size));
 				f.close();
-				hash = BFT::HashBuffer(buffer.cArray(), size);
+				hash = buffer.hash();
 				return true;
 			}
 			return false;
@@ -320,7 +320,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		inline virtual bool open(Buffer & buffer, size_t & hash) const override {
 			buffer = Buffer(size);
 			std::memcpy(buffer.data(), ptr, size);
-			hash = BFT::HashBuffer(buffer.cArray(), size);
+			hash = buffer.hash();
 			return true;
 		}
 	};
@@ -376,7 +376,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		/////////////////////////////////////////////////
 		Buffer DELETE_ME(packagedData, packagedDataSize);
 		/////////////////////////////////////////////////
-		const bool decompressResult = BFT::DecompressBuffer(DELETE_ME, snapshot);
+		auto decompressedBuffer = DELETE_ME.decompress();
+		DELETE_ME.release();
 
 		// Check if we need to delete the packBuffer, or if it is an embedded resource
 		// If it's an embedded resource, the fileResource's destructor will satisfy, else do below
@@ -386,10 +387,11 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 			FreeLibrary(handle);
 
 		// Handle decompression failure now
-		if (!decompressResult) {
+		if (!decompressedBuffer) {
 			Log::PushText("Critical failure: cannot decompress package file.\r\n");
 			return false;
 		}
+		snapshot = *decompressedBuffer;
 
 		// Get lists of all files involved
 		size_t bytesRead(0ull);
@@ -498,17 +500,17 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	Buffer instructionBuffer;
 
 	// These files are common, maybe some have changed
-	size_t fileCount(0ull), instructionNum(0ull);
+	size_t fileCount(0ull);
 	for each (const auto & cFiles in commonFiles) {
 		Buffer oldBuffer, newBuffer;
 		size_t oldHash(0ull), newHash(0ull);
 		if (cFiles.first->open(oldBuffer, oldHash) && cFiles.second->open(newBuffer, newHash)) {
 			if (oldHash != newHash) {
 				// Files are different versions
-				Buffer buffer;
-				if (BFT::DiffBuffers(oldBuffer, newBuffer, buffer, &instructionNum)) {
+				auto buffer = oldBuffer.diff(newBuffer);
+				if (buffer) {
 					Log::PushText("Diffing file: \"" + cFiles.first->relative + "\"\r\n");
-					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, 'U', instructionBuffer);
+					writeInstructions(cFiles.first->relative, oldHash, newHash, *buffer, 'U', instructionBuffer);
 					fileCount++;
 				}
 			}
@@ -524,10 +526,10 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		Buffer newBuffer;
 		size_t newHash(0ull);
 		if (nFile->open(newBuffer, newHash)) {
-			Buffer buffer;
-			if (BFT::DiffBuffers(Buffer(), newBuffer, buffer, &instructionNum)) {
+			auto buffer = Buffer().diff(newBuffer);
+			if (buffer) {
 				Log::PushText("Adding file: \"" + nFile->relative + "\"\r\n");
-				writeInstructions(nFile->relative, 0ull, newHash, buffer, 'N', instructionBuffer);
+				writeInstructions(nFile->relative, 0ull, newHash, *buffer, 'N', instructionBuffer);
 				fileCount++;
 			}
 		}
@@ -542,7 +544,6 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		Buffer oldBuffer;
 		size_t oldHash(0ull);
 		if (oFile->open(oldBuffer, oldHash)) {
-			instructionNum++;
 			Log::PushText("Removing file: \"" + oFile->relative + "\"\r\n");
 			writeInstructions(oFile->relative, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
 			fileCount++;
@@ -554,10 +555,9 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	oldSnap.release();
 
 	// Try to compress the instruction buffer
-	Buffer compressedBuffer;
-	const bool compressedResult = BFT::CompressBuffer(instructionBuffer, compressedBuffer);
+	auto compressedBuffer = instructionBuffer.compress();
 	instructionBuffer.release();
-	if (!compressedResult) {
+	if (!compressedBuffer) {
 		Log::PushText("Critical failure: cannot compress diff instructions.\r\n");
 		return false;
 	}
@@ -566,7 +566,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	constexpr const char HEADER_TITLE[] = DDIRECTORY_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DDIRECTORY_HEADER_TEXT) / sizeof(*DDIRECTORY_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	diffSize = HEADER_SIZE + compressedBuffer.size();
+	diffSize = HEADER_SIZE + compressedBuffer->size();
 	*diffBuffer = new char[diffSize];
 	char * HEADER_ADDRESS = *diffBuffer;
 	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
@@ -577,18 +577,14 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	std::memcpy(HEADER_ADDRESS, &fileCount, size_t(sizeof(size_t)));
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, compressedBuffer.data(), compressedBuffer.size());
-	compressedBuffer.release();
-
-	// Update optional parameter
-	if (instructionCount != nullptr)
-		*instructionCount = instructionNum;
+	std::memcpy(DATA_ADDRESS, compressedBuffer->data(), compressedBuffer->size());
+	compressedBuffer->release();
 
 	// Success
 	return true;
 }
 
-bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten, size_t * instructionsUsed)
+bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten)
 {
 	// Ensure buffer at least *exists*
 	if (diffSize <= size_t(sizeof(size_t)) || diffBuffer == nullptr) {
@@ -620,8 +616,9 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	/////////////////////////////////////////////////
 	Buffer DELETE_ME(DATA_ADDRESS, DATA_SIZE);
 	/////////////////////////////////////////////////
-	Buffer instructionBuffer;
-	if (!BFT::DecompressBuffer(DELETE_ME, instructionBuffer)) {
+	auto instructionBuffer = DELETE_ME.decompress();
+	DELETE_ME.release();
+	if (!instructionBuffer) {
 		Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed.\r\n");
 		return false;
 	}
@@ -633,7 +630,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			buffer = Buffer(size);
 			f.read(buffer.cArray(), std::streamsize(size));
 			f.close();
-			hash = BFT::HashBuffer(buffer.cArray(), size);
+			hash = buffer.hash();
 			return true;
 		}
 		return false;
@@ -646,7 +643,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		size_t diff_oldHash = 0ull, diff_newHash = 0ull;
 	};
 	std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
-	void * ptr = instructionBuffer.data();
+	void * ptr = instructionBuffer->data();
 	size_t files(0ull);
 	while (files < fileCount) {
 		FileInstruction FI;
@@ -694,13 +691,13 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			removedFiles.push_back(FI);
 		files++;
 	}
-	instructionBuffer.release();
+	instructionBuffer->release();
 
 	// Patch all files first
-	size_t byteNum(0ull), instructionNum(0ull);
+	size_t byteNum(0ull);
 	for each (const auto & file in diffFiles) {
 		// Try to read the target file
-		Buffer oldBuffer, newBuffer;
+		Buffer oldBuffer;
 		size_t oldHash(0ull);
 	
 		// Try to read source file
@@ -719,14 +716,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		else {
 			// Patch buffer
 			Log::PushText("patching file \"" + file.path + "\"\r\n");
-			if (!BFT::PatchBuffer(oldBuffer, newBuffer, file.instructionBuffer, &instructionNum)) {
+			auto newBuffer = oldBuffer.patch(file.instructionBuffer);
+			if (!newBuffer) {
 				Log::PushText("Critical failure: patching failed!\r\n");
 				return false;
 			}
 
-			const size_t newHash = BFT::HashBuffer(newBuffer.cArray(), newBuffer.size());
-
 			// Confirm new hashes match
+			const size_t newHash = newBuffer->hash();
 			if (newHash != file.diff_newHash) {
 				Log::PushText("Critical failure: patched file is corrupted (hash mismatch).\r\n");
 				return false;
@@ -738,9 +735,9 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 				Log::PushText("Critical failure: cannot write patched file to disk.\r\n");
 				return false;
 			}
-			newFile.write(newBuffer.cArray(), std::streamsize(newBuffer.size()));
+			newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 			newFile.close();
-			byteNum += newBuffer.size();
+			byteNum += newBuffer->size();
 		}
 	}
 
@@ -751,14 +748,14 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		
 		// Write the 'insert' instructions
 		// Remember that we use the diff/patch function to add new files too
-		Buffer newBuffer;
-		if (!BFT::PatchBuffer(Buffer(), newBuffer, file.instructionBuffer, &instructionNum)) {
+		auto newBuffer = Buffer().patch(file.instructionBuffer);
+		if (!newBuffer) {
 			Log::PushText("Critical failure: cannot derive new file from patch instructions.\r\n");
 			return false;
 		}
 
 		// Confirm new hashes match
-		const size_t newHash = BFT::HashBuffer(newBuffer.cArray(), newBuffer.size());
+		const size_t newHash = newBuffer->hash();
 		if (newHash != file.diff_newHash) {
 			Log::PushText("Critical failure: new file is corrupted (hash mismatch).\r\n");
 			return false;
@@ -770,9 +767,9 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			Log::PushText("Critical failure: cannot write new file to disk.\r\n");
 			return false;
 		}
-		newFile.write(newBuffer.cArray(), std::streamsize(newBuffer.size()));
+		newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 		newFile.close();
-		byteNum += newBuffer.size();
+		byteNum += newBuffer->size();
 	}
 
 	// If we made it this far, it should be safe to delete all files
@@ -789,10 +786,8 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			if (oldHash == file.diff_oldHash) {
 				if (!std::filesystem::remove(file.fullPath))
 					Log::PushText("Error: cannot delete file \"" + file.path + "\" from disk, delete this file manually if you can.\r\n");
-				else {
-					Log::PushText("Removing file: \"" + file.path + "\"\r\n");
-					instructionNum++;
-				}
+				else 
+					Log::PushText("Removing file: \"" + file.path + "\"\r\n");				
 			}
 		}
 	}
@@ -800,8 +795,6 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	// Update optional parameters
 	if (bytesWritten != nullptr)
 		*bytesWritten = byteNum;
-	if (instructionsUsed != nullptr)
-		*instructionsUsed = instructionNum;
 
 	// Success
 	return true;
