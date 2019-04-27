@@ -127,11 +127,13 @@ bool BFT::ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer &
 	return true;
 }
 
-bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)
+bool BFT::DiffBuffers(const Buffer & buffer_old, const Buffer & buffer_new, Buffer & buffer_diff, size_t * instructionCount)
 {
 	// Ensure that at least ONE of the two source buffers exists
-	if ((buffer_old == nullptr && buffer_new == nullptr) || (size_old == 0ull && size_new == 0ull)) {
-		Log::PushText("Error: both 'old' and 'new' buffers either do not exist or have no content.\r\n");
+	const auto size_old = buffer_old.size();
+	const auto size_new = buffer_new.size();
+	if ((size_old == 0ull) && (size_new == 0ull)) {
+		Log::PushText("Error: both 'old' and 'new' buffers have no content (one must have data).\r\n");
 		return false;
 	}
 
@@ -153,13 +155,13 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 			};
 			size_t bestContinuous(0ull), bestMatchCount(windowSize);
 			std::vector<MatchInfo> bestSeries;
-			auto buffer_slice_old = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_old, bytesUsed_old));
-			auto buffer_slice_new = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_new, bytesUsed_new));
+			auto buffer_slice_old = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_old.data(), bytesUsed_old));
+			auto buffer_slice_new = reinterpret_cast<std::byte*>(BFT::PTR_ADD(buffer_new.data(), bytesUsed_new));
 			for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
 				const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
 				std::vector<MatchInfo> matches;
 				size_t largestContinuous(0ull);
-				for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2+= 8ull) {
+				for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2 += 8ull) {
 					const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_new[index2]);
 					// Check if values match						
 					if (OLD_FIRST8 == NEW_FIRST8) {
@@ -193,8 +195,8 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 				// Break if the largest series is as big as the window
 				if (bestContinuous >= windowSize)
 					break;
-			}			
-			
+			}
+
 			// Step 2: Generate instructions based on the matching-regions found
 			// Note: 
 			//			data from [start1 -> +length] equals [start2 -> + length]
@@ -319,7 +321,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 							break;
 						}
 						x = y - 1;
-						break;			
+						break;
 					}
 				}
 			}
@@ -331,7 +333,7 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
-	
+
 	// Create a buffer to contain all the diff instructions
 	size_t size_patch(0ull);
 	constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
@@ -367,9 +369,8 @@ bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_
 	constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
 	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	size_diff = HEADER_SIZE + compressedPatchBuffer.size();
-	*buffer_diff = new char[size_diff];
-	char * HEADER_ADDRESS = *buffer_diff;
+	buffer_diff = Buffer(HEADER_SIZE + compressedPatchBuffer.size());
+	char * HEADER_ADDRESS = buffer_diff.cArray();
 	void * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
 	// Write header information
@@ -498,6 +499,11 @@ size_t Buffer::size() const
 bool Buffer::hasData() const
 {
 	return !m_data.empty();
+}
+
+std::byte & Buffer::operator[](const size_t & index) const
+{
+	return const_cast<std::byte&>(m_data.at(index));
 }
 
 char * Buffer::cArray() const

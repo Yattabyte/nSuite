@@ -302,13 +302,13 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		std::string path = "", relative = "";
 		size_t size = 0ull;
 		inline File(const std::string & p, const std::string & r, const size_t & s) : path(p), relative(r), size(s) {}
-		inline virtual bool open(char ** buffer, size_t & hash) const {
+		inline virtual bool open(Buffer & buffer, size_t & hash) const {
 			std::ifstream f(path, std::ios::binary | std::ios::beg);
 			if (f.is_open()) {
-				*buffer = new char[size];
-				f.read(*buffer, std::streamsize(size));
+				buffer = Buffer(size);
+				f.read(buffer.cArray(), std::streamsize(size));
 				f.close();
-				hash = BFT::HashBuffer(*buffer, size);
+				hash = BFT::HashBuffer(buffer.cArray(), size);
 				return true;
 			}
 			return false;
@@ -317,10 +317,10 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	struct FileMem : File {
 		void * ptr = nullptr;
 		inline FileMem(const std::string & p, const std::string & r, const size_t & s, void * b) : File(p, r, s), ptr(b) {}
-		inline virtual bool open(char ** buffer, size_t & hash) const override {
-			*buffer = new char[size];
-			std::memcpy(*buffer, ptr, size);
-			hash = BFT::HashBuffer(*buffer, size);
+		inline virtual bool open(Buffer & buffer, size_t & hash) const override {
+			buffer = Buffer(size);
+			std::memcpy(buffer.data(), ptr, size);
+			hash = BFT::HashBuffer(buffer.cArray(), size);
 			return true;
 		}
 	};
@@ -448,7 +448,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		delFiles = srcOld_Files;
 		return true;
 	};
-	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, char * buffer, const size_t & bufferSize, const char & flag, Buffer & instructionBuffer) {
+	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, const Buffer & buffer, const char & flag, Buffer & instructionBuffer) {
+		const auto bufferSize = buffer.size();
 		auto pathLength = path.length();
 		const size_t instructionSize = (sizeof(size_t) * 4) + (sizeof(char) * pathLength) + sizeof(char) + bufferSize;
 		const size_t bufferOldSize = instructionBuffer.size();
@@ -480,7 +481,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
 
 		// Write buffer
-		std::memcpy(ptr, buffer, bufferSize);
+		std::memcpy(ptr, buffer.data(), bufferSize);
 		ptr = BFT::PTR_ADD(ptr, bufferSize);
 	};
 
@@ -499,23 +500,19 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	// These files are common, maybe some have changed
 	size_t fileCount(0ull), instructionNum(0ull);
 	for each (const auto & cFiles in commonFiles) {
-		char * oldBuffer(nullptr), * newBuffer(nullptr);
+		Buffer oldBuffer, newBuffer;
 		size_t oldHash(0ull), newHash(0ull);
-		if (cFiles.first->open(&oldBuffer, oldHash) && cFiles.second->open(&newBuffer, newHash)) {
+		if (cFiles.first->open(oldBuffer, oldHash) && cFiles.second->open(newBuffer, newHash)) {
 			if (oldHash != newHash) {
 				// Files are different versions
-				char * buffer(nullptr);
-				size_t size(0ull);
-				if (BFT::DiffBuffers(oldBuffer, cFiles.first->size, newBuffer, cFiles.second->size, &buffer, size, &instructionNum)) {
+				Buffer buffer;
+				if (BFT::DiffBuffers(oldBuffer, newBuffer, buffer, &instructionNum)) {
 					Log::PushText("Diffing file: \"" + cFiles.first->relative + "\"\r\n");
-					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, size, 'U', instructionBuffer);
+					writeInstructions(cFiles.first->relative, oldHash, newHash, buffer, 'U', instructionBuffer);
 					fileCount++;
 				}
-				delete[] buffer;
 			}
 		}
-		delete[] oldBuffer;
-		delete[] newBuffer;
 		delete cFiles.first;
 		delete cFiles.second;
 	}
@@ -524,19 +521,16 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 
 	// These files are brand new
 	for each (const auto & nFile in addedFiles) {
-		char * newBuffer(nullptr);
+		Buffer newBuffer;
 		size_t newHash(0ull);
-		if (nFile->open(&newBuffer, newHash)) {
-			char * buffer(nullptr);
-			size_t size(0ull);
-			if (BFT::DiffBuffers(nullptr, 0ull, newBuffer, nFile->size, &buffer, size, &instructionNum)) {
+		if (nFile->open(newBuffer, newHash)) {
+			Buffer buffer;
+			if (BFT::DiffBuffers(Buffer(), newBuffer, buffer, &instructionNum)) {
 				Log::PushText("Adding file: \"" + nFile->relative + "\"\r\n");
-				writeInstructions(nFile->relative, 0ull, newHash, buffer, size, 'N', instructionBuffer);
+				writeInstructions(nFile->relative, 0ull, newHash, buffer, 'N', instructionBuffer);
 				fileCount++;
 			}
-			delete[] buffer;
 		}
-		delete[] newBuffer;
 		delete nFile;
 	}
 	addedFiles.clear();
@@ -545,15 +539,14 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 
 	// These files are deprecated
 	for each (const auto & oFile in removedFiles) {
-		char * oldBuffer(nullptr);
+		Buffer oldBuffer;
 		size_t oldHash(0ull);
-		if (oFile->open(&oldBuffer, oldHash)) {
+		if (oFile->open(oldBuffer, oldHash)) {
 			instructionNum++;
 			Log::PushText("Removing file: \"" + oFile->relative + "\"\r\n");
-			writeInstructions(oFile->relative, oldHash, 0ull, nullptr, 0ull, 'D', instructionBuffer);
+			writeInstructions(oFile->relative, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
 			fileCount++;
 		}
-		delete[] oldBuffer;
 		delete oFile;
 	}
 	removedFiles.clear();

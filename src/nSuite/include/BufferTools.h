@@ -21,8 +21,10 @@ public:
 	bool hasData() const;
 
 	// Data Accessor Methods
+	std::byte & operator[](const size_t & index) const;
 	char * cArray() const;
 	std::byte * data() const;
+
 
 	// Data Modifying Methods
 	void resize(const size_t & size);
@@ -67,14 +69,11 @@ namespace BFT {
 	-----------------------------------------------------------------------------------
 	@note						caller expected to clean-up buffer_diff on their own
 	@param	buffer_old			the older of the 2 buffers.
-	@param	size_old			the size of the old buffer.
 	@param	buffer_new			the newer of the 2 buffers.
-	@param	size_new			the size of the new buffer.
-	@param	buffer_diff			pointer to store the diff buffer at.
-	@param	size_diff			reference updated with the size of the compressed diff buffer.
+	@param	buffer_diff			reference updated with a buffer containing the diff instructions.
 	@param	instructionCount	(optional) pointer to update with the number of instructions processed.
 	@return						true if diff success, false otherwise. */
-	bool DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount = nullptr);
+	bool DiffBuffers(const Buffer & buffer_old, const Buffer & buffer_new, Buffer & buffer_diff, size_t * instructionCount = nullptr);
 	/** Reads from a compressed instruction set, uses it to patch the 'older' buffer into the 'newer' buffer
 	@note						caller expected to clean-up buffer_new on their own
 	@param	buffer_old			the older of the 2 buffers.
