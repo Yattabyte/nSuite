@@ -185,21 +185,23 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	}	
 
 	// Try to decompress the buffer
-	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + packageName);
-	char * decompressedBuffer(nullptr);
-	size_t decompressedSize(0ull);
-	if (!BFT::DecompressBuffer(packagedData, packagedDataSize, &decompressedBuffer, decompressedSize)) {
+	/////////////////////////////////////////////////
+	Buffer DELETE_ME(packagedData, packagedDataSize);
+	/////////////////////////////////////////////////
+	Buffer decompressedBuffer;
+	if (!BFT::DecompressBuffer(DELETE_ME, decompressedBuffer)) {
 		Log::PushText("Error: cannot complete directory decompression, as the package file cannot be decompressed.\r\n");
 		return false;
 	}
 
 	// Begin reading the archive
 	Threader threader;
-	void * readingPtr = decompressedBuffer;
+	void * readingPtr = decompressedBuffer.data();
 	size_t bytesRead(0ull);
 	std::atomic_size_t filesWritten(0ull);
-	Progress::SetRange(decompressedSize + 100);
-	while (bytesRead < decompressedSize) {
+	Progress::SetRange(decompressedBuffer.size() + 100);
+	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + packageName);
+	while (bytesRead < decompressedBuffer.size()) {
 		// Read the total number of characters from the path string, from the archive
 		const auto pathSize = *reinterpret_cast<size_t*>(readingPtr);
 		readingPtr = BFT::PTR_ADD(readingPtr, size_t(sizeof(size_t)));
@@ -239,6 +241,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	while (!threader.isFinished())
 		continue;	
 	threader.shutdown();
+	decompressedBuffer.release();
 	Progress::SetProgress(bytesRead + 100);
 
 	// Update optional parameters
@@ -248,7 +251,6 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 		*fileCount = filesWritten;
 
 	// Success
-	delete[] decompressedBuffer;
 	return true;
 }
 
@@ -327,7 +329,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	static constexpr auto getRelativePath = [](const std::string & filePath, const std::string & directory) -> std::string {
 		return filePath.substr(directory.length(), filePath.length() - directory.length());
 	};
-	static constexpr auto getFiles = [](const std::string & directory, char ** snapshot, std::vector<File*> & files) -> bool {		
+	static constexpr auto getFiles = [](const std::string & directory, Buffer & snapshot, std::vector<File*> & files) -> bool {		
 		// See if the input path is a directory
 		if (std::filesystem::is_directory(directory)) {
 			for each (const auto & srcFile in GetFilePaths(directory)) {
@@ -371,8 +373,10 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		}
 
 		// Try to decompress the buffer
-		size_t snapSize(0ull);
-		const bool decompressResult = BFT::DecompressBuffer(packagedData, packagedDataSize, snapshot, snapSize);
+		/////////////////////////////////////////////////
+		Buffer DELETE_ME(packagedData, packagedDataSize);
+		/////////////////////////////////////////////////
+		const bool decompressResult = BFT::DecompressBuffer(DELETE_ME, snapshot);
 
 		// Check if we need to delete the packBuffer, or if it is an embedded resource
 		// If it's an embedded resource, the fileResource's destructor will satisfy, else do below
@@ -389,8 +393,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 
 		// Get lists of all files involved
 		size_t bytesRead(0ull);
-		void * ptr = *snapshot;
-		while (bytesRead < snapSize) {
+		void * ptr = snapshot.data();
+		while (bytesRead < snapshot.size()) {
 			// Read the total number of characters from the path string, from the archive
 			const auto pathSize = *reinterpret_cast<size_t*>(ptr);
 			ptr = BFT::PTR_ADD(ptr, size_t(sizeof(size_t)));
@@ -411,7 +415,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 		}
 		return true;		
 	};
-	static constexpr auto getFileLists = [](const std::string & oldDirectory, char ** oldSnapshot, const std::string & newDirectory, char ** newSnapshot, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
+	static constexpr auto getFileLists = [](const std::string & oldDirectory, Buffer & oldSnapshot, const std::string & newDirectory, Buffer & newSnapshot, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
 		// Get files
 		std::vector<File*> srcOld_Files, srcNew_Files;
 		if (!getFiles(oldDirectory, oldSnapshot, srcOld_Files) || !getFiles(newDirectory, newSnapshot, srcNew_Files)) {
@@ -483,8 +487,8 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	// Retrieve all common, added, and removed files
 	PathPairList commonFiles;
 	PathList addedFiles, removedFiles;
-	char * oldSnap(nullptr), * newSnap(nullptr);
-	if (!getFileLists(oldDirectory, &oldSnap, newDirectory, &newSnap, commonFiles, addedFiles, removedFiles)) {
+	Buffer oldSnap, newSnap;
+	if (!getFileLists(oldDirectory, oldSnap, newDirectory, newSnap, commonFiles, addedFiles, removedFiles)) {
 		Log::PushText("Error: could not retrieve all requisite file lists for diffing.\r\n");
 		return false;
 	}
@@ -537,7 +541,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	}
 	addedFiles.clear();
 	addedFiles.shrink_to_fit();
-	delete[] newSnap;
+	newSnap.release();
 
 	// These files are deprecated
 	for each (const auto & oFile in removedFiles) {
@@ -554,7 +558,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	}
 	removedFiles.clear();
 	removedFiles.shrink_to_fit();
-	delete[] oldSnap;
+	oldSnap.release();
 
 	// Try to compress the instruction buffer
 	Buffer compressedBuffer;
@@ -620,9 +624,11 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	const auto fileCount = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
 
 	// Try to decompress the instruction buffer
-	char * instructionBuffer(nullptr);
-	size_t instructionBufferSize(0ull);
-	if (!BFT::DecompressBuffer(DATA_ADDRESS, DATA_SIZE, &instructionBuffer, instructionBufferSize)) {
+	/////////////////////////////////////////////////
+	Buffer DELETE_ME(DATA_ADDRESS, DATA_SIZE);
+	/////////////////////////////////////////////////
+	Buffer instructionBuffer;
+	if (!BFT::DecompressBuffer(DELETE_ME, instructionBuffer)) {
 		Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed.\r\n");
 		return false;
 	}
@@ -647,7 +653,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 		size_t instructionSize = 0ull, diff_oldHash = 0ull, diff_newHash = 0ull;
 	};
 	std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
-	void * ptr = instructionBuffer;
+	void * ptr = instructionBuffer.data();
 	size_t files(0ull);
 	while (files < fileCount) {
 		FileInstruction FI;
@@ -694,6 +700,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 			removedFiles.push_back(FI);
 		files++;
 	}
+	instructionBuffer.release();
 
 	// Patch all files first
 	size_t byteNum(0ull), instructionNum(0ull);

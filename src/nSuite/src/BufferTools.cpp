@@ -17,23 +17,22 @@ bool BFT::CompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer
 		return false;
 	}
 
+	// Pre-allocate a huge buffer to allow for compression operations
 	const auto sourceSize = sourceBuffer.size();
-
-	// Pre-allocate a huge buffer to allow for compression OPS
-	char * lz4_compressionWorkingBuffer = new char[sourceSize * 2ull];
+	const auto workingSize = sourceBuffer.size() * 2ull;
+	Buffer workingBuffer(workingSize);
 
 	// Try to compress the source buffer
 	const auto compressedSize = LZ4_compress_default(
 		sourceBuffer.cArray(),
-		lz4_compressionWorkingBuffer,
+		workingBuffer.cArray(),
 		int(sourceSize),
-		int(sourceSize * 2ull)
+		int(workingSize)
 	);
 
 	// Ensure we have a non-zero sized buffer
 	if (compressedSize <= 0) {
 		Log::PushText("Error: could not compress source buffer.\r\n");
-		delete[] lz4_compressionWorkingBuffer;
 		return false;
 	}
 
@@ -52,49 +51,47 @@ bool BFT::CompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer
 	std::memcpy(HEADER_ADDRESS, &sourceSize, size_t(sizeof(size_t)));
 
 	// Copy compressed data over
-	std::memcpy(DATA_ADDRESS, lz4_compressionWorkingBuffer, size_t(compressedSize));
-	delete[] lz4_compressionWorkingBuffer;
+	std::memcpy(DATA_ADDRESS, workingBuffer.data(), size_t(compressedSize));
 
 	// Success
 	return true;
 }
 
-bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize)
+bool BFT::DecompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer)
 {
 	// Ensure buffer at least *exists*
-	if (sourceSize <= size_t(sizeof(size_t)) || sourceBuffer == nullptr) {
-		Log::PushText("Error: source buffer doesn't exist or has no content.\r\n");
+	if (!sourceBuffer.hasData()) {
+		Log::PushText("Error: source buffer is empty.\r\n");
 		return false;
 	}
 
 	// Parse the header
-	char * packagedData(nullptr);
-	size_t packagedDataSize(0ull);
-	const bool result = ParseHeader(sourceBuffer, sourceSize, destinationSize, &packagedData, packagedDataSize);
+	Buffer compressedBuffer;
+	size_t uncompressedSize(0ull);
+	const bool result = ParseHeader(sourceBuffer, uncompressedSize, compressedBuffer);
 	if (!result) {
 		Log::PushText("Error: cannot parse package header.\r\n");
 		return false;
 	}
 
 	// Uncompress the data
-	*destinationBuffer = new char[destinationSize];
+	destinationBuffer = Buffer(uncompressedSize);
 	const auto decompressionResult = LZ4_decompress_safe(
-		packagedData,
-		*destinationBuffer,
-		int(packagedDataSize),
-		int(destinationSize)
+		compressedBuffer.cArray(),
+		destinationBuffer.cArray(),
+		int(compressedBuffer.size()),
+		int(destinationBuffer.size())
 	);
+	compressedBuffer.release();
 
 	// Ensure we have a non-zero sized buffer
 	if (decompressionResult <= 0) {
 		Log::PushText("Error: could not decompress source buffer.\r\n");
-		destinationSize = 0ull;
-		delete[] * destinationBuffer;
 		return false;
 	}
 
 	// Success
-	return true;	
+	return true;
 }
 
 bool BFT::ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize)
@@ -128,6 +125,39 @@ bool BFT::ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompr
 	// Get the data portion
 	*dataPointer = DATA_ADDRESS;
 	dataSize = bufferSize - HEADER_SIZE;
+	return true;
+}
+
+bool BFT::ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer)
+{
+	// Ensure buffer at least *exists*
+	if (!buffer.hasData()) {
+		Log::PushText("Error: source buffer is empty.\r\n");
+		return false;
+	}
+
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
+	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
+	const size_t DATA_SIZE = buffer.size() - HEADER_SIZE;
+	char headerTitle_In[HEADER_TITLE_SIZE];
+	char * HEADER_ADDRESS = buffer.cArray();
+	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
+
+	// Read in the header title of this buffer, ENSURE it matches
+	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
+		Log::PushText("Error: the source buffer specified is not a valid nSuite compressed buffer.\r\n");
+		return false;
+	}
+
+	// Get uncompressed size
+	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+	uncompressedSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+
+	// Get the data portion
+	dataBuffer = Buffer(DATA_ADDRESS, buffer.size() - HEADER_SIZE);
 	return true;
 }
 
@@ -418,9 +448,11 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	size_new = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
 
 	// Try to decompress the diff buffer
-	char * buffer_diff_full(nullptr);
-	size_t size_diff_full(0ull);
-	const auto result = BFT::DecompressBuffer(DATA_ADDRESS, DATA_SIZE, &buffer_diff_full, size_diff_full);
+	/////////////////////////////////////////////////
+	Buffer DELETE_ME(DATA_ADDRESS, DATA_SIZE);
+	/////////////////////////////////////////////////
+	Buffer diffInstructionBuffer;
+	const auto result = BFT::DecompressBuffer(DELETE_ME, diffInstructionBuffer);
 	if (!result) {
 		Log::PushText("Error: cannot complete buffer patching, as diff buffer cannot be decompressed.\r\n");
 		size_new = 0ull;
@@ -430,12 +462,12 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	// Convert buffer into instructions
 	*buffer_new = new char[size_new];
 	size_t bytesRead(0ull);
-	void * readingPtr = buffer_diff_full;
+	void * readingPtr = diffInstructionBuffer.data();
 	constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 	const auto CallDo = [&buffer_new, &size_new, &buffer_old, size_old](const auto & obj) { return obj.DO(*buffer_new, size_new, buffer_old, size_old); };
 	size_t count(0ull);
 	Threader threader;
-	while (bytesRead < size_diff_full) {
+	while (bytesRead < diffInstructionBuffer.size()) {
 		// Make the instruction, reading it in from memory
 		const auto & instruction = Instruction_Maker::Make(&readingPtr);
 		// Read the instruction size
@@ -452,13 +484,13 @@ bool BFT::PatchBuffer(char * buffer_old, const size_t & size_old, char ** buffer
 	while (!threader.isFinished())
 		continue;
 	threader.shutdown();
+	diffInstructionBuffer.release();
 
 	// Update optional parameter
 	if (instructionCount != nullptr)
 		*instructionCount += count;
 
 	// Success
-	delete[] buffer_diff_full;
 	return true;
 }
 
@@ -486,6 +518,12 @@ void * BFT::PTR_ADD(void * const ptr, const size_t & offset)
 
 Buffer::Buffer(const size_t & size) : m_data(size) {}
 
+Buffer::Buffer(const void * pointer, const size_t & range)
+	: m_data(range)
+{
+	std::memcpy(m_data.data(), pointer, range);
+}
+
 size_t Buffer::size() const
 {
 	return m_data.size();
@@ -501,9 +539,9 @@ char * Buffer::cArray() const
 	return reinterpret_cast<char*>(const_cast<std::byte*>(m_data.data()));
 }
 
-std::byte * Buffer::data()
+std::byte * Buffer::data() const
 {
-	return m_data.data();
+	return const_cast<std::byte*>(m_data.data());
 }
 
 void Buffer::resize(const size_t & size)

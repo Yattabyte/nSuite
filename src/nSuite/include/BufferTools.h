@@ -11,6 +11,7 @@ public:
 	~Buffer() = default;
 	Buffer() = default;
 	Buffer(const size_t & size);
+	Buffer(const void * pointer, const size_t & range);
 
 
 	// Public Methods
@@ -21,7 +22,7 @@ public:
 
 	// Data Accessor Methods
 	char * cArray() const;
-	std::byte * data();
+	std::byte * data() const;
 
 	// Data Modifying Methods
 	void resize(const size_t & size);
@@ -48,13 +49,10 @@ namespace BFT {
 	@return						true if compression success, false otherwise. */
 	bool CompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer);
 	/** Decompressess a source buffer into an equal or larger-sized destination buffer.
-	@note						caller expected to clean-up destinationBuffer on their own
-	@param	sourceBuffer		the original buffer to read from.
-	@param	sourceSize			the size of the source buffer in bytes.
-	@param	destinationBuffer	pointer to the destination buffer, which will hold decompressed contents.
-	@param	destinationSize		reference updated with the size in bytes of the decompressed destinationBuffer.
-	@return						true if decompression success, false otherwise. */
-	bool DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char ** destinationBuffer, size_t & destinationSize);
+	@param	sourceBuffer		the buffer to read from.
+	@param	destinationBuffer	reference updated with a decompressed version of the source buffer.
+	@return						true if decompression success, false otherwise. */	
+	bool DecompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer);
 	/** Parses the header of an nSuite compressed buffer, updating parameters like the data portion of the buffer if successfull.
 	@param	buffer				the buffer to parse.
 	@param	bufferSize			the size of the buffer, in bytes.
@@ -63,6 +61,7 @@ namespace BFT {
 	@param	dataSize			size of the remaining data portion of the buffer (package size - header size).
 	@return						true if the nSuite compressed buffer is formatted correctly and could be parsed, false otherwise. */
 	bool ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize);
+	bool ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer);
 	/** Processes two input buffers, diffing them.
 	Generates a compressed instruction set dictating how to get from the old buffer to the new buffer.
 	buffer_diff format:
