@@ -54,13 +54,10 @@ namespace BFT {
 	@return						true if decompression success, false otherwise. */	
 	bool DecompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuffer);
 	/** Parses the header of an nSuite compressed buffer, updating parameters like the data portion of the buffer if successfull.
-	@param	buffer				the buffer to parse.
-	@param	bufferSize			the size of the buffer, in bytes.
+	@param	buffer				the entire package buffer to parse.
 	@param	uncompressedSize	reference updated with the uncompressed size of the package.
-	@param	dataPointer			pointer to the data portion of the buffer.
-	@param	dataSize			size of the remaining data portion of the buffer (package size - header size).
+	@param	dataBuffer			reference updated with a buffer containing the remaining data portion of the package.
 	@return						true if the nSuite compressed buffer is formatted correctly and could be parsed, false otherwise. */
-	bool ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize);
 	bool ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer);
 	/** Processes two input buffers, diffing them.
 	Generates a compressed instruction set dictating how to get from the old buffer to the new buffer.

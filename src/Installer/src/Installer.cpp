@@ -84,7 +84,11 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 			success = false;
 		}
 		else {
-			result = BFT::ParseHeader(packagedData, packagedDataSize, m_maxSize, &packagedData, packagedDataSize);
+			/////////////////////////////////////////////////
+			Buffer DELETE_ME(packagedData, packagedDataSize);
+			/////////////////////////////////////////////////
+			Buffer packageBuffer;
+			result = BFT::ParseHeader(DELETE_ME, m_maxSize, packageBuffer);
 			if (!result) {
 				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;

@@ -94,40 +94,6 @@ bool BFT::DecompressBuffer(const Buffer & sourceBuffer, Buffer & destinationBuff
 	return true;
 }
 
-bool BFT::ParseHeader(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize)
-{
-	// Ensure buffer at least *exists*
-	if (bufferSize <= size_t(sizeof(size_t)) || buffer == nullptr) {
-		Log::PushText("Error: source buffer doesn't exist or has no content.\r\n");
-		return false;
-	}
-
-	// Expected header information
-	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	const size_t DATA_SIZE = bufferSize - HEADER_SIZE;
-	char headerTitle_In[HEADER_TITLE_SIZE];
-	char * HEADER_ADDRESS = buffer;
-	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
-
-	// Read in the header title of this buffer, ENSURE it matches
-	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
-	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
-		Log::PushText("Error: the source buffer specified is not a valid nSuite compressed buffer.\r\n");
-		return false;
-	}
-
-	// Get uncompressed size
-	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-	uncompressedSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
-
-	// Get the data portion
-	*dataPointer = DATA_ADDRESS;
-	dataSize = bufferSize - HEADER_SIZE;
-	return true;
-}
-
 bool BFT::ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer)
 {
 	// Ensure buffer at least *exists*
