@@ -75,18 +75,26 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		success = false;
 	}
 	else {
-		// Read directory header data
-		void * pointer = m_archive.getPtr();
-		const auto folderSize = *reinterpret_cast<size_t*>(pointer);
-		pointer = BFT::PTR_ADD(pointer, size_t(sizeof(size_t)));
-		m_packageName = std::string(reinterpret_cast<char*>(pointer), folderSize);
-		pointer = BFT::PTR_ADD(pointer, folderSize);
-		// Read compressed package header
-		m_maxSize = *reinterpret_cast<size_t*>(reinterpret_cast<char*>(pointer));
-
-		// If no name is found, use the package name (if available)
-		if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
-			m_mfStrings[L"name"] = to_wideString(m_packageName);
+		// Parse the header
+		char * packagedData(nullptr);
+		size_t packagedDataSize(0ull);
+		bool result = DRT::ParsePackage(reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), m_packageName, &packagedData, packagedDataSize);
+		if (!result) {
+			Log::PushText("Critical failure: cannot parse archive package's header.\r\n");
+			success = false;
+		}
+		else {
+			result = BFT::ParsePackage(packagedData, packagedDataSize, m_maxSize, &packagedData, packagedDataSize);
+			if (!result) {
+				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
+				success = false;
+			}
+			else {
+				// If no name is found, use the package name (if available)
+				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
+					m_mfStrings[L"name"] = to_wideString(m_packageName);
+			}
+		}
 	}
 	// Create window class
 	WNDCLASSEX wcex;

@@ -32,6 +32,14 @@ namespace DRT {
 	@param	fileCount			(optional) pointer updated with the number of files written to disk.
 	@return						true if decompression success, false otherwise. */
 	bool DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount = nullptr, size_t * fileCount = nullptr);
+	/** Parses the header of an .npack formatted buffer, updating parameters like the data portion of the buffer if successfull.
+	@param	packageBuffer		the package buffer to parse.
+	@param	packageSize			the size of the package buffer, in bytes.
+	@param	packageName			reference updated with the name given to the package.
+	@param	dataPointer			pointer to the data portion of the package buffer.
+	@param	dataSize			size of the remaining data portion of the package buffer (package size - header size).
+	@return						true if the package is formatted correctly and could be parsed, false otherwise. */
+	bool ParsePackage(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize);
 	/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
 	diffBuffer format:
 	-------------------------------------------------------------------------------

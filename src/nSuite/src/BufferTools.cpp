@@ -4,6 +4,7 @@
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
+
 #define CBUFFER_HEADER_TEXT "nSuite cbuffer"
 #define DBUFFER_HEADER_TEXT "nSuite dbuffer"
 
@@ -65,37 +66,26 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 		return false;
 	}
 
-	// Expected header information
-	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	const size_t DATA_SIZE = sourceSize - HEADER_SIZE;
-	char headerTitle_In[HEADER_TITLE_SIZE];
-	char * HEADER_ADDRESS = sourceBuffer;
-	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
-
-	// Read in the header title of this buffer, ENSURE it matches
-	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
-	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
-		Log::PushText("Error: the source buffer specified is not a valid nSuite compressed buffer.\r\n");
+	// Parse the header
+	char * packagedData(nullptr);
+	size_t packagedDataSize(0ull);
+	const bool result = ParsePackage(sourceBuffer, sourceSize, destinationSize, &packagedData, packagedDataSize);
+	if (!result) {
+		Log::PushText("Error: cannot parse package header.\r\n");
 		return false;
-	}	
-	
-	// Get data size
-	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-	destinationSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
-	*destinationBuffer = new char[destinationSize];
+	}
 
-	// Get data
-	const auto result = LZ4_decompress_safe(
-		DATA_ADDRESS,
+	// Uncompress the data
+	*destinationBuffer = new char[destinationSize];
+	const auto decompressionResult = LZ4_decompress_safe(
+		packagedData,
 		*destinationBuffer,
-		int(DATA_SIZE),
+		int(packagedDataSize),
 		int(destinationSize)
 	);
 
 	// Ensure we have a non-zero sized buffer
-	if (result <= 0) {
+	if (decompressionResult <= 0) {
 		Log::PushText("Error: could not decompress source buffer.\r\n");
 		destinationSize = 0ull;
 		delete[] * destinationBuffer;
@@ -104,6 +94,40 @@ bool BFT::DecompressBuffer(char * sourceBuffer, const size_t & sourceSize, char 
 
 	// Success
 	return true;	
+}
+
+bool BFT::ParsePackage(char * buffer, const size_t & bufferSize, size_t & uncompressedSize, char ** dataPointer, size_t & dataSize)
+{
+	// Ensure buffer at least *exists*
+	if (bufferSize <= size_t(sizeof(size_t)) || buffer == nullptr) {
+		Log::PushText("Error: source buffer doesn't exist or has no content.\r\n");
+		return false;
+	}
+
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
+	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
+	const size_t DATA_SIZE = bufferSize - HEADER_SIZE;
+	char headerTitle_In[HEADER_TITLE_SIZE];
+	char * HEADER_ADDRESS = buffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
+
+	// Read in the header title of this buffer, ENSURE it matches
+	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
+		Log::PushText("Error: the source buffer specified is not a valid nSuite compressed buffer.\r\n");
+		return false;
+	}
+
+	// Get uncompressed size
+	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+	uncompressedSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+
+	// Get the data portion
+	*dataPointer = DATA_ADDRESS;
+	dataSize = bufferSize - HEADER_SIZE;
+	return true;
 }
 
 bool BFT::DiffBuffers(char * buffer_old, const size_t & size_old, char * buffer_new, const size_t & size_new, char ** buffer_diff, size_t & size_diff, size_t * instructionCount)

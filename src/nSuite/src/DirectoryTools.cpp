@@ -10,7 +10,8 @@
 #include <fstream>
 #include <shlobj.h>
 #include <vector>
-#define CDIRECTORY_HEADER_TEXT "nSuite package"
+
+#define PDIRECTORY_HEADER_TEXT "nSuite package"
 #define DDIRECTORY_HEADER_TEXT "nSuite diff"
 
 
@@ -142,8 +143,8 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	}
 
 	// Expected header information
-	constexpr const char HEADER_TITLE[] = CDIRECTORY_HEADER_TEXT;
-	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CDIRECTORY_HEADER_TEXT) / sizeof(*CDIRECTORY_HEADER_TEXT));
+	constexpr const char HEADER_TITLE[] = PDIRECTORY_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(PDIRECTORY_HEADER_TEXT) / sizeof(*PDIRECTORY_HEADER_TEXT));
 	const size_t HEADER_SIZE = HEADER_TITLE_SIZE + folderName.size() + size_t(sizeof(size_t));
 	packSize = HEADER_SIZE + size_t(compressedSize);
 	*packBuffer = new char[packSize];
@@ -174,35 +175,21 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 		return false;
 	}
 
-	// Expected header information
-	constexpr const char HEADER_TITLE[] = CDIRECTORY_HEADER_TEXT;
-	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CDIRECTORY_HEADER_TEXT) / sizeof(*CDIRECTORY_HEADER_TEXT));
-	size_t HEADER_SIZE = HEADER_TITLE_SIZE;
-	char headerTitle_In[HEADER_TITLE_SIZE];
-	char * HEADER_ADDRESS = packBuffer;
-	char * DATA_ADDRESS = HEADER_ADDRESS;
-
-	// Read in the header title of this buffer, ENSURE it matches
-	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
-	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
-		Log::PushText("Error: the package buffer specified is not a valid nSuite package buffer.\r\n");
+	// Parse the header
+	std::string packageName("");
+	char * packagedData(nullptr);
+	size_t packagedDataSize(0ull);
+	const bool result = ParsePackage(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
+	if (!result) {
+		Log::PushText("Error: cannot begin directory decompression, as package header cannot be parsed.\r\n");
 		return false;
-	}
-
-	// Get the folder size + name
-	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-	const auto folderSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
-	HEADER_SIZE += folderSize + size_t(sizeof(size_t));
-	DATA_ADDRESS += HEADER_SIZE;
-	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));
-	const char * folderArray = reinterpret_cast<char*>(HEADER_ADDRESS);
-	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + std::string(folderArray, folderSize));
+	}	
 
 	// Try to decompress the buffer
+	const auto finalDestionation = SanitizePath(dstDirectory + "\\" + packageName);
 	char * decompressedBuffer(nullptr);
 	size_t decompressedSize(0ull);
-	const size_t DATA_SIZE = packSize - HEADER_SIZE;
-	if (!BFT::DecompressBuffer(DATA_ADDRESS, DATA_SIZE, &decompressedBuffer, decompressedSize)) {
+	if (!BFT::DecompressBuffer(packagedData, packagedDataSize, &decompressedBuffer, decompressedSize)) {
 		Log::PushText("Error: cannot complete directory decompression, as the package file cannot be decompressed.\r\n");
 		return false;
 	}
@@ -263,6 +250,47 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 
 	// Success
 	delete[] decompressedBuffer;
+	return true;
+}
+
+bool DRT::ParsePackage(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize)
+{
+	// Ensure buffer at least *exists*
+	if (packageSize <= size_t(sizeof(size_t)) || packageBuffer == nullptr) {
+		Log::PushText("Error: package buffer doesn't exist or has no content.\r\n");
+		return false;
+	}
+
+	// Expected header information
+	constexpr const char HEADER_TITLE[] = PDIRECTORY_HEADER_TEXT;
+	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(PDIRECTORY_HEADER_TEXT) / sizeof(*PDIRECTORY_HEADER_TEXT));
+	size_t HEADER_SIZE = HEADER_TITLE_SIZE;
+	if (packageSize < HEADER_SIZE) {
+		Log::PushText("Error: package buffer is malformed.\r\n");
+		return false;
+	}
+	char headerTitle_In[HEADER_TITLE_SIZE];
+	char * HEADER_ADDRESS = packageBuffer;
+	char * DATA_ADDRESS = HEADER_ADDRESS;
+
+	// Read in the header title of this buffer, ENSURE it matches
+	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
+		Log::PushText("Error: the package buffer specified is not a valid nSuite package buffer.\r\n");
+		return false;
+	}
+
+	// Get the folder size + name
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
+	const auto folderSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+	HEADER_SIZE += folderSize + size_t(sizeof(size_t));
+	DATA_ADDRESS += HEADER_SIZE;
+	HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, size_t(sizeof(size_t))));
+	packageName = std::string(reinterpret_cast<char*>(HEADER_ADDRESS), folderSize);
+
+	// Get the data portion
+	*dataPointer = DATA_ADDRESS;
+	dataSize = packageSize - HEADER_SIZE;
 	return true;
 }
 
@@ -334,31 +362,19 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 			packFile.close();
 		}
 
-		// Expected header information
-		constexpr const char HEADER_TITLE[] = CDIRECTORY_HEADER_TEXT;
-		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CDIRECTORY_HEADER_TEXT) / sizeof(*CDIRECTORY_HEADER_TEXT));
-		size_t HEADER_SIZE = HEADER_TITLE_SIZE;
-		char headerTitle_In[HEADER_TITLE_SIZE];
-		char * HEADER_ADDRESS = packBuffer;
-		char * DATA_ADDRESS = HEADER_ADDRESS;
-
-		// Read in the header title of this buffer, ENSURE it matches
-		std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
-		if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
-			Log::PushText("Error: the package buffer specified is not a valid nSuite package buffer.\r\n");
+		// Parse the header
+		std::string packageName("");
+		char * packagedData(nullptr);
+		size_t packagedDataSize(0ull);
+		const bool result = ParsePackage(packBuffer, packSize, packageName, &packagedData, packagedDataSize);
+		if (!result) {
+			Log::PushText("Error: cannot begin directory decompression, as package header cannot be parsed.\r\n");
 			return false;
 		}
 
-		// Get the folder size + name
-		HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-		const auto folderSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
-		HEADER_SIZE += folderSize + size_t(sizeof(size_t));
-		DATA_ADDRESS += HEADER_SIZE;
-
-		// Decompress
+		// Try to decompress the buffer
 		size_t snapSize(0ull);
-		const size_t DATA_SIZE = packSize - HEADER_SIZE;
-		const bool decompressResult = BFT::DecompressBuffer(DATA_ADDRESS, DATA_SIZE, snapshot, snapSize);
+		const bool decompressResult = BFT::DecompressBuffer(packagedData, packagedDataSize, snapshot, snapSize);
 
 		// Check if we need to delete the packBuffer, or if it is an embedded resource
 		// If it's an embedded resource, the fileResource's destructor will satisfy, else do below
