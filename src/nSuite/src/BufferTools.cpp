@@ -1,51 +1,9 @@
 #include "BufferTools.h"
 #include "Instructions.h"
-#include "Log.h"
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
 
-#define CBUFFER_HEADER_TEXT "nSuite cbuffer"
-#define DBUFFER_HEADER_TEXT "nSuite dbuffer"
-
-
-bool BFT::ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer)
-{
-	// Ensure buffer at least *exists*
-	if (!buffer.hasData()) {
-		Log::PushText("Error: source buffer is empty.\r\n");
-		return false;
-	}
-
-	// Expected header information
-	constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-	constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-	constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-	const size_t DATA_SIZE = buffer.size() - HEADER_SIZE;
-	char headerTitle_In[HEADER_TITLE_SIZE];
-	char * HEADER_ADDRESS = buffer.cArray();
-	char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
-
-	// Read in the header title of this buffer, ENSURE it matches
-	std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
-	if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
-		Log::PushText("Error: the source buffer specified is not a valid nSuite compressed buffer.\r\n");
-		return false;
-	}
-
-	// Get uncompressed size
-	HEADER_ADDRESS = reinterpret_cast<char*>(PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-	uncompressedSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
-
-	// Get the data portion
-	dataBuffer = Buffer(DATA_ADDRESS, buffer.size() - HEADER_SIZE);
-	return true;
-}
-
-void * BFT::PTR_ADD(void * const ptr, const size_t & offset)
-{
-	return static_cast<std::byte*>(ptr) + offset;
-}
 
 Buffer::Buffer(const size_t & size) : m_data(size) {}
 
@@ -82,6 +40,20 @@ const size_t Buffer::hash() const
 		value = ((value << 5) + value) + reinterpret_cast<char&>(const_cast<std::byte&>(m_data[x])); 
 
 	return value;
+}
+
+size_t Buffer::readData(void * dataPointer, const size_t & size, const size_t index) const
+{
+	auto address = static_cast<std::byte*>(const_cast<std::byte*>(m_data.data())) + index;
+	std::memcpy(dataPointer, address, size);
+	return index + size;
+}
+
+size_t Buffer::writeData(const void * dataPointer, const size_t & size, const size_t index) const
+{
+	auto address = static_cast<std::byte*>(const_cast<std::byte*>(m_data.data())) + index;
+	std::memcpy(address, dataPointer, size);
+	return index + size;
 }
 
 char * Buffer::cArray() const
@@ -124,16 +96,13 @@ std::optional<Buffer> Buffer::compress() const
 			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
 			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
 			Buffer compressedBuffer(HEADER_SIZE + size_t(compressedSize));
-			char * HEADER_ADDRESS = compressedBuffer.cArray();
-			char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-			// Write header information
-			std::memcpy(HEADER_ADDRESS, &HEADER_TITLE[0], HEADER_TITLE_SIZE);
-			HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-			std::memcpy(HEADER_ADDRESS, &sourceSize, size_t(sizeof(size_t)));
+			// Write Header Information
+			auto index = compressedBuffer.writeData(&HEADER_TITLE[0], HEADER_TITLE_SIZE);
+			index = compressedBuffer.writeData(&sourceSize, size_t(sizeof(size_t)), index);
 
-			// Copy compressed data over
-			std::memcpy(DATA_ADDRESS, workingBuffer.data(), size_t(compressedSize));
+			// Write compressed data over
+			index = compressedBuffer.writeData(workingBuffer.data(), size_t(compressedSize), index);
 			workingBuffer.release();
 
 			// Success
@@ -153,35 +122,35 @@ std::optional<Buffer> Buffer::decompress() const
 		constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
 		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
 		constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-		const size_t DATA_SIZE = size() - HEADER_SIZE;
-		char headerTitle_In[HEADER_TITLE_SIZE];
-		char * HEADER_ADDRESS = cArray();
-		char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-		// Read in the header title of this buffer, ENSURE it matches
-		std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+		// Read in header title, ensure header matches
+		char headerTitle_In[HEADER_TITLE_SIZE];
+		auto index = readData(&headerTitle_In, HEADER_TITLE_SIZE);
 		if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
 			// Get uncompressed size
-			HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-			const auto uncompressedSize = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+			size_t uncompressedSize(0ull);
+			index = readData(&uncompressedSize, size_t(sizeof(size_t)), index);
 
 			// Uncompress the remaining data
-			Buffer compressedBuffer(DATA_ADDRESS, size() - HEADER_SIZE);
+			/////////////////////////////////////////////////
+			const size_t DATA_SIZE = size() - HEADER_SIZE;
+			Buffer DELETE_ME(&(operator[](index)), DATA_SIZE);
+			/////////////////////////////////////////////////
 			Buffer uncompressedBuffer(uncompressedSize);
 			const auto decompressionResult = LZ4_decompress_safe(
-				compressedBuffer.cArray(),
+				DELETE_ME.cArray(),
 				uncompressedBuffer.cArray(),
-				int(compressedBuffer.size()),
+				int(DELETE_ME.size()),
 				int(uncompressedBuffer.size())
 			);
-			compressedBuffer.release();
+			DELETE_ME.release();
 
 			// Ensure we have a non-zero sized buffer
 			if (decompressionResult > 0) 
 				// Success
 				return uncompressedBuffer;			
 		}		
-	}	
+	}
 
 	// Failure
 	return {};
@@ -208,9 +177,9 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 				// Step 1: Find all regions that match
 				struct MatchInfo { size_t length = 0ull, start1 = 0ull, start2 = 0ull; };
 				size_t bestContinuous(0ull), bestMatchCount(windowSize);
-				std::vector<MatchInfo> bestSeries;
-				auto buffer_slice_old = reinterpret_cast<std::byte*>(BFT::PTR_ADD(data(), bytesUsed_old));
-				auto buffer_slice_new = reinterpret_cast<std::byte*>(BFT::PTR_ADD(target.data(), bytesUsed_new));
+				std::vector<MatchInfo> bestSeries;				
+				auto buffer_slice_old = &(operator[](bytesUsed_old));
+				auto buffer_slice_new = &target[bytesUsed_new];
 				for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
 					const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
 					std::vector<MatchInfo> matches;
@@ -394,10 +363,10 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 		for each (const auto & instruction in instructions)
 			size_patch += std::visit(CallSize, instruction);
 		Buffer patchBuffer(size_patch);
-		void * writingPtr = patchBuffer.data();
 
 		// Write instruction data to the buffer
-		const auto CallWrite = [&writingPtr](const auto & obj) { obj.WRITE(&writingPtr); };
+		size_t index(0ull);
+		const auto CallWrite = [&patchBuffer, &index](const auto & obj) { obj.WRITE(patchBuffer, index); };
 		for (auto & instruction : instructions)
 			std::visit(CallWrite, instruction);
 
@@ -415,16 +384,13 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
 			Buffer diffBuffer(HEADER_SIZE + compressedPatchBuffer->size());
-			char * HEADER_ADDRESS = diffBuffer.cArray();
-			void * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-			// Write header information
-			std::memcpy(HEADER_ADDRESS, &HEADER_TITLE[0], HEADER_TITLE_SIZE);
-			HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-			std::memcpy(HEADER_ADDRESS, &size_new, size_t(sizeof(size_t)));
+			// Write Header Information
+			auto byteIndex = diffBuffer.writeData(&HEADER_TITLE[0], HEADER_TITLE_SIZE);
+			byteIndex = diffBuffer.writeData(&size_new, size_t(sizeof(size_t)), byteIndex);
 
-			// Copy compressed data over
-			std::memcpy(DATA_ADDRESS, compressedPatchBuffer->data(), compressedPatchBuffer->size());
+			// Write compressed data over
+			byteIndex = diffBuffer.writeData(compressedPatchBuffer->data(), compressedPatchBuffer->size(), byteIndex);
 			compressedPatchBuffer->release();
 
 			// Success
@@ -444,35 +410,32 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer)
 		constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
 		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
 		constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-		const size_t DATA_SIZE = diffBuffer.size() - HEADER_SIZE;
-		char headerTitle_In[HEADER_TITLE_SIZE];
-		char * HEADER_ADDRESS = diffBuffer.cArray();
-		char * DATA_ADDRESS = HEADER_ADDRESS + HEADER_SIZE;
 
-		// Read in the header title of this buffer, ENSURE it matches
-		std::memcpy(headerTitle_In, HEADER_ADDRESS, HEADER_TITLE_SIZE);
+		// Read in diffBuffer's header title, ensure header matches
+		char headerTitle_In[HEADER_TITLE_SIZE];
+		auto index = diffBuffer.readData(&headerTitle_In, HEADER_TITLE_SIZE);
 		if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
-			// Get source file size
-			HEADER_ADDRESS = reinterpret_cast<char*>(BFT::PTR_ADD(HEADER_ADDRESS, HEADER_TITLE_SIZE));
-			const auto NEW_SIZE = *reinterpret_cast<size_t*>(HEADER_ADDRESS);
+			// Get uncompressed size
+			size_t newSize(0ull);
+			index = diffBuffer.readData(&newSize, size_t(sizeof(size_t)), index);
 
 			// Try to decompress the diff buffer
 			/////////////////////////////////////////////////
-			Buffer DELETE_ME(DATA_ADDRESS, DATA_SIZE);
+			const size_t DATA_SIZE = diffBuffer.size() - HEADER_SIZE;
+			Buffer DELETE_ME(&diffBuffer[index], DATA_SIZE);
 			/////////////////////////////////////////////////
 			auto diffInstructionBuffer = DELETE_ME.decompress();
 			DELETE_ME.release();
 			if (diffInstructionBuffer) {
 				// Convert buffer into instructions
-				Buffer bufferNew(NEW_SIZE);
-				size_t bytesRead(0ull);
-				void * readingPtr = diffInstructionBuffer->data();
+				Threader threader;
+				Buffer bufferNew(newSize);
+				size_t bytesRead(0ull), byteIndex(0ull);
 				constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 				const auto CallDo = [&](const auto & obj) { return obj.DO(bufferNew, *this); };
-				Threader threader;
 				while (bytesRead < diffInstructionBuffer->size()) {
 					// Make the instruction, reading it in from memory
-					const auto & instruction = Instruction_Maker::Make(&readingPtr);
+					const auto & instruction = Instruction_Maker::Make(*diffInstructionBuffer, byteIndex);
 					// Read the instruction size
 					bytesRead += std::visit(CallSize, instruction);
 					threader.addJob([instruction, &CallDo]() {

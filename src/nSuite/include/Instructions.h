@@ -16,9 +16,9 @@ public:
 	/** Exectute this instruction. */
 	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Copy_Instruction READ(void ** pointer);
+	static Copy_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -35,9 +35,9 @@ public:
 	/** Exectute this instruction. */
 	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Insert_Instruction READ(void ** pointer);
+	static Insert_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -55,9 +55,9 @@ public:
 	/** Exectute this instruction. */
 	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Repeat_Instruction READ(void ** pointer);
+	static Repeat_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -72,7 +72,7 @@ using InstructionTypes = std::variant<Copy_Instruction, Insert_Instruction, Repe
 /** Creates an instruction and returns it after reading it in from a buffer. */
 struct Instruction_Maker {
 	/** Make an instruction, reading it in from a buffer. */
-	static InstructionTypes Make(void ** pointer);
+	static InstructionTypes Make(Buffer & outputBuffer, size_t & byteIndex);
 };
 
 #endif // INSTRUCTIONS_H

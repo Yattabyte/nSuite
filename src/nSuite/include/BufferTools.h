@@ -5,6 +5,9 @@
 #include <optional>
 #include <vector>
 
+#define CBUFFER_HEADER_TEXT "nSuite cbuffer"
+#define DBUFFER_HEADER_TEXT "nSuite dbuffer"
+
 
 /** Generic byte array encapsulation, adaptor for std::vector. */
 class Buffer {
@@ -28,6 +31,10 @@ public:
 	/** Generates a hash value for this buffer, using it's contents.
 	@return						hash value for this buffer. */
 	const size_t hash() const;
+	/***/
+	size_t readData(void * dataPointer, const size_t & size, const size_t index = 0) const;
+	/***/
+	size_t writeData(const void * dataPointer, const size_t & size, const size_t index = 0) const;
 	/***/
 	char * cArray() const;
 	/***/
@@ -85,22 +92,6 @@ public:
 private:
 	// Private Attributes
 	std::vector<std::byte> m_data;
-};
-
-
-/** Namespace to keep buffer-related operations grouped together. */
-namespace BFT {
-	/** Parses the header of an nSuite compressed buffer, updating parameters like the data portion of the buffer if successfull.
-	@param	buffer				the entire package buffer to parse.
-	@param	uncompressedSize	reference updated with the uncompressed size of the package.
-	@param	dataBuffer			reference updated with a buffer containing the remaining data portion of the package.
-	@return						true if the nSuite compressed buffer is formatted correctly and could be parsed, false otherwise. */
-	bool ParseHeader(const Buffer & buffer, size_t & uncompressedSize, Buffer & dataBuffer);
-	/** Increment a pointer's address by the offset provided.
-	@param	ptr					the pointer to increment by the offset amount.
-	@param	offset				the offset amount to apply to the pointer's address.
-	@return						the modified pointer address. */
-	void * PTR_ADD(void *const ptr, const size_t & offset);
 };
 
 #endif // BUFFER_TOOLS_H

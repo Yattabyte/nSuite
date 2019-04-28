@@ -1,139 +1,133 @@
 #include "Instructions.h"
-#include "BufferTools.h"
 
-size_t Copy_Instruction::SIZE() const {
+
+size_t Copy_Instruction::SIZE() const 
+{
 	return sizeof(char) + (sizeof(size_t) * 3ull);
 }
 
-void Copy_Instruction::DO(Buffer & bufferNew, const Buffer & bufferOld) const {
+void Copy_Instruction::DO(Buffer & bufferNew, const Buffer & bufferOld) const 
+{
 	for (auto i = index, x = beginRead; i < bufferNew.size() && x < endRead && x < bufferOld.size(); ++i, ++x)
 		bufferNew[i] = bufferOld[x];
 }
 
-void Copy_Instruction::WRITE(void ** pointer) const {
+void Copy_Instruction::WRITE(Buffer & outputBuffer, size_t & byteIndex) const 
+{
 	// Write Type
-	*reinterpret_cast<char*>(*pointer) = TYPE;
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+	byteIndex = outputBuffer.writeData(&TYPE, size_t(sizeof(char)), byteIndex);
 	// Write Index
-	std::memcpy(*pointer, &index, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&index, size_t(sizeof(size_t)), byteIndex);
 	// Write Begin
-	std::memcpy(*pointer, &beginRead, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&beginRead, size_t(sizeof(size_t)), byteIndex);
 	// Write End
-	std::memcpy(*pointer, &endRead, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&endRead, size_t(sizeof(size_t)), byteIndex);
 }
 
-Copy_Instruction Copy_Instruction::READ(void ** pointer) {
+Copy_Instruction Copy_Instruction::READ(Buffer & outputBuffer, size_t & byteIndex)
+{
 	// Type already read
 	Copy_Instruction inst;
 	// Read Index
-	inst.index = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.readData(&inst.index, size_t(sizeof(size_t)), byteIndex);
 	// Read Begin
-	inst.beginRead = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.readData(&inst.beginRead, size_t(sizeof(size_t)), byteIndex);
 	// Read End
-	inst.endRead = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.readData(&inst.endRead, size_t(sizeof(size_t)), byteIndex);
 	return inst;
 }
 
-size_t Insert_Instruction::SIZE() const {
+size_t Insert_Instruction::SIZE() const 
+{
 	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * newData.size());
 }
 
-void Insert_Instruction::DO(Buffer & bufferNew, const Buffer &) const {
+void Insert_Instruction::DO(Buffer & bufferNew, const Buffer &) const 
+{
 	for (auto i = index, x = size_t(0ull), length = newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
 		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(newData[x]));
 }
 
-void Insert_Instruction::WRITE(void ** pointer) const {
+void Insert_Instruction::WRITE(Buffer & outputBuffer, size_t & byteIndex) const 
+{
 	// Write Type
-	*reinterpret_cast<char*>(*pointer) = TYPE;
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+	byteIndex = outputBuffer.writeData(&TYPE, size_t(sizeof(char)), byteIndex);
 	// Write Index
-	std::memcpy(*pointer, &index, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&index, size_t(sizeof(size_t)), byteIndex);
 	// Write Length
 	auto length = newData.size();
-	std::memcpy(*pointer, &length, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&length, size_t(sizeof(size_t)), byteIndex);
 	if (length) {
 		// Write Data
-		std::memcpy(*pointer, newData.data(), length);
-		*pointer = BFT::PTR_ADD(*pointer, length);
+		byteIndex = outputBuffer.writeData(newData.data(), length, byteIndex);
 	}
 }
 
-Insert_Instruction Insert_Instruction::READ(void ** pointer) {
+Insert_Instruction Insert_Instruction::READ(Buffer & outputBuffer, size_t & byteIndex)
+{
 	// Type already read
 	Insert_Instruction inst;
 	// Read Index
-	inst.index = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.readData(&inst.index, size_t(sizeof(size_t)), byteIndex);
 	// Read Length
-	size_t length = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	size_t length;
+	byteIndex = outputBuffer.readData(&length, size_t(sizeof(size_t)), byteIndex);
 	if (length) {
 		// Read Data
 		inst.newData.resize(length);
-		std::memcpy(inst.newData.data(), *pointer, length);
-		*pointer = BFT::PTR_ADD(*pointer, length);
+		byteIndex = outputBuffer.readData(inst.newData.data(), length, byteIndex);
 	}
 	return inst;
 }
 
-size_t Repeat_Instruction::SIZE() const {
+size_t Repeat_Instruction::SIZE() const 
+{
 	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
 }
 
-void Repeat_Instruction::DO(Buffer & bufferNew, const Buffer &) const {
+void Repeat_Instruction::DO(Buffer & bufferNew, const Buffer &) const 
+{
 	for (auto i = index, x = size_t(0ull); i < bufferNew.size() && x < amount; ++i, ++x)
 		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(value));
 }
 
-void Repeat_Instruction::WRITE(void ** pointer) const {
+void Repeat_Instruction::WRITE(Buffer & outputBuffer, size_t & byteIndex) const
+{
 	// Write Type
-	*reinterpret_cast<char*>(*pointer) = TYPE;
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+	byteIndex = outputBuffer.writeData(&TYPE, size_t(sizeof(char)), byteIndex);
 	// Write Index
-	std::memcpy(*pointer, &index, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&index, size_t(sizeof(size_t)), byteIndex);
 	// Write Amount
-	std::memcpy(*pointer, &amount, sizeof(size_t));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.writeData(&amount, size_t(sizeof(size_t)), byteIndex);
 	// Write Value
-	std::memcpy(*pointer, &value, sizeof(char));
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+	byteIndex = outputBuffer.writeData(&value, size_t(sizeof(char)), byteIndex);
 }
 
-Repeat_Instruction Repeat_Instruction::READ(void ** pointer) {
+Repeat_Instruction Repeat_Instruction::READ(Buffer & outputBuffer, size_t & byteIndex)
+{
 	// Type already read
 	Repeat_Instruction inst;
 	// Read Index
-	inst.index = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	byteIndex = outputBuffer.readData(&inst.index, size_t(sizeof(size_t)), byteIndex);
 	// Read Amount
-	inst.amount = *reinterpret_cast<size_t*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(size_t));
+	size_t amount;
+	byteIndex = outputBuffer.readData(&amount, size_t(sizeof(size_t)), byteIndex);
 	// Read Value
-	inst.value = *reinterpret_cast<char*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+	byteIndex = outputBuffer.readData(&inst.value, size_t(sizeof(char)), byteIndex);
 	return inst;
 }
 
-InstructionTypes Instruction_Maker::Make(void ** pointer) {
-	const char type = *reinterpret_cast<char*>(*pointer);
-	*pointer = BFT::PTR_ADD(*pointer, sizeof(char));
+InstructionTypes Instruction_Maker::Make(Buffer & outputBuffer, size_t & byteIndex)
+{
+	char type;
+	byteIndex = outputBuffer.readData(&type, size_t(sizeof(char)), byteIndex);
 	switch (type) {
-	case Copy_Instruction::TYPE:
-		return Copy_Instruction::READ(pointer);
-	case Insert_Instruction::TYPE:
-		return Insert_Instruction::READ(pointer);
-	case Repeat_Instruction::TYPE:
-		return Repeat_Instruction::READ(pointer);
+		case Copy_Instruction::TYPE:
+			return Copy_Instruction::READ(outputBuffer, byteIndex);
+		case Insert_Instruction::TYPE:
+			return Insert_Instruction::READ(outputBuffer, byteIndex);
+		case Repeat_Instruction::TYPE:
+			return Repeat_Instruction::READ(outputBuffer, byteIndex);
 	}
 	return {};
 }

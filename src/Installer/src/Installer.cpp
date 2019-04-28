@@ -84,16 +84,25 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 			success = false;
 		}
 		else {
+			// Expected header information
+			constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
+			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
+			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
+
+			// Read in header title, ensure header matches
 			/////////////////////////////////////////////////
 			Buffer DELETE_ME(packagedData, packagedDataSize);
 			/////////////////////////////////////////////////
-			Buffer packageBuffer;
-			result = BFT::ParseHeader(DELETE_ME, m_maxSize, packageBuffer);
-			if (!result) {
+			char headerTitle_In[HEADER_TITLE_SIZE];
+			auto index = DELETE_ME.readData(&headerTitle_In, HEADER_TITLE_SIZE);
+			if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
 				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;
 			}
 			else {
+				// Get uncompressed size
+				index = DELETE_ME.readData(&m_maxSize, size_t(sizeof(size_t)), index);
+
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
 					m_mfStrings[L"name"] = to_wideString(m_packageName);

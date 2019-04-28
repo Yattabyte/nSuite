@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#define PDIRECTORY_HEADER_TEXT "nSuite package"
+#define DDIRECTORY_HEADER_TEXT "nSuite diff"
+
 
 /** Namespace to keep directory-related operations grouped together. */
 namespace DRT {
