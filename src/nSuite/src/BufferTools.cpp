@@ -10,7 +10,7 @@ Buffer::Buffer(const size_t & size) : m_data(size) {}
 Buffer::Buffer(const void * pointer, const size_t & range)
 	: m_data(range)
 {
-	std::memcpy(m_data.data(), pointer, range);
+	std::memcpy(&m_data[0], pointer, range);
 }
 
 bool Buffer::hasData() const
@@ -25,34 +25,31 @@ size_t Buffer::size() const
 
 const size_t Buffer::hash() const
 {
+	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
 	size_t value(1234567890ull);
-	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(m_data.data()));
-
-	size_t x = 0ull, max = m_data.size() / 8ull;
+	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
+	size_t x(0ull), full(m_data.size()), max(full / 8ull);
 	for (; x < max; ++x)
-		value = ((value << 5) + value) + pointer[x];
+		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
 
-	// in-case size isn't a multiple of 8, data will be leftover
-	// modify index so we can compare byte-wise
+	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
 	x *= 8ull;
-	for (; x < m_data.size(); ++x)
-		// compare remaining bytes
-		value = ((value << 5) + value) + reinterpret_cast<char&>(const_cast<std::byte&>(m_data[x])); 
+	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
+	for (; x < full; ++x)		
+		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
 
 	return value;
 }
 
 size_t Buffer::readData(void * dataPointer, const size_t & size, const size_t index) const
 {
-	auto address = static_cast<std::byte*>(const_cast<std::byte*>(m_data.data())) + index;
-	std::memcpy(dataPointer, address, size);
+	std::memcpy(dataPointer, &m_data[index], size);
 	return index + size;
 }
 
-size_t Buffer::writeData(const void * dataPointer, const size_t & size, const size_t index) const
+size_t Buffer::writeData(const void * dataPointer, const size_t & size, const size_t index)
 {
-	auto address = static_cast<std::byte*>(const_cast<std::byte*>(m_data.data())) + index;
-	std::memcpy(address, dataPointer, size);
+	std::memcpy(&m_data[index], dataPointer, size);
 	return index + size;
 }
 
@@ -68,7 +65,7 @@ std::byte * Buffer::data() const
 
 std::byte & Buffer::operator[](const size_t & index) const
 {
-	return const_cast<std::byte&>(m_data.at(index));
+	return const_cast<std::byte&>(m_data[index]);
 }
 
 std::optional<Buffer> Buffer::compress() const
@@ -92,13 +89,10 @@ std::optional<Buffer> Buffer::compress() const
 		if (compressedSize > 0) {
 			// We now know the actual compressed buffer size
 			// Calculate the size of the header, then generate a DECORATED compressed buffer
-			constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-			Buffer compressedBuffer(HEADER_SIZE + size_t(compressedSize));
+			Buffer compressedBuffer(CBUFFER_H_SIZE + size_t(compressedSize));
 
 			// Write Header Information
-			auto index = compressedBuffer.writeData(&HEADER_TITLE[0], HEADER_TITLE_SIZE);
+			auto index = compressedBuffer.writeData(&CBUFFER_H_TITLE[0], CBUFFER_H_TITLE_SIZE);
 			index = compressedBuffer.writeData(&sourceSize, size_t(sizeof(size_t)), index);
 
 			// Write compressed data over
@@ -118,22 +112,17 @@ std::optional<Buffer> Buffer::decompress() const
 {
 	// Ensure buffer at least *exists*
 	if (hasData()) {
-		// Expected header information
-		constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-		constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-
 		// Read in header title, ensure header matches
-		char headerTitle_In[HEADER_TITLE_SIZE];
-		auto index = readData(&headerTitle_In, HEADER_TITLE_SIZE);
-		if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
+		char headerTitle_In[CBUFFER_H_TITLE_SIZE];
+		auto index = readData(&headerTitle_In, CBUFFER_H_TITLE_SIZE);
+		if (std::strcmp(headerTitle_In, CBUFFER_H_TITLE) == 0) {
 			// Get uncompressed size
 			size_t uncompressedSize(0ull);
 			index = readData(&uncompressedSize, size_t(sizeof(size_t)), index);
 
 			// Uncompress the remaining data
 			/////////////////////////////////////////////////
-			const size_t DATA_SIZE = size() - HEADER_SIZE;
+			const size_t DATA_SIZE = size() - CBUFFER_H_SIZE;
 			Buffer DELETE_ME(&(operator[](index)), DATA_SIZE);
 			/////////////////////////////////////////////////
 			Buffer uncompressedBuffer(uncompressedSize);
@@ -146,9 +135,10 @@ std::optional<Buffer> Buffer::decompress() const
 			DELETE_ME.release();
 
 			// Ensure we have a non-zero sized buffer
-			if (decompressionResult > 0) 
+			if (decompressionResult > 0) {
 				// Success
-				return uncompressedBuffer;			
+				return uncompressedBuffer;
+			}
 		}		
 	}
 
@@ -380,13 +370,10 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 		if (compressedPatchBuffer) {
 			// We now want to prepend a header
 			// Calculate the size of the header, then generate a DECORATED compressed diff buffer
-			constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
-			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
-			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-			Buffer diffBuffer(HEADER_SIZE + compressedPatchBuffer->size());
+			Buffer diffBuffer(DBUFFER_H_SIZE + compressedPatchBuffer->size());
 
 			// Write Header Information
-			auto byteIndex = diffBuffer.writeData(&HEADER_TITLE[0], HEADER_TITLE_SIZE);
+			auto byteIndex = diffBuffer.writeData(&DBUFFER_H_TITLE[0], DBUFFER_H_TITLE_SIZE);
 			byteIndex = diffBuffer.writeData(&size_new, size_t(sizeof(size_t)), byteIndex);
 
 			// Write compressed data over
@@ -406,22 +393,17 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer)
 {
 	// Ensure diff buffer at least *exists* (ignore old buffer, when empty we treat instruction as a brand new file)
 	if (diffBuffer.hasData()) {
-		// Expected header information
-		constexpr const char HEADER_TITLE[] = DBUFFER_HEADER_TEXT;
-		constexpr const size_t HEADER_TITLE_SIZE = (sizeof(DBUFFER_HEADER_TEXT) / sizeof(*DBUFFER_HEADER_TEXT));
-		constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-
 		// Read in diffBuffer's header title, ensure header matches
-		char headerTitle_In[HEADER_TITLE_SIZE];
-		auto index = diffBuffer.readData(&headerTitle_In, HEADER_TITLE_SIZE);
-		if (std::strcmp(headerTitle_In, HEADER_TITLE) == 0) {
+		char headerTitle_In[DBUFFER_H_TITLE_SIZE];
+		auto index = diffBuffer.readData(&headerTitle_In, DBUFFER_H_TITLE_SIZE);
+		if (std::strcmp(headerTitle_In, DBUFFER_H_TITLE) == 0) {
 			// Get uncompressed size
 			size_t newSize(0ull);
 			index = diffBuffer.readData(&newSize, size_t(sizeof(size_t)), index);
 
 			// Try to decompress the diff buffer
 			/////////////////////////////////////////////////
-			const size_t DATA_SIZE = diffBuffer.size() - HEADER_SIZE;
+			const size_t DATA_SIZE = diffBuffer.size() - DBUFFER_H_SIZE;
 			Buffer DELETE_ME(&diffBuffer[index], DATA_SIZE);
 			/////////////////////////////////////////////////
 			auto diffInstructionBuffer = DELETE_ME.decompress();

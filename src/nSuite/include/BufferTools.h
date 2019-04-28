@@ -5,8 +5,12 @@
 #include <optional>
 #include <vector>
 
-#define CBUFFER_HEADER_TEXT "nSuite cbuffer"
-#define DBUFFER_HEADER_TEXT "nSuite dbuffer"
+constexpr const char CBUFFER_H_TITLE[] = "nSuite cbuffer";
+constexpr const char DBUFFER_H_TITLE[] = "nSuite dbuffer";
+constexpr const size_t CBUFFER_H_TITLE_SIZE = (sizeof(CBUFFER_H_TITLE) / sizeof(*CBUFFER_H_TITLE));
+constexpr const size_t DBUFFER_H_TITLE_SIZE = (sizeof(DBUFFER_H_TITLE) / sizeof(*DBUFFER_H_TITLE));
+constexpr const size_t CBUFFER_H_SIZE = CBUFFER_H_TITLE_SIZE + size_t(sizeof(size_t));
+constexpr const size_t DBUFFER_H_SIZE = DBUFFER_H_TITLE_SIZE + size_t(sizeof(size_t));
 
 
 /** Generic byte array encapsulation, adaptor for std::vector. */
@@ -34,7 +38,7 @@ public:
 	/***/
 	size_t readData(void * dataPointer, const size_t & size, const size_t index = 0) const;
 	/***/
-	size_t writeData(const void * dataPointer, const size_t & size, const size_t index = 0) const;
+	size_t writeData(const void * dataPointer, const size_t & size, const size_t index = 0);
 	/***/
 	char * cArray() const;
 	/***/

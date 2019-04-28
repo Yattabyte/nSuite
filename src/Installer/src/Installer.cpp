@@ -84,18 +84,13 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 			success = false;
 		}
 		else {
-			// Expected header information
-			constexpr const char HEADER_TITLE[] = CBUFFER_HEADER_TEXT;
-			constexpr const size_t HEADER_TITLE_SIZE = (sizeof(CBUFFER_HEADER_TEXT) / sizeof(*CBUFFER_HEADER_TEXT));
-			constexpr const size_t HEADER_SIZE = HEADER_TITLE_SIZE + size_t(sizeof(size_t));
-
 			// Read in header title, ensure header matches
 			/////////////////////////////////////////////////
 			Buffer DELETE_ME(packagedData, packagedDataSize);
 			/////////////////////////////////////////////////
-			char headerTitle_In[HEADER_TITLE_SIZE];
-			auto index = DELETE_ME.readData(&headerTitle_In, HEADER_TITLE_SIZE);
-			if (std::strcmp(headerTitle_In, HEADER_TITLE) != 0) {
+			char headerTitle_In[CBUFFER_H_TITLE_SIZE];
+			auto index = DELETE_ME.readData(&headerTitle_In, CBUFFER_H_TITLE_SIZE);
+			if (std::strcmp(headerTitle_In, CBUFFER_H_TITLE) != 0) {
 				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;
 			}
