@@ -2,7 +2,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
-#include "BufferTools.h"
+#include "Buffer.h"
 #include <variant>
 #include <vector>
 

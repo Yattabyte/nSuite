@@ -1,6 +1,6 @@
 #include "Log.h"
 #include "DirectoryTools.h"
-#include "BufferTools.h"
+#include "Buffer.h"
 #include "Resource.h"
 #include <chrono>
 #include <iostream>

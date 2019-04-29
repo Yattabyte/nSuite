@@ -1,5 +1,5 @@
 #include "Commands/PatchCommand.h"
-#include "BufferTools.h"
+#include "Buffer.h"
 #include "DirectoryTools.h"
 #include "StringConversions.h"
 #include "Log.h"

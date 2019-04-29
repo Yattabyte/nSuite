@@ -1,9 +1,18 @@
-#include "BufferTools.h"
+#include "Buffer.h"
 #include "Instructions.h"
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
 
+
+// Public (de)Constructors
+
+Buffer::~Buffer()
+{
+	release();
+}
+
+Buffer::Buffer() : m_data(0) {}
 
 Buffer::Buffer(const size_t & size) : m_data(size) {}
 
@@ -13,60 +22,8 @@ Buffer::Buffer(const void * pointer, const size_t & range)
 	std::memcpy(&m_data[0], pointer, range);
 }
 
-bool Buffer::hasData() const
-{
-	return !m_data.empty();
-}
 
-size_t Buffer::size() const
-{
-	return m_data.size();
-}
-
-const size_t Buffer::hash() const
-{
-	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
-	size_t value(1234567890ull);
-	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
-	size_t x(0ull), full(m_data.size()), max(full / 8ull);
-	for (; x < max; ++x)
-		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
-
-	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
-	x *= 8ull;
-	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
-	for (; x < full; ++x)		
-		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
-
-	return value;
-}
-
-size_t Buffer::readData(void * dataPointer, const size_t & size, const size_t index) const
-{
-	std::memcpy(dataPointer, &m_data[index], size);
-	return index + size;
-}
-
-size_t Buffer::writeData(const void * dataPointer, const size_t & size, const size_t index)
-{
-	std::memcpy(&m_data[index], dataPointer, size);
-	return index + size;
-}
-
-char * Buffer::cArray() const
-{
-	return reinterpret_cast<char*>(const_cast<std::byte*>(m_data.data()));
-}
-
-std::byte * Buffer::data() const
-{
-	return const_cast<std::byte*>(m_data.data());
-}
-
-std::byte & Buffer::operator[](const size_t & index) const
-{
-	return const_cast<std::byte&>(m_data[index]);
-}
+// Public Derivators
 
 std::optional<Buffer> Buffer::compress() const
 {
@@ -139,14 +96,14 @@ std::optional<Buffer> Buffer::decompress() const
 				// Success
 				return uncompressedBuffer;
 			}
-		}		
+		}
 	}
 
 	// Failure
 	return {};
 }
 
-std::optional<Buffer> Buffer::diff(const Buffer & target)
+std::optional<Buffer> Buffer::diff(const Buffer & target) const
 {
 	// Ensure that at least ONE of the two source buffers exists
 	if (hasData() || target.hasData()) {
@@ -167,7 +124,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 				// Step 1: Find all regions that match
 				struct MatchInfo { size_t length = 0ull, start1 = 0ull, start2 = 0ull; };
 				size_t bestContinuous(0ull), bestMatchCount(windowSize);
-				std::vector<MatchInfo> bestSeries;				
+				std::vector<MatchInfo> bestSeries;
 				auto buffer_slice_old = &(operator[](bytesUsed_old));
 				auto buffer_slice_new = &target[bytesUsed_new];
 				for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
@@ -389,7 +346,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target)
 	return {};
 }
 
-std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer)
+std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 {
 	// Ensure diff buffer at least *exists* (ignore old buffer, when empty we treat instruction as a brand new file)
 	if (diffBuffer.hasData()) {
@@ -441,6 +398,67 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer)
 
 	// Failure
 	return {};
+}
+
+
+// Public Accessors
+
+bool Buffer::hasData() const
+{
+	return !m_data.empty();
+}
+
+size_t Buffer::size() const
+{
+	return m_data.size();
+}
+
+const size_t Buffer::hash() const
+{
+	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
+	size_t value(1234567890ull);
+	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
+	size_t x(0ull), full(m_data.size()), max(full / 8ull);
+	for (; x < max; ++x)
+		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
+
+	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
+	x *= 8ull;
+	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
+	for (; x < full; ++x)		
+		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
+
+	return value;
+}
+
+size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
+{
+	std::memcpy(outputPtr, &m_data[byteOffset], size);
+	return byteOffset + size;
+}
+
+
+// Public Modifiers
+
+size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
+{
+	std::memcpy(&m_data[byteOffset], inputPtr, size);
+	return byteOffset + size;
+}
+
+char * Buffer::cArray() const
+{
+	return reinterpret_cast<char*>(const_cast<std::byte*>(m_data.data()));
+}
+
+std::byte * Buffer::data() const
+{
+	return const_cast<std::byte*>(m_data.data());
+}
+
+std::byte & Buffer::operator[](const size_t & byteOffset) const
+{
+	return const_cast<std::byte&>(m_data[byteOffset]);
 }
 
 void Buffer::resize(const size_t & size)

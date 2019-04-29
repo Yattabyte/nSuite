@@ -1,7 +1,7 @@
 #include "Installer.h"
 #include "StringConversions.h"
 #include "DirectoryTools.h"
-#include "BufferTools.h"
+#include "Buffer.h"
 #include "Log.h"
 #include <fstream>
 #include <regex>

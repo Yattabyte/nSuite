@@ -4,15 +4,15 @@
 set (ModuleStatic nSuite-Static)
 set (ModuleShared nSuite-Shared)
 
-# Grou Files
+# Group Files
 set(FILES
 	# Source files
-	src/BufferTools.cpp
+	src/Buffer.cpp
 	src/DirectoryTools.cpp
 	src/Instructions.cpp	
 	
 	# Header files
-	include/BufferTools.h
+	include/Buffer.h
 	include/StringConversions.h
 	include/DirectoryTools.h
 	include/Instructions.h	
