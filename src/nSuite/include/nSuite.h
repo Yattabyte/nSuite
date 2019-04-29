@@ -2,6 +2,7 @@
 #ifndef DIRECTORY_TOOLS_H
 #define DIRECTORY_TOOLS_H
 
+#include "Buffer.h"
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -10,8 +11,8 @@
 #define DDIRECTORY_HEADER_TEXT "nSuite diff"
 
 
-/** Namespace to keep directory-related operations grouped together. */
-namespace DRT {
+/** Namespace declaration for all nSuite methods and classes. */
+namespace NST {
 	/** Compresses all disk contents found within a source directory into an .npack - package formatted buffer.
 	After compression, it applies a small header dictating packaged folders' name.
 	packBuffer format:

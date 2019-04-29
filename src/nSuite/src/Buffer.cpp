@@ -4,6 +4,8 @@
 #include "lz4.h"
 #include <algorithm>
 
+using namespace NST;
+
 
 // Public (de)Constructors
 

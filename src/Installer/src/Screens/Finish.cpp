@@ -1,6 +1,6 @@
 #include "Screens/Finish.h"
 #include "StringConversions.h"
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "Installer.h"
 
 
@@ -150,7 +150,7 @@ void Finish::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = DRT::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			const auto dstPath = NST::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
@@ -163,7 +163,7 @@ void Finish::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = DRT::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			const auto dstPath = NST::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;

@@ -1,5 +1,7 @@
 #include "Instructions.h"
 
+using namespace NST;
+
 
 size_t Copy_Instruction::SIZE() const 
 {

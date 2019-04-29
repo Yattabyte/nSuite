@@ -23,48 +23,51 @@
 #include "Windows.h"
 
 
-/** Utility class encapsulating resource files embedded in a application. */
-class Resource {
-public:
-	// Public (de)constructors
-	/** Destroys this resource object, unlocking it for future use. */
-	inline ~Resource() {
-		UnlockResource(m_hMemory);
-		FreeResource(m_hMemory);
-	}
-	/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
-	inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
-		m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
-		m_hMemory = LoadResource(moduleHandle, m_hResource);
-		m_ptr = LockResource(m_hMemory);
-		m_size = SizeofResource(moduleHandle, m_hResource);
-	}
+/** Add Resource to nSuite NST namespace. */
+namespace NST {
+	/** Utility class encapsulating resource files embedded in a application. */
+	class Resource {
+	public:
+		// Public (de)constructors
+		/** Destroys this resource object, unlocking it for future use. */
+		inline ~Resource() {
+			UnlockResource(m_hMemory);
+			FreeResource(m_hMemory);
+		}
+		/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
+		inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
+			m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
+			m_hMemory = LoadResource(moduleHandle, m_hResource);
+			m_ptr = LockResource(m_hMemory);
+			m_size = SizeofResource(moduleHandle, m_hResource);
+		}
 
 
-	// Public Methods
-	/** Retrieve a pointer to this resources' data.
-	@return		a pointer to the beginning of this resources' data. */
-	inline void * getPtr() const {
-		return m_ptr;
-	}
-	/** Retrieve the size of this resource in bytes.
-	@return		the size of this resources' data in bytes. */
-	inline size_t getSize() const {
-		return m_size;
-	}
-	/** Check if this resource has successfully completed initialization and has at least 1 byte of data.
-	@return		true if this resource exists, false otherwise. */
-	inline bool exists() const {
-		return (m_hResource && m_hMemory && m_ptr) && (m_size > 0ull);
-	}
+		// Public Methods
+		/** Retrieve a pointer to this resources' data.
+		@return		a pointer to the beginning of this resources' data. */
+		inline void * getPtr() const {
+			return m_ptr;
+		}
+		/** Retrieve the size of this resource in bytes.
+		@return		the size of this resources' data in bytes. */
+		inline size_t getSize() const {
+			return m_size;
+		}
+		/** Check if this resource has successfully completed initialization and has at least 1 byte of data.
+		@return		true if this resource exists, false otherwise. */
+		inline bool exists() const {
+			return (m_hResource && m_hMemory && m_ptr) && (m_size > 0ull);
+		}
 
 
-private:
-	// Private Attributes
-	HRSRC m_hResource = nullptr;
-	HGLOBAL m_hMemory = nullptr;
-	void * m_ptr = nullptr;
-	size_t m_size = 0;
+	private:
+		// Private Attributes
+		HRSRC m_hResource = nullptr;
+		HGLOBAL m_hMemory = nullptr;
+		void * m_ptr = nullptr;
+		size_t m_size = 0;
+	};
 };
 
 #endif // RESOURCE_H

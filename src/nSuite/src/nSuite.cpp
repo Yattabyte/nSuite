@@ -1,4 +1,4 @@
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "Buffer.h"
 #include "Resource.h"
 #include "Log.h"
@@ -11,13 +11,15 @@
 #include <shlobj.h>
 #include <vector>
 
+using namespace NST;
+
 
 static void * PTR_ADD(void * const ptr, const size_t & offset)
 {
 	return static_cast<std::byte*>(ptr) + offset;
 }
 
-bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t * byteCount, size_t * fileCount, const std::vector<std::string> & exclusions)
+bool NST::CompressDirectory(const std::string & srcDirectory, char ** packBuffer, size_t & packSize, size_t * byteCount, size_t * fileCount, const std::vector<std::string> & exclusions)
 {
 	// Variables
 	const auto absolute_path_length = srcDirectory.size();
@@ -165,7 +167,7 @@ bool DRT::CompressDirectory(const std::string & srcDirectory, char ** packBuffer
 	return true;
 }
 
-bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount, size_t * fileCount)
+bool NST::DecompressDirectory(const std::string & dstDirectory, char * packBuffer, const size_t & packSize, size_t * byteCount, size_t * fileCount)
 {
 	// Ensure buffer at least *exists*
 	if (packSize <= size_t(sizeof(size_t)) || packBuffer == nullptr) {
@@ -254,7 +256,7 @@ bool DRT::DecompressDirectory(const std::string & dstDirectory, char * packBuffe
 	return true;
 }
 
-bool DRT::ParseHeader(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize)
+bool NST::ParseHeader(char * packageBuffer, const size_t & packageSize, std::string & packageName, char ** dataPointer, size_t & dataSize)
 {
 	// Ensure buffer at least *exists*
 	if (packageSize <= size_t(sizeof(size_t)) || packageBuffer == nullptr) {
@@ -295,7 +297,7 @@ bool DRT::ParseHeader(char * packageBuffer, const size_t & packageSize, std::str
 	return true;
 }
 
-bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize)
+bool NST::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory, char ** diffBuffer, size_t & diffSize)
 {
 	// Declarations that will only be used here	
 	struct File {
@@ -584,7 +586,7 @@ bool DRT::DiffDirectories(const std::string & oldDirectory, const std::string & 
 	return true;
 }
 
-bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten)
+bool NST::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, const size_t & diffSize, size_t * bytesWritten)
 {
 	// Ensure buffer at least *exists*
 	if (diffSize <= size_t(sizeof(size_t)) || diffBuffer == nullptr) {
@@ -800,7 +802,7 @@ bool DRT::PatchDirectory(const std::string & dstDirectory, char * diffBuffer, co
 	return true;
 }
 
-std::vector<std::filesystem::directory_entry> DRT::GetFilePaths(const std::string & directory)
+std::vector<std::filesystem::directory_entry> NST::GetFilePaths(const std::string & directory)
 {
 	std::vector<std::filesystem::directory_entry> paths;
 	if (std::filesystem::is_directory(directory))
@@ -810,7 +812,7 @@ std::vector<std::filesystem::directory_entry> DRT::GetFilePaths(const std::strin
 	return paths;
 }
 
-std::string DRT::GetStartMenuPath()
+std::string NST::GetStartMenuPath()
 {
 	char cPath[FILENAME_MAX];
 	if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_COMMON_PROGRAMS, NULL, 0, cPath)))
@@ -818,7 +820,7 @@ std::string DRT::GetStartMenuPath()
 	return std::string();
 }
 
-std::string DRT::GetDesktopPath()
+std::string NST::GetDesktopPath()
 {
 	char cPath[FILENAME_MAX];
 	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE))
@@ -826,7 +828,7 @@ std::string DRT::GetDesktopPath()
 	return std::string();
 }
 
-std::string DRT::GetRunningDirectory()
+std::string NST::GetRunningDirectory()
 {
 	char cCurrentPath[FILENAME_MAX];
 	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
@@ -834,7 +836,7 @@ std::string DRT::GetRunningDirectory()
 	return std::string(cCurrentPath);
 }
 
-std::string DRT::SanitizePath(const std::string & path)
+std::string NST::SanitizePath(const std::string & path)
 {
 	std::string cpy(path);
 	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')

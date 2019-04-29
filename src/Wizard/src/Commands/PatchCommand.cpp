@@ -1,6 +1,5 @@
 #include "Commands/PatchCommand.h"
-#include "Buffer.h"
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "StringConversions.h"
 #include "Log.h"
 #include <fstream>
@@ -9,7 +8,7 @@
 int PatchCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	Log::PushText(
+	NST::Log::PushText(
 		"                      ~\r\n"
 		"        Patcher      /\r\n"
 		"  ~-----------------~\r\n"
@@ -27,11 +26,11 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = NST::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = NST::SanitizePath(std::string(&argv[x][5]));
 		else {
-			Log::PushText(
+			NST::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the .ndiff file]\r\n"
 				" -dst=[path to the directory to patch]\r\n"
@@ -48,18 +47,18 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 	// Try to open diff file
 	diffFile = std::ifstream(srcDirectory, std::ios::binary | std::ios::beg);
 	if (!diffFile.is_open())
-		Log::PushText("Cannot read diff file, aborting...\r\n");
+		NST::Log::PushText("Cannot read diff file, aborting...\r\n");
 	else {
 		// Try to patch the directory specified
 		const size_t diffSize = std::filesystem::file_size(srcDirectory);
 		diffBuffer = new char[diffSize];
 		diffFile.read(diffBuffer, std::streamsize(diffSize));
 		size_t bytesWritten(0ull);
-		if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten))
-			Log::PushText("aborting...\r\n");
+		if (!NST::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten))
+			NST::Log::PushText("aborting...\r\n");
 		else {
 			// Output results
-			Log::PushText(
+			NST::Log::PushText(
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
 			);
 			success = true;

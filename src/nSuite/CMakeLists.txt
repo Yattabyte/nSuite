@@ -8,18 +8,18 @@ set (ModuleShared nSuite-Shared)
 set(FILES
 	# Source files
 	src/Buffer.cpp
-	src/DirectoryTools.cpp
+	src/nSuite.cpp
 	src/Instructions.cpp	
 	
 	# Header files
 	include/Buffer.h
+	include/nSuite.h
+	include/Instructions.h
 	include/StringConversions.h
-	include/DirectoryTools.h
-	include/Instructions.h	
 	include/Log.h
 	include/Progress.h
-	include/Resource.h	
-	include/Threader.h	
+	include/Resource.h
+	include/Threader.h
 )
 
 # Create Library

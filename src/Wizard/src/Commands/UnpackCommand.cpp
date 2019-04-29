@@ -1,6 +1,5 @@
 #include "Commands/UnpackCommand.h"
-#include "Buffer.h"
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "StringConversions.h"
 #include "Log.h"
 #include <fstream>
@@ -9,7 +8,7 @@
 int UnpackCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	Log::PushText(
+	NST::Log::PushText(
 		"                      ~\r\n"
 		"       Unpacker      /\r\n"
 		"  ~-----------------~\r\n"
@@ -27,11 +26,11 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = NST::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = DRT::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = NST::SanitizePath(std::string(&argv[x][5]));
 		else {
-			Log::PushText(
+			NST::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the package file]\r\n"
 				" -dst=[directory to write package contents]\r\n"
@@ -49,7 +48,7 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 	packFile = std::ifstream(srcDirectory, std::ios::binary | std::ios::beg);
 	const size_t packSize = std::filesystem::file_size(srcDirectory);
 	if (!packFile.is_open())
-		Log::PushText("Cannot read diff file, aborting...\r\n");
+		NST::Log::PushText("Cannot read diff file, aborting...\r\n");
 	else {
 		// Copy contents into a buffer
 		packBuffer = new char[packSize];
@@ -57,11 +56,11 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 
 		// Try to unpackage using the resource file
 		size_t byteCount(0ull), fileCount(0ull);
-		if (!DRT::DecompressDirectory(dstDirectory, packBuffer, packSize, &byteCount, &fileCount))
-			Log::PushText("Cannot decompress package file, aborting...\r\n");
+		if (!NST::DecompressDirectory(dstDirectory, packBuffer, packSize, &byteCount, &fileCount))
+			NST::Log::PushText("Cannot decompress package file, aborting...\r\n");
 		else {
 			// Output results
-			Log::PushText(
+			NST::Log::PushText(
 				"Files written:   " + std::to_string(fileCount) + "\r\n" +
 				"Bytes processed: " + std::to_string(byteCount) + "\r\n"
 			);

@@ -14,11 +14,11 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Copy_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
+	static Copy_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -33,11 +33,11 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Insert_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
+	static Insert_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -53,11 +53,11 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(Buffer & bufferNew, const Buffer & bufferOld) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(Buffer & outputBuffer, size_t & byteIndex) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Repeat_Instruction READ(Buffer & outputBuffer, size_t & byteIndex);
+	static Repeat_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -72,7 +72,7 @@ using InstructionTypes = std::variant<Copy_Instruction, Insert_Instruction, Repe
 /** Creates an instruction and returns it after reading it in from a buffer. */
 struct Instruction_Maker {
 	/** Make an instruction, reading it in from a buffer. */
-	static InstructionTypes Make(Buffer & outputBuffer, size_t & byteIndex);
+	static InstructionTypes Make(NST::Buffer & outputBuffer, size_t & byteIndex);
 };
 
 #endif // INSTRUCTIONS_H
