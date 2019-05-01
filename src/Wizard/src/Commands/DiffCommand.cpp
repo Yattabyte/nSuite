@@ -16,14 +16,8 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 		"~\r\n\r\n"
 	);
 
-	// Create common variables
-	bool success = false;
-	std::ofstream file;
-	char * diffBuffer(nullptr);
-	size_t diffSize(0ull);
-	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
-
 	// Check command line arguments
+	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
@@ -57,27 +51,25 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".ndiff";
 	
 	// Try to diff the 2 directories specified
-	if (!NST::DiffDirectories(oldDirectory, newDirectory, &diffBuffer, diffSize))
+	const auto diffBuffer = NST::DiffDirectories(oldDirectory, newDirectory);
+	if (!diffBuffer)
 		NST::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
 	else {
 		// Try to create diff file
 		std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-		file = std::ofstream(dstDirectory, std::ios::binary | std::ios::out);
+		std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
 		if (!file.is_open())
 			NST::Log::PushText("Cannot write diff file to disk, aborting...\r\n");
 		else {
 			// Write the diff file to disk
-			file.write(diffBuffer, std::streamsize(diffSize));
+			file.write(diffBuffer->cArray(), std::streamsize(diffBuffer->size()));
+			file.close();
 
 			// Output results
-			NST::Log::PushText("Bytes written:  " + std::to_string(diffSize) + "\r\n"
-			);
-			success = true;
+			NST::Log::PushText("Bytes written:  " + std::to_string(diffBuffer->size()) + "\r\n");
+			return EXIT_SUCCESS;
 		}
 	}
 
-	// Clean-up
-	file.close();
-	delete[] diffBuffer;
-	return success ? EXIT_SUCCESS : EXIT_FAILURE;
+	return EXIT_FAILURE;
 }

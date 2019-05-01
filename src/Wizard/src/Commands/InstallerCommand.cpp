@@ -17,17 +17,8 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 		"~\r\n\r\n"
 	);
 
-	// Create common variables
-	bool success = false;
-	HANDLE handle(nullptr);
-	std::ofstream instFile;
-	std::ifstream maniFile;
-	char * packBuffer(nullptr), *maniBuffer(nullptr);
-	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
-	std::string srcDirectory(""), dstDirectory("");
-	const NST::Resource installer(IDR_INSTALLER, "INSTALLER");
-
 	// Check command line arguments
+	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
@@ -54,16 +45,21 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".exe";
 
 	// Try to compress the directory specified
-	if (!NST::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount, { "\\manifest.nman" }))
+	bool success = false;
+	HANDLE handle(nullptr);
+	size_t maxSize(0ull), fileCount(0ull);
+	const auto packBuffer = NST::CompressDirectory(srcDirectory, &maxSize, &fileCount, { "\\manifest.nman" });
+	if (!packBuffer)
 		NST::Log::PushText("Cannot create installer from the directory specified, aborting...\r\n");
 	else {
 		// Ensure resource exists
+		const NST::Resource installer(IDR_INSTALLER, "INSTALLER");
 		if (!installer.exists()) 
 			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");		
 		else {
 			// Try to create installer file
 			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-			instFile = std::ofstream(dstDirectory, std::ios::binary | std::ios::out);
+			std::ofstream instFile(dstDirectory, std::ios::binary | std::ios::out);
 			if (!instFile.is_open()) 
 				NST::Log::PushText("Cannot write installer to disk, aborting...\r\n");
 			else {
@@ -73,22 +69,23 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 
 				// Try to update installer's resource
 				handle = BeginUpdateResource(dstDirectory.c_str(), false);
-				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
+				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
 					NST::Log::PushText("Cannot write archive contents to the installer, aborting...\r\n");				
 				else {
 					// Try to find manifest file
 					if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {
 						const auto manifestSize = std::filesystem::file_size(srcDirectory + "\\manifest.nman");
-						maniFile = std::ifstream(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
+						std::ifstream maniFile(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
 						if (!maniFile.is_open())
 							NST::Log::PushText("Cannot open manifest file!\r\n");
 						else {
 							// Read manifest file
-							maniBuffer = new char[manifestSize];
-							maniFile.read(maniBuffer, (std::streamsize)manifestSize);
+							NST::Buffer manifestBuffer(manifestSize);
+							maniFile.read(manifestBuffer.cArray(), (std::streamsize)manifestSize);
+							maniFile.close();
 
 							// Update installers' manifest resource
-							if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), maniBuffer, (DWORD)manifestSize))
+							if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), manifestBuffer.data(), (DWORD)manifestSize))
 								NST::Log::PushText("Cannot write manifest contents to the installer!\r\n");						
 						}
 					}
@@ -96,7 +93,7 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 					NST::Log::PushText(
 						"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
 						"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
-						"Compressed Size: " + std::to_string(packSize) + "\r\n"
+						"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
 					);
 					success = true;
 				}
@@ -105,10 +102,6 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 	}
 
 	// Clean-up
-	maniFile.close();
-	instFile.close();
 	EndUpdateResource(handle, !success);
-	delete[] packBuffer;
-	delete[] maniBuffer;
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

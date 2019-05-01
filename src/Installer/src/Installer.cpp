@@ -75,33 +75,44 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		success = false;
 	}
 	else {
-		// Parse the header
-		char * packagedData(nullptr);
-		size_t packagedDataSize(0ull);
-		bool result = NST::ParseHeader(reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), m_packageName, &packagedData, packagedDataSize);
-		if (!result) {
-			NST::Log::PushText("Critical failure: cannot parse archive package's header.\r\n");
+		// Read in header
+		/////////////////////////////////////////////////
+		NST::Buffer DELETE_ME1(m_archive.getPtr(), m_archive.getSize());
+		/////////////////////////////////////////////////
+		PackageHeader packageHeader;
+		void * dataPtr1(nullptr);
+		size_t dataSize1(0ull);
+		DELETE_ME1.readHeader(&packageHeader, &dataPtr1, dataSize1);
+
+		// Ensure header title matches
+		if (std::strcmp(packageHeader.m_title, PackageHeader::TITLE) != 0) {
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");
 			success = false;
 		}
 		else {
-			// Read in header title, ensure header matches
+			m_packageName = packageHeader.m_folderName;
+			// Read in header
 			/////////////////////////////////////////////////
-			NST::Buffer DELETE_ME(packagedData, packagedDataSize);
+			NST::Buffer DELETE_ME(dataPtr1, dataSize1);
 			/////////////////////////////////////////////////
-			char headerTitle_In[CBUFFER_H_TITLE_SIZE];
-			auto index = DELETE_ME.readData(&headerTitle_In, CBUFFER_H_TITLE_SIZE);
-			if (std::strcmp(headerTitle_In, CBUFFER_H_TITLE) != 0) {
+			NST::Buffer::CompressionHeader header;
+			void * dataPtr(nullptr);
+			size_t dataSize(0ull);
+			DELETE_ME.readHeader(&header, &dataPtr, dataSize);
+
+			// Ensure header title matches
+			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0) {
 				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;
 			}
 			else {
-				// Get uncompressed size
-				index = DELETE_ME.readData(&m_maxSize, size_t(sizeof(size_t)), index);
-
+				// Get header payload -> uncompressed size
+				m_maxSize = header.m_uncompressedSize;
+				
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
 					m_mfStrings[L"name"] = to_wideString(m_packageName);
-			}
+			}			
 		}
 	}
 	// Create window class
@@ -225,7 +236,7 @@ void Installer::beginInstallation()
 		else {
 			// Unpackage using the rest of the resource file
 			auto directory = NST::SanitizePath(getDirectory());
-			if (!NST::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
+			if (!NST::DecompressDirectory(directory, NST::Buffer(m_archive.getPtr(), m_archive.getSize())))
 				invalidate();
 			else {
 				// Write uninstaller to disk

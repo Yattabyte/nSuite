@@ -112,8 +112,7 @@ Repeat_Instruction Repeat_Instruction::READ(Buffer & outputBuffer, size_t & byte
 	// Read Index
 	byteIndex = outputBuffer.readData(&inst.index, size_t(sizeof(size_t)), byteIndex);
 	// Read Amount
-	size_t amount;
-	byteIndex = outputBuffer.readData(&amount, size_t(sizeof(size_t)), byteIndex);
+	byteIndex = outputBuffer.readData(&inst.amount, size_t(sizeof(size_t)), byteIndex);	
 	// Read Value
 	byteIndex = outputBuffer.readData(&inst.value, size_t(sizeof(char)), byteIndex);
 	return inst;

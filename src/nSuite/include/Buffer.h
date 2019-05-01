@@ -3,14 +3,8 @@
 #define BUFFER_H
 
 #include <optional>
+#include <string>
 #include <vector>
-
-constexpr const char CBUFFER_H_TITLE[] = "nSuite cbuffer";
-constexpr const char DBUFFER_H_TITLE[] = "nSuite dbuffer";
-constexpr const size_t CBUFFER_H_TITLE_SIZE = (sizeof(CBUFFER_H_TITLE) / sizeof(*CBUFFER_H_TITLE));
-constexpr const size_t DBUFFER_H_TITLE_SIZE = (sizeof(DBUFFER_H_TITLE) / sizeof(*DBUFFER_H_TITLE));
-constexpr const size_t CBUFFER_H_SIZE = CBUFFER_H_TITLE_SIZE + size_t(sizeof(size_t));
-constexpr const size_t DBUFFER_H_SIZE = DBUFFER_H_TITLE_SIZE + size_t(sizeof(size_t));
 
 
 /** Add Buffer to nSuite NST namespace. */
@@ -18,6 +12,10 @@ namespace NST {
 	/** Generic byte array encapsulation, adaptor for std::vector. */
 	class Buffer {
 	public:
+		struct Header;
+		struct CompressionHeader;
+		struct DiffHeader;
+
 		// Public (de)Constructors
 		/** Destroy the buffer, erasing all buffer contents and freeing its memory. */
 		~Buffer();
@@ -32,7 +30,7 @@ namespace NST {
 		Buffer(const void * pointer, const size_t & range);
 
 
-		// Public Derivators
+		// Public Derivators	
 		/** Generates a compressed version of this buffer.
 		Compressed buffer format:
 		------------------------------------------------------------------
@@ -85,6 +83,8 @@ namespace NST {
 		@param	byteOffset			how many bytes into this buffer to begin copying from.
 		@return						new byte offset = byteOffset + size. */
 		size_t readData(void * outputPtr, const size_t & size, const size_t byteOffset = 0) const;
+		/***/
+		void readHeader(Header * header, void ** dataPtr, size_t & dataSize) const;
 
 
 		// Public Modifiers
@@ -94,14 +94,102 @@ namespace NST {
 		@param	byteOffset			how many bytes into this buffer to begin copying to.
 		@return						new byte offset = byteOffset + size. */
 		size_t writeData(const void * inputPtr, const size_t & size, const size_t byteOffset = 0);
+		/** Writes-in data from an input header buffer to the beginning of this buffer. Shifts old data down by the header size.
+		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc
+		@param	header				header to copy the data from. */
+		void writeHeader(const Header * header);
 		/** Changes the size of this buffer to the new size specified.
 		@note	Requires allocating a new buffer of the target size and copying over old data.
 		@note	If the new size is smaller than the old one, the trailing data will be lost.
+		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc
 		@param	size				the new size to use. */
 		void resize(const size_t & size);
 		/** Erases all buffer content and frees the memory this buffer allocated.
-		@note	All pointers given by this buffer are invalidated. */
+		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc */
 		void release();
+
+
+		// Public Header Information
+		/** A structure for holding and performing header I/O operations on buffers. */
+		struct Header {
+			// Attributes
+			static constexpr const size_t TITLE_SIZE = 16ull;
+			char m_title[TITLE_SIZE] = { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 };
+
+
+			// (de) Constructors
+			~Header() = default;
+			Header() = default;
+			inline Header(const char * title) {
+				strcpy_s(&m_title[0], TITLE_SIZE, title);
+			}
+
+
+			// Interface
+			virtual size_t size() const = 0;
+			/** Updates THIS with the data found in the input pointer. */
+			inline virtual void * operator << (void * ptr) {
+				std::memcpy(&m_title[0], ptr, TITLE_SIZE);
+				return &(reinterpret_cast<char*>(ptr)[TITLE_SIZE]);
+			}
+			/** Updates the data in the input pointer with the data found in THIS. */
+			inline virtual void * operator >> (void * ptr) const {
+				std::memcpy(ptr, &m_title[0], TITLE_SIZE);
+				return &reinterpret_cast<char*>(ptr)[TITLE_SIZE];
+			}
+		};
+		/** Holds and performs Compression I/O operations on buffers. */
+		struct CompressionHeader : Header {
+			// Attributes
+			static constexpr const char TITLE[] = "nSuite cmpress";
+			size_t m_uncompressedSize = 0ull;
+
+
+			// (de)Constructors
+			inline CompressionHeader(const size_t size = 0ull) : Header(TITLE), m_uncompressedSize(size) {}
+
+
+			// Interface Implementation
+			inline virtual size_t size() const override {
+				return size_t(sizeof(size_t));
+			}
+			inline virtual void * operator << (void * ptr) override {
+				ptr = Header::operator<<(ptr);
+				std::memcpy(&m_uncompressedSize, ptr, size());
+				return &(reinterpret_cast<char*>(ptr)[size()]);
+			}
+			inline virtual void *operator >> (void * ptr) const override {
+				ptr = Header::operator>>(ptr);
+				std::memcpy(ptr, &m_uncompressedSize, size());
+				return &reinterpret_cast<char*>(ptr)[size()];
+			}
+		};
+		/** Holds and performs Diff I/O operations on buffers. */
+		struct DiffHeader : Header {
+			// Attributes
+			static constexpr const char TITLE[] = "nSuite differ";
+			size_t m_targetSize = 0ull;
+
+
+			// (de)Constructors
+			inline DiffHeader(const size_t size = 0ull) : Header(TITLE), m_targetSize(size) {}
+
+
+			// Interface Implementation
+			inline virtual size_t size() const override {
+				return size_t(sizeof(size_t));
+			}
+			inline virtual void * operator << (void * ptr) override {
+				ptr = Header::operator>>(ptr);
+				std::memcpy(&m_targetSize, ptr, size());
+				return &(reinterpret_cast<char*>(ptr)[size()]);
+			}
+			inline virtual void *operator >> (void * ptr) const override {
+				ptr = Header::operator>>(ptr);
+				std::memcpy(ptr, &m_targetSize, size());
+				return &reinterpret_cast<char*>(ptr)[size()];
+			}
+		};
 
 
 	private:

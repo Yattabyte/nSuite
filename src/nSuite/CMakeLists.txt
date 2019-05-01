@@ -4,6 +4,8 @@
 set (ModuleStatic nSuite-Static)
 set (ModuleShared nSuite-Shared)
 
+configure_file(Resource.h.in include/Resource.h)
+
 # Group Files
 set(FILES
 	# Source files
@@ -21,6 +23,7 @@ set(FILES
 	include/Resource.h
 	include/Threader.h
 )
+
 
 # Create Library
 add_library(${ModuleStatic} STATIC ${FILES})

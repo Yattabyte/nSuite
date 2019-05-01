@@ -21,7 +21,8 @@ Buffer::Buffer(const size_t & size) : m_data(size) {}
 Buffer::Buffer(const void * pointer, const size_t & range)
 	: m_data(range)
 {
-	std::memcpy(&m_data[0], pointer, range);
+	if (pointer != nullptr && range > 0ull)
+		std::memcpy(&m_data[0], pointer, range);
 }
 
 
@@ -34,29 +35,24 @@ std::optional<Buffer> Buffer::compress() const
 		// Pre-allocate a huge buffer to allow for compression operations
 		const auto sourceSize = size();
 		const auto workingSize = sourceSize * 2ull;
-		Buffer workingBuffer(workingSize);
+		Buffer compressedBuffer(workingSize);
 
 		// Try to compress the source buffer
 		const auto compressedSize = LZ4_compress_default(
 			cArray(),
-			workingBuffer.cArray(),
+			compressedBuffer.cArray(),
 			int(sourceSize),
 			int(workingSize)
 		);
 
 		// Ensure we have a non-zero sized buffer
 		if (compressedSize > 0) {
-			// We now know the actual compressed buffer size
-			// Calculate the size of the header, then generate a DECORATED compressed buffer
-			Buffer compressedBuffer(CBUFFER_H_SIZE + size_t(compressedSize));
+			// We now know the actual compressed size, downsize our oversized buffer to the compressed size
+			compressedBuffer.resize(compressedSize);
 
-			// Write Header Information
-			auto index = compressedBuffer.writeData(&CBUFFER_H_TITLE[0], CBUFFER_H_TITLE_SIZE);
-			index = compressedBuffer.writeData(&sourceSize, size_t(sizeof(size_t)), index);
-
-			// Write compressed data over
-			index = compressedBuffer.writeData(workingBuffer.data(), size_t(compressedSize), index);
-			workingBuffer.release();
+			// Prepend header information
+			CompressionHeader header(sourceSize);
+			compressedBuffer.writeHeader(&header);
 
 			// Success
 			return compressedBuffer;
@@ -71,27 +67,22 @@ std::optional<Buffer> Buffer::decompress() const
 {
 	// Ensure buffer at least *exists*
 	if (hasData()) {
-		// Read in header title, ensure header matches
-		char headerTitle_In[CBUFFER_H_TITLE_SIZE];
-		auto index = readData(&headerTitle_In, CBUFFER_H_TITLE_SIZE);
-		if (std::strcmp(headerTitle_In, CBUFFER_H_TITLE) == 0) {
-			// Get uncompressed size
-			size_t uncompressedSize(0ull);
-			index = readData(&uncompressedSize, size_t(sizeof(size_t)), index);
+		// Read in header
+		CompressionHeader header;		
+		void * dataPtr(nullptr);
+		size_t dataSize(0ull);
+		readHeader(&header, &dataPtr, dataSize);
 
+		// Ensure header title matches
+		if (std::strcmp(header.m_title, CompressionHeader::TITLE) == 0) {
 			// Uncompress the remaining data
-			/////////////////////////////////////////////////
-			const size_t DATA_SIZE = size() - CBUFFER_H_SIZE;
-			Buffer DELETE_ME(&(operator[](index)), DATA_SIZE);
-			/////////////////////////////////////////////////
-			Buffer uncompressedBuffer(uncompressedSize);
+			Buffer uncompressedBuffer(header.m_uncompressedSize);
 			const auto decompressionResult = LZ4_decompress_safe(
-				DELETE_ME.cArray(),
+				reinterpret_cast<char*>(dataPtr),
 				uncompressedBuffer.cArray(),
-				int(DELETE_ME.size()),
+				int(dataSize),
 				int(uncompressedBuffer.size())
 			);
-			DELETE_ME.release();
 
 			// Ensure we have a non-zero sized buffer
 			if (decompressionResult > 0) {
@@ -327,20 +318,12 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 		auto compressedPatchBuffer = patchBuffer.compress();
 		patchBuffer.release();
 		if (compressedPatchBuffer) {
-			// We now want to prepend a header
-			// Calculate the size of the header, then generate a DECORATED compressed diff buffer
-			Buffer diffBuffer(DBUFFER_H_SIZE + compressedPatchBuffer->size());
-
-			// Write Header Information
-			auto byteIndex = diffBuffer.writeData(&DBUFFER_H_TITLE[0], DBUFFER_H_TITLE_SIZE);
-			byteIndex = diffBuffer.writeData(&size_new, size_t(sizeof(size_t)), byteIndex);
-
-			// Write compressed data over
-			byteIndex = diffBuffer.writeData(compressedPatchBuffer->data(), compressedPatchBuffer->size(), byteIndex);
-			compressedPatchBuffer->release();
+			// Prepend header information
+			DiffHeader header(size_new);
+			compressedPatchBuffer->writeHeader(&header);
 
 			// Success
-			return diffBuffer;
+			return compressedPatchBuffer.value();
 		}
 	}
 
@@ -352,25 +335,20 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 {
 	// Ensure diff buffer at least *exists* (ignore old buffer, when empty we treat instruction as a brand new file)
 	if (diffBuffer.hasData()) {
-		// Read in diffBuffer's header title, ensure header matches
-		char headerTitle_In[DBUFFER_H_TITLE_SIZE];
-		auto index = diffBuffer.readData(&headerTitle_In, DBUFFER_H_TITLE_SIZE);
-		if (std::strcmp(headerTitle_In, DBUFFER_H_TITLE) == 0) {
-			// Get uncompressed size
-			size_t newSize(0ull);
-			index = diffBuffer.readData(&newSize, size_t(sizeof(size_t)), index);
+		// Read in header
+		DiffHeader header;
+		void * dataPtr(nullptr);
+		size_t dataSize(0ull);
+		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
+		// Ensure header title matches
+		if (std::strcmp(header.m_title, DiffHeader::TITLE) == 0) {
 			// Try to decompress the diff buffer
-			/////////////////////////////////////////////////
-			const size_t DATA_SIZE = diffBuffer.size() - DBUFFER_H_SIZE;
-			Buffer DELETE_ME(&diffBuffer[index], DATA_SIZE);
-			/////////////////////////////////////////////////
-			auto diffInstructionBuffer = DELETE_ME.decompress();
-			DELETE_ME.release();
+			auto diffInstructionBuffer = Buffer(dataPtr, dataSize).decompress();
 			if (diffInstructionBuffer) {
 				// Convert buffer into instructions
 				Threader threader;
-				Buffer bufferNew(newSize);
+				Buffer bufferNew(header.m_targetSize);
 				size_t bytesRead(0ull), byteIndex(0ull);
 				constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 				const auto CallDo = [&](const auto & obj) { return obj.DO(bufferNew, *this); };
@@ -390,7 +368,6 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 				while (!threader.isFinished())
 					continue;
 				threader.shutdown();
-				diffInstructionBuffer->release();
 
 				// Success
 				return bufferNew;
@@ -435,8 +412,18 @@ const size_t Buffer::hash() const
 
 size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
 {
-	std::memcpy(outputPtr, &m_data[byteOffset], size);
+	if (outputPtr != nullptr && size > 0ull)
+		std::memcpy(outputPtr, &m_data[byteOffset], size);
 	return byteOffset + size;
+}
+
+void NST::Buffer::readHeader(NST::Buffer::Header * header, void ** dataPtr, size_t & dataSize) const
+{
+	(*header) << (const_cast<std::byte*>(&m_data[0]));
+
+	const size_t full_header_size = Header::TITLE_SIZE + header->size();
+	*dataPtr = &const_cast<std::byte&>(m_data[full_header_size]);
+	dataSize = m_data.size() - full_header_size;
 }
 
 
@@ -444,8 +431,24 @@ size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byte
 
 size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
 {
-	std::memcpy(&m_data[byteOffset], inputPtr, size);
+	if (inputPtr != nullptr && size > 0ull)
+		std::memcpy(&m_data[byteOffset], inputPtr, size);
 	return byteOffset + size;
+}
+
+void NST::Buffer::writeHeader(const Header * header)
+{
+	// Make container large enough to fit the old data + header
+	const size_t full_header_size = Header::TITLE_SIZE + header->size();
+	const size_t oldSize = m_data.size();
+	const size_t newSize = oldSize + full_header_size;
+	resize(newSize);
+
+	// Shift old data down to where the header ends
+	std::memmove(&m_data[full_header_size], &m_data[0], oldSize);
+
+	// Copy header data
+	(*header) >> (&m_data[0]);
 }
 
 char * Buffer::cArray() const

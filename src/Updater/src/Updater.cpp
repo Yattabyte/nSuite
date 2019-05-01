@@ -51,19 +51,17 @@ int main()
 		for each (const auto & patch in patches) {
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
-			const size_t diffSize = std::filesystem::file_size(patch);
 			if (!diffFile.is_open()) {
 				NST::Log::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
 			else {
 				// Apply patch
-				char * diffBuffer = new char[diffSize];
-				diffFile.read(diffBuffer, std::streamsize(diffSize));
+				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
+				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 				diffFile.close();
-				if (!NST::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten)) {
+				if (!NST::PatchDirectory(dstDirectory, diffBuffer, &bytesWritten)) {
 					NST::Log::PushText("skipping patch...\r\n");
-					delete[] diffBuffer;
 					continue;
 				}
 
@@ -71,7 +69,6 @@ int main()
 				if (!std::filesystem::remove(patch))
 					NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
 				patchesApplied++;
-				delete[] diffBuffer;
 			}
 		}
 

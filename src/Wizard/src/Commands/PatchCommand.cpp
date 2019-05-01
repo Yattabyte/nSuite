@@ -16,13 +16,8 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 		"~\r\n\r\n"
 	);
 
-	// Create common variables
-	bool success = false;
-	char * diffBuffer(nullptr);
-	std::ifstream diffFile;
-	std::string srcDirectory(""), dstDirectory("");
-
 	// Check command line arguments
+	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
@@ -45,28 +40,28 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 		srcDirectory += ".ndiff";
 
 	// Try to open diff file
-	diffFile = std::ifstream(srcDirectory, std::ios::binary | std::ios::beg);
+	std::ifstream diffFile(srcDirectory, std::ios::binary | std::ios::beg);
 	if (!diffFile.is_open())
 		NST::Log::PushText("Cannot read diff file, aborting...\r\n");
 	else {
 		// Try to patch the directory specified
-		const size_t diffSize = std::filesystem::file_size(srcDirectory);
-		diffBuffer = new char[diffSize];
-		diffFile.read(diffBuffer, std::streamsize(diffSize));
+		NST::Buffer diffBuffer(std::filesystem::file_size(srcDirectory));
+		diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
+		diffFile.close();
+
+		// Try to patch the destination directory
 		size_t bytesWritten(0ull);
-		if (!NST::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten))
+		if (!NST::PatchDirectory(dstDirectory, diffBuffer, &bytesWritten))
 			NST::Log::PushText("aborting...\r\n");
 		else {
 			// Output results
 			NST::Log::PushText(
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
 			);
-			success = true;
+
+			return EXIT_SUCCESS;
 		}
 	}
 
-	// Clean-up
-	diffFile.close();
-	delete[] diffBuffer;
-	return success ? EXIT_SUCCESS : EXIT_FAILURE;
+	return EXIT_FAILURE;
 }

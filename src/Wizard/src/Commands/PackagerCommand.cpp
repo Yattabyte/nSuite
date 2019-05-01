@@ -17,16 +17,8 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 		"~\r\n\r\n"
 	);
 
-	// Create common variables
-	bool success = false;
-	HANDLE handle(nullptr);
-	std::ofstream file;
-	char * packBuffer(nullptr);
-	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
-	std::string srcDirectory(""), dstDirectory("");
-	const NST::Resource unpacker(IDR_UNPACKER, "UNPACKER");
-
 	// Check command line arguments
+	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
@@ -53,16 +45,21 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".exe";
 	
 	// Try to compress the directory specified
-	if (!NST::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount))
+	bool success = false;
+	HANDLE handle(nullptr);
+	size_t maxSize(0ull), fileCount(0ull);
+	const auto packBuffer = NST::CompressDirectory(srcDirectory, &maxSize, &fileCount);
+	if (!packBuffer)
 		NST::Log::PushText("Cannot create package from the directory specified, aborting...\r\n");
 	else {
 		// Ensure resource exists
+		const NST::Resource unpacker(IDR_UNPACKER, "UNPACKER");
 		if (!unpacker.exists())
 			NST::Log::PushText("Cannot access unpacker resource, aborting...\r\n");
 		else {
 			// Try to create package file
 			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-			file = std::ofstream(dstDirectory, std::ios::binary | std::ios::out);
+			std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
 			if (!file.is_open())
 				NST::Log::PushText("Cannot write package to disk, aborting...\r\n");
 			else {
@@ -72,14 +69,14 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 
 				// Try to update packager's resource
 				handle = BeginUpdateResource(dstDirectory.c_str(), false);
-				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
+				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
 					NST::Log::PushText("Cannot write archive contents to the package, aborting...\r\n");				
 				else {
 					// Output results
 					NST::Log::PushText(
 						"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
 						"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
-						"Compressed Size: " + std::to_string(packSize) + "\r\n"
+						"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
 					);
 					success = true;
 				}
@@ -88,8 +85,6 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 	}
 
 	// Clean-up
-	file.close();
 	EndUpdateResource(handle, !success);
-	delete[] packBuffer;
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
