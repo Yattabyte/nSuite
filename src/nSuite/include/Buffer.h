@@ -3,8 +3,6 @@
 #define BUFFER_H
 
 #include <optional>
-#include <string>
-#include <vector>
 
 
 /** Add Buffer to nSuite NST namespace. */
@@ -24,10 +22,18 @@ namespace NST {
 		/** Constructs a buffer of the specified size.
 		@param	size				the amount of memory to allocate. */
 		Buffer(const size_t & size);
-		/** Constructs a buffer that copies another region of memory.
-		@param	pointer				pointer to a region of memory to copy from.
-		@param	range				the number of bytes to copy. */
-		Buffer(const void * pointer, const size_t & range);
+		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
+		@param	pointer				pointer to a region of memory to adopt from.
+		@param	range				the number of bytes to use.
+		@param	hardCopy			when true, copies the region, when false safely points to the region and NEVER deletes it. */
+		Buffer(std::byte * pointer, const size_t & range, bool hardCopy = false);
+		/** Copy Constructor. 
+		@param	other				the buffer to copy from. */
+		Buffer(const Buffer & other);
+		/** Move Constructor. 
+		@param	other				the buffer to move from and invalidate. */
+		Buffer(Buffer && other);
+
 
 
 		// Public Derivators	
@@ -84,10 +90,18 @@ namespace NST {
 		@return						new byte offset = byteOffset + size. */
 		size_t readData(void * outputPtr, const size_t & size, const size_t byteOffset = 0) const;
 		/***/
-		void readHeader(Header * header, void ** dataPtr, size_t & dataSize) const;
+		void readHeader(Header * header, std::byte ** dataPtr, size_t & dataSize) const;
 
 
 		// Public Modifiers
+		/** Copy-assignment operator. 
+		@param	other				the buffer to copy from. 
+		@return						reference to this. */
+		Buffer & operator=(const Buffer & other);
+		/** move-assignment operator. 
+		@param	other				the buffer to move from. 
+		@return						reference to this. */
+		Buffer & operator=(Buffer && other);
 		/** Writes-in data from an input pointer, from a specific byte offset and size, to this buffer.
 		@param	inputPtr			pointer to copy the data from.
 		@param	size				the number of bytes to copy.
@@ -194,7 +208,9 @@ namespace NST {
 
 	private:
 		// Private Attributes
-		std::vector<std::byte> m_data;
+		bool m_ownsData = true;
+		std::byte * m_data = nullptr;
+		size_t m_size = 0ull, m_capacity = 0ull;
 	};
 };
 

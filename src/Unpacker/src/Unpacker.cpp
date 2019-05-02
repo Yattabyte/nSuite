@@ -39,7 +39,7 @@ int main()
 		);
 
 		// Unpackage using the resource file
-		if (!NST::DecompressDirectory(dstDirectory, NST::Buffer(archive.getPtr(), archive.getSize()), &byteCount, &fileCount))
+		if (!NST::DecompressDirectory(dstDirectory, NST::Buffer(reinterpret_cast<std::byte*>(archive.getPtr()), archive.getSize()), &byteCount, &fileCount))
 			NST::Log::PushText("Cannot decompress embedded package resource, aborting...\r\n");
 		else {
 			// Success, report results

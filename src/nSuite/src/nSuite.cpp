@@ -143,7 +143,7 @@ bool NST::DecompressDirectory(const std::string & dstDirectory, const Buffer & p
 	else {
 		// Read in header
 		PackageHeader header;
-		void * dataPtr(nullptr);
+		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		packBuffer.readHeader(&header, &dataPtr, dataSize);
 
@@ -266,7 +266,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 			auto handle = GetModuleHandle(directory.c_str());
 			Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
 			if (canLoad && handle != NULL && fileResource.exists()) {
-				packBuffer = NST::Buffer(fileResource.getPtr(), fileResource.getSize());
+				packBuffer = NST::Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
 				FreeLibrary(handle);
 			}
 			else {
@@ -283,7 +283,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 
 			// Read in header		
 			PackageHeader header;
-			void * dataPtr(nullptr);
+			std::byte * dataPtr(nullptr);
 			size_t dataSize(0ull);
 			packBuffer.readHeader(&header, &dataPtr, dataSize);
 
@@ -483,7 +483,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 	else {
 		// Read in header
 		PatchHeader header;
-		void * dataPtr(nullptr);
+		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
@@ -542,18 +542,18 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 					size_t instructionSize(0ull);
 					byteIndex = instructionBuffer->readData(&instructionSize, size_t(sizeof(size_t)), byteIndex);
 
-					// Read buffer
+					// Copy buffer
 					if (instructionSize > 0)
-						FI.instructionBuffer = Buffer(&(*instructionBuffer)[byteIndex], instructionSize);
+						FI.instructionBuffer = Buffer(&(*instructionBuffer)[byteIndex], instructionSize, true);
 					byteIndex += instructionSize;
 
 					// Sort instructions
 					if (flag == 'U')
-						diffFiles.push_back(FI);
+						diffFiles.push_back(std::move(FI));
 					else if (flag == 'N')
-						addedFiles.push_back(FI);
+						addedFiles.push_back(std::move(FI));
 					else if (flag == 'D')
-						removedFiles.push_back(FI);
+						removedFiles.push_back(std::move(FI));
 					files++;
 				}
 				instructionBuffer->release();
@@ -561,7 +561,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 				// Patch all files first
 				size_t byteNum(0ull);
 				bool success = false;
-				for each (const auto & file in diffFiles) {
+				for (FileInstruction & file : diffFiles) {
 					// Try to read the target file
 					Buffer oldBuffer;
 					size_t oldHash(0ull);
@@ -571,8 +571,12 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 						Log::PushText("Critical failure: Cannot read source file from disk.\r\n");
 					else {
 						// Patch if this source file hasn't been patched yet
-						if (oldHash == file.diff_newHash)
+						if (oldHash == file.diff_newHash) {
 							Log::PushText("The file \"" + file.path + "\" is already up to date, skipping...\r\n");
+							file.instructionBuffer.release();
+							success = true;
+							continue;
+						}
 						else if (oldHash != file.diff_oldHash) 
 							Log::PushText("Critical failure: the file \"" + file.path + "\" is of an unexpected version. \r\n");
 						else {
@@ -595,7 +599,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 										newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 										newFile.close();
 										byteNum += newBuffer->size();
-
+										file.instructionBuffer.release();
 										success = true;
 										continue;
 									}
@@ -603,12 +607,16 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 							}
 						}
 					}
+					success = false;
 					break;
 				}
+				diffFiles.clear();
+				diffFiles.shrink_to_fit();
+
 				if (success) {
 					// By this point all files matched, safe to add new ones
 					success = false;
-					for each (const auto & file in addedFiles) {
+					for (FileInstruction & file : addedFiles) {
 						std::filesystem::create_directories(std::filesystem::path(file.fullPath).parent_path());
 						Log::PushText("Writing file: \"" + file.path + "\"\r\n");
 
@@ -631,17 +639,21 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 									newFile.close();
 									byteNum += newBuffer->size();
+									file.instructionBuffer.release();
 									success = true;
 									continue;
 								}
 							}
 						}
+						success = false;
 						break;
 					}
+					addedFiles.clear();
+					addedFiles.shrink_to_fit();
 
 					if (success) {
 						// If we made it this far, it should be safe to delete all files
-						for each (const auto & file in removedFiles) {
+						for (FileInstruction & file : removedFiles) {
 							// Try to read the target file (may not exist)
 							Buffer oldBuffer;
 							size_t oldHash(0ull);
@@ -659,6 +671,8 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 								}
 							}
 						}
+						removedFiles.clear();
+						removedFiles.shrink_to_fit();
 
 						// Update optional parameters
 						if (bytesWritten != nullptr)

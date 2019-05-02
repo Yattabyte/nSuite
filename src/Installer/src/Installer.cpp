@@ -77,10 +77,10 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	else {
 		// Read in header
 		/////////////////////////////////////////////////
-		NST::Buffer DELETE_ME1(m_archive.getPtr(), m_archive.getSize());
+		NST::Buffer DELETE_ME1(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize());
 		/////////////////////////////////////////////////
 		PackageHeader packageHeader;
-		void * dataPtr1(nullptr);
+		std::byte * dataPtr1(nullptr);
 		size_t dataSize1(0ull);
 		DELETE_ME1.readHeader(&packageHeader, &dataPtr1, dataSize1);
 
@@ -96,7 +96,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 			NST::Buffer DELETE_ME(dataPtr1, dataSize1);
 			/////////////////////////////////////////////////
 			NST::Buffer::CompressionHeader header;
-			void * dataPtr(nullptr);
+			std::byte * dataPtr(nullptr);
 			size_t dataSize(0ull);
 			DELETE_ME.readHeader(&header, &dataPtr, dataSize);
 
@@ -236,7 +236,7 @@ void Installer::beginInstallation()
 		else {
 			// Unpackage using the rest of the resource file
 			auto directory = NST::SanitizePath(getDirectory());
-			if (!NST::DecompressDirectory(directory, NST::Buffer(m_archive.getPtr(), m_archive.getSize())))
+			if (!NST::DecompressDirectory(directory, NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize())))
 				invalidate();
 			else {
 				// Write uninstaller to disk

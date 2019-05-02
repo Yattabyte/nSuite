@@ -14,15 +14,48 @@ Buffer::~Buffer()
 	release();
 }
 
-Buffer::Buffer() : m_data(0) {}
-
-Buffer::Buffer(const size_t & size) : m_data(size) {}
-
-Buffer::Buffer(const void * pointer, const size_t & range)
-	: m_data(range)
+Buffer::Buffer() 
 {
-	if (pointer != nullptr && range > 0ull)
-		std::memcpy(&m_data[0], pointer, range);
+}
+
+Buffer::Buffer(const size_t & size) 
+{
+	resize(size);
+}
+
+Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
+	: m_ownsData(hardCopy)
+{
+	if (hardCopy) {
+		m_capacity = range * 2ull;
+		m_size = range;
+		m_data = new std::byte[m_capacity];
+		std::memcpy(m_data, pointer, range);
+	}
+	else {
+		m_data = pointer;
+		m_size = range;
+		m_capacity = range;
+	}
+}
+
+Buffer::Buffer(const Buffer & other)
+	: m_ownsData(other.m_ownsData), m_capacity(other.m_capacity), m_size(other.m_size), m_data(new std::byte[other.m_capacity])
+{
+	std::copy(other.m_data, other.m_data + other.m_size, m_data);
+}
+
+Buffer::Buffer(Buffer && other)
+{
+	m_data = other.m_data;
+	m_size = other.m_size;
+	m_capacity = other.m_capacity;
+	m_ownsData = other.m_ownsData;
+
+	other.m_data = nullptr;
+	other.m_size = 0ull;
+	other.m_capacity = 0ull;
+	other.m_ownsData = false;
 }
 
 
@@ -69,7 +102,7 @@ std::optional<Buffer> Buffer::decompress() const
 	if (hasData()) {
 		// Read in header
 		CompressionHeader header;		
-		void * dataPtr(nullptr);
+		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		readHeader(&header, &dataPtr, dataSize);
 
@@ -323,7 +356,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 			compressedPatchBuffer->writeHeader(&header);
 
 			// Success
-			return compressedPatchBuffer.value();
+			return compressedPatchBuffer;
 		}
 	}
 
@@ -337,7 +370,7 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 	if (diffBuffer.hasData()) {
 		// Read in header
 		DiffHeader header;
-		void * dataPtr(nullptr);
+		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
@@ -384,12 +417,12 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 
 bool Buffer::hasData() const
 {
-	return !m_data.empty();
+	return m_size > 0ull;
 }
 
 size_t Buffer::size() const
 {
-	return m_data.size();
+	return m_size;
 }
 
 const size_t Buffer::hash() const
@@ -397,7 +430,7 @@ const size_t Buffer::hash() const
 	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
 	size_t value(1234567890ull);
 	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
-	size_t x(0ull), full(m_data.size()), max(full / 8ull);
+	size_t x(0ull), full(size()), max(full / 8ull);
 	for (; x < max; ++x)
 		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
 
@@ -410,6 +443,21 @@ const size_t Buffer::hash() const
 	return value;
 }
 
+char * Buffer::cArray() const
+{
+	return reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
+}
+
+std::byte * Buffer::data() const
+{
+	return const_cast<std::byte*>(m_data);
+}
+
+std::byte & Buffer::operator[](const size_t & byteOffset) const
+{
+	return const_cast<std::byte&>(m_data[byteOffset]);
+}
+
 size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
 {
 	if (outputPtr != nullptr && size > 0ull)
@@ -417,17 +465,47 @@ size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byte
 	return byteOffset + size;
 }
 
-void NST::Buffer::readHeader(NST::Buffer::Header * header, void ** dataPtr, size_t & dataSize) const
+void Buffer::readHeader(Buffer::Header * header, std::byte ** dataPtr, size_t & dataSize) const
 {
 	(*header) << (const_cast<std::byte*>(&m_data[0]));
 
 	const size_t full_header_size = Header::TITLE_SIZE + header->size();
-	*dataPtr = &const_cast<std::byte&>(m_data[full_header_size]);
-	dataSize = m_data.size() - full_header_size;
+	*dataPtr = const_cast<std::byte*>(&m_data[full_header_size]);
+	dataSize = size() - full_header_size;
 }
 
 
 // Public Modifiers
+
+Buffer & Buffer::operator=(const Buffer & other)
+{
+	if (this != &other) {
+		release();
+		m_ownsData = other.m_ownsData;
+		m_capacity = other.m_capacity;
+		m_size = other.m_size;
+		m_data = new std::byte[other.m_capacity];
+		std::copy(other.m_data, other.m_data + other.m_size, m_data);
+	}
+	return *this;
+}
+
+Buffer & Buffer::operator=(Buffer && other)
+{
+	if (this != &other) {
+		release();
+		m_data = other.m_data;
+		m_size = other.m_size;
+		m_capacity = other.m_capacity;
+		m_ownsData = other.m_ownsData;
+
+		other.m_data = nullptr;
+		other.m_size = 0ull;
+		other.m_capacity = 0ull;
+		other.m_ownsData = false;
+	}
+	return *this;
+}
 
 size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
 {
@@ -436,11 +514,11 @@ size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_
 	return byteOffset + size;
 }
 
-void NST::Buffer::writeHeader(const Header * header)
+void Buffer::writeHeader(const Header * header)
 {
 	// Make container large enough to fit the old data + header
 	const size_t full_header_size = Header::TITLE_SIZE + header->size();
-	const size_t oldSize = m_data.size();
+	const size_t oldSize = size();
 	const size_t newSize = oldSize + full_header_size;
 	resize(newSize);
 
@@ -451,28 +529,35 @@ void NST::Buffer::writeHeader(const Header * header)
 	(*header) >> (&m_data[0]);
 }
 
-char * Buffer::cArray() const
-{
-	return reinterpret_cast<char*>(const_cast<std::byte*>(m_data.data()));
-}
-
-std::byte * Buffer::data() const
-{
-	return const_cast<std::byte*>(m_data.data());
-}
-
-std::byte & Buffer::operator[](const size_t & byteOffset) const
-{
-	return const_cast<std::byte&>(m_data[byteOffset]);
-}
-
 void Buffer::resize(const size_t & size)
 {
-	m_data.resize(size);
+	// Ensure this is a valid buffer
+	if (m_data != nullptr && m_size > 0ull && m_capacity > 0ull) {
+		// Check if we've previously allocated enough memory
+		if (size > m_capacity) {
+			// Need to expand our container
+			m_capacity = size * 2ull;
+			std::byte * temp = new std::byte[m_capacity];
+			// Copy over old memory
+			//std::memcpy(temp, m_data, size < m_size ? size : m_size);
+			std::memcpy(temp, m_data, m_size);
+			release();
+			m_data = temp;
+		}
+	}
+	// Otherwise generate new memory
+	else {
+		m_capacity = size * 2ull;
+		m_data = new std::byte[m_capacity];
+	}
+	m_size = size;
 }
 
 void Buffer::release()
 {
-	m_data.clear();
-	m_data.shrink_to_fit();
+	if (m_data != nullptr && m_size > 0ull && m_ownsData)
+		delete[] m_data;
+
+	m_data = nullptr;
+	m_size = 0ull;
 }
