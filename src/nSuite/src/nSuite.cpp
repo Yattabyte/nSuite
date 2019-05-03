@@ -83,7 +83,7 @@ std::optional<Buffer> NST::CompressDirectory(const std::string & srcDirectory, s
 			for each (const auto & file in files) {
 				threader.addJob([file, byteIndex, &filebuffer]() {
 					// Write the total number of characters in the path string, into the archive
-					auto pathSize = file.trunc_path.size();
+					const auto pathSize = file.trunc_path.size();
 					auto index = filebuffer.writeData(&pathSize, size_t(sizeof(size_t)), byteIndex);
 
 					// Write the file path string, into the archive
@@ -240,7 +240,8 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 		inline FileMem(const std::string & p, const std::string & r, const size_t & s, void * b) : File(p, r, s), ptr(b) {}
 		inline virtual bool open(Buffer & buffer, size_t & hash) const override {
 			buffer = Buffer(size);
-			std::memcpy(buffer.data(), ptr, size);
+			auto * ptrCast = reinterpret_cast<std::byte*>(ptr);
+			std::copy(ptrCast, ptrCast + size, buffer.data());
 			hash = buffer.hash();
 			return true;
 		}

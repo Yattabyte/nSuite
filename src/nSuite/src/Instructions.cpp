@@ -47,7 +47,7 @@ size_t Insert_Instruction::SIZE() const
 void Insert_Instruction::DO(Buffer & bufferNew, const Buffer &) const 
 {
 	for (auto i = index, x = size_t(0ull), length = newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
-		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(newData[x]));
+		bufferNew[i] = newData[x];
 }
 
 void Insert_Instruction::WRITE(Buffer & outputBuffer, size_t & byteIndex) const 
@@ -90,7 +90,7 @@ size_t Repeat_Instruction::SIZE() const
 void Repeat_Instruction::DO(Buffer & bufferNew, const Buffer &) const 
 {
 	for (auto i = index, x = size_t(0ull); i < bufferNew.size() && x < amount; ++i, ++x)
-		bufferNew[i] = reinterpret_cast<std::byte&>(const_cast<char&>(value));
+		bufferNew[i] = value;
 }
 
 void Repeat_Instruction::WRITE(Buffer & outputBuffer, size_t & byteIndex) const

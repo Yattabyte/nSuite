@@ -14,11 +14,8 @@ Buffer::~Buffer()
 	release();
 }
 
-Buffer::Buffer() 
-{
-}
-
 Buffer::Buffer(const size_t & size) 
+	: m_ownsData(true)
 {
 	resize(size);
 }
@@ -27,10 +24,8 @@ Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
 	: m_ownsData(hardCopy)
 {
 	if (hardCopy) {
-		m_capacity = range * 2ull;
-		m_size = range;
-		m_data = new std::byte[m_capacity];
-		std::memcpy(m_data, pointer, range);
+		resize(range);
+		std::copy(pointer, pointer + range, m_data);
 	}
 	else {
 		m_data = pointer;
@@ -40,8 +35,9 @@ Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
 }
 
 Buffer::Buffer(const Buffer & other)
-	: m_ownsData(other.m_ownsData), m_capacity(other.m_capacity), m_size(other.m_size), m_data(new std::byte[other.m_capacity])
+	: m_size(other.m_size), m_capacity(other.m_capacity), m_ownsData(true)
 {
+	alloc(other.m_capacity);
 	std::copy(other.m_data, other.m_data + other.m_size, m_data);
 }
 
@@ -59,7 +55,147 @@ Buffer::Buffer(Buffer && other)
 }
 
 
-// Public Derivators
+// Public Assignment Operators
+
+Buffer & Buffer::operator=(const Buffer & other)
+{
+	if (this != &other) {
+		release();
+		alloc(other.m_capacity);
+		m_size = other.m_size;
+		m_ownsData = other.m_ownsData;
+		std::copy(other.m_data, other.m_data + other.m_size, m_data);
+	}
+	return *this;
+}
+
+Buffer & Buffer::operator=(Buffer && other)
+{
+	if (this != &other) {
+		release();
+		m_data = other.m_data;
+		m_size = other.m_size;
+		m_capacity = other.m_capacity;
+		m_ownsData = other.m_ownsData;
+
+		other.m_data = nullptr;
+		other.m_size = 0ull;
+		other.m_capacity = 0ull;
+		other.m_ownsData = false;
+	}
+	return *this;
+}
+
+
+// Private Methods
+
+void Buffer::alloc(const size_t & capacity)
+{
+	m_capacity = capacity;
+	m_data = new std::byte[m_capacity];
+}
+
+
+// Public Methods
+
+const bool Buffer::hasData() const
+{
+	return m_size > 0ull;
+}
+
+const size_t &Buffer::size() const
+{
+	return m_size;
+}
+
+const size_t Buffer::hash() const
+{
+	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
+	size_t value(1234567890ull);
+	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
+	size_t x(0ull), full(size()), max(full / 8ull);
+	for (; x < max; ++x)
+		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
+
+	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
+	x *= 8ull;
+	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
+	for (; x < full; ++x)
+		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
+
+	return value;
+}
+
+
+void Buffer::resize(const size_t & size)
+{
+	// Ensure this is a valid buffer
+	if (m_data != nullptr && m_size > 0ull && m_capacity > 0ull) {
+		// Check if we've previously allocated enough memory
+		if (size > m_capacity) {
+			// Copy old pointer
+			auto dataPtrCpy = m_data;
+			// Need to expand our container
+			alloc(size * 2ull);
+			// Copy over old memory
+			std::copy(dataPtrCpy, dataPtrCpy + m_size, m_data);
+			// Delete old memory
+			if (m_ownsData)
+				delete[] dataPtrCpy;
+			else
+				m_ownsData = true;
+		}
+	}
+	// Otherwise allocate new memory
+	else
+		alloc(size * 2ull);
+	m_size = size;
+}
+
+void Buffer::release()
+{
+	if (m_data != nullptr && m_size > 0ull && m_ownsData)
+		delete[] m_data;
+
+	m_data = nullptr;
+	m_size = 0ull;
+}
+
+
+// Public Mutable Data Accessors
+
+char * Buffer::cArray() const
+{
+	return reinterpret_cast<char*>(&m_data[0]);
+}
+
+std::byte * Buffer::data() const
+{
+	return m_data;
+}
+
+std::byte & Buffer::operator[](const size_t & byteOffset) const
+{
+	return m_data[byteOffset];
+}
+
+size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
+{
+	if (outputPtr != nullptr && size > 0ull)
+		std::copy(&m_data[byteOffset], &m_data[byteOffset + size], reinterpret_cast<std::byte*>(outputPtr));
+	return byteOffset + size;
+}
+
+size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
+{
+	auto * ptrCast = reinterpret_cast<std::byte*>(const_cast<void*>(inputPtr));
+	if (inputPtr != nullptr && size > 0ull)
+		std::copy(ptrCast, ptrCast + size, &m_data[byteOffset]);
+	return byteOffset + size;
+}
+
+
+// Public Derivation Methods
 
 std::optional<Buffer> Buffer::compress() const
 {
@@ -72,7 +208,7 @@ std::optional<Buffer> Buffer::compress() const
 
 		// Try to compress the source buffer
 		const auto compressedSize = LZ4_compress_default(
-			cArray(),
+			this->cArray(),
 			compressedBuffer.cArray(),
 			int(sourceSize),
 			int(workingSize)
@@ -203,7 +339,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 					Insert_Instruction inst;
 					inst.index = bytesUsed_new;
 					inst.newData.resize(windowSize);
-					std::memcpy(inst.newData.data(), buffer_slice_new, windowSize);
+					std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst.newData.data());
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
 					instructions.push_back(inst);
 				}
@@ -218,7 +354,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 							Insert_Instruction inst;
 							inst.index = lastMatchEnd;
 							inst.newData.resize(newDataLength);
-							std::memcpy(inst.newData.data(), &target[lastMatchEnd], newDataLength);
+							std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst.newData.data());
 							std::unique_lock<std::mutex> writeGuard(instructionMutex);
 							instructions.push_back(inst);
 						}
@@ -239,7 +375,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						Insert_Instruction inst;
 						inst.index = lastMatchEnd;
 						inst.newData.resize(newDataLength);
-						std::memcpy(inst.newData.data(), &target[lastMatchEnd], newDataLength);
+						std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst.newData.data());
 						std::unique_lock<std::mutex> writeGuard(instructionMutex);
 						instructions.push_back(inst);
 					}
@@ -255,7 +391,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 			Insert_Instruction inst;
 			inst.index = bytesUsed_new;
 			inst.newData.resize(size_new - bytesUsed_new);
-			std::memcpy(inst.newData.data(), &target[bytesUsed_new], size_new - bytesUsed_new);
+			std::copy(&target[bytesUsed_new], &target[bytesUsed_new + (size_new - bytesUsed_new)], inst.newData.data());
 			std::unique_lock<std::mutex> writeGuard(instructionMutex);
 			instructions.push_back(inst);
 		}
@@ -293,7 +429,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 								Insert_Instruction instBefore;
 								instBefore.index = inst->index;
 								instBefore.newData.resize(x);
-								std::memcpy(instBefore.newData.data(), inst->newData.data(), x);
+								std::copy(inst->newData.data(), inst->newData.data() + x, instBefore.newData.data());
 
 								// Generate new Repeat Instruction
 								Repeat_Instruction instRepeat;
@@ -413,57 +549,7 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 }
 
 
-// Public Accessors
-
-bool Buffer::hasData() const
-{
-	return m_size > 0ull;
-}
-
-size_t Buffer::size() const
-{
-	return m_size;
-}
-
-const size_t Buffer::hash() const
-{
-	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
-	size_t value(1234567890ull);
-	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
-	size_t x(0ull), full(size()), max(full / 8ull);
-	for (; x < max; ++x)
-		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
-
-	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
-	x *= 8ull;
-	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
-	for (; x < full; ++x)		
-		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
-
-	return value;
-}
-
-char * Buffer::cArray() const
-{
-	return reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
-}
-
-std::byte * Buffer::data() const
-{
-	return const_cast<std::byte*>(m_data);
-}
-
-std::byte & Buffer::operator[](const size_t & byteOffset) const
-{
-	return const_cast<std::byte&>(m_data[byteOffset]);
-}
-
-size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
-{
-	if (outputPtr != nullptr && size > 0ull)
-		std::memcpy(outputPtr, &m_data[byteOffset], size);
-	return byteOffset + size;
-}
+// Public Header Methods
 
 void Buffer::readHeader(Buffer::Header * header, std::byte ** dataPtr, size_t & dataSize) const
 {
@@ -472,46 +558,6 @@ void Buffer::readHeader(Buffer::Header * header, std::byte ** dataPtr, size_t & 
 	const size_t full_header_size = Header::TITLE_SIZE + header->size();
 	*dataPtr = const_cast<std::byte*>(&m_data[full_header_size]);
 	dataSize = size() - full_header_size;
-}
-
-
-// Public Modifiers
-
-Buffer & Buffer::operator=(const Buffer & other)
-{
-	if (this != &other) {
-		release();
-		m_ownsData = other.m_ownsData;
-		m_capacity = other.m_capacity;
-		m_size = other.m_size;
-		m_data = new std::byte[other.m_capacity];
-		std::copy(other.m_data, other.m_data + other.m_size, m_data);
-	}
-	return *this;
-}
-
-Buffer & Buffer::operator=(Buffer && other)
-{
-	if (this != &other) {
-		release();
-		m_data = other.m_data;
-		m_size = other.m_size;
-		m_capacity = other.m_capacity;
-		m_ownsData = other.m_ownsData;
-
-		other.m_data = nullptr;
-		other.m_size = 0ull;
-		other.m_capacity = 0ull;
-		other.m_ownsData = false;
-	}
-	return *this;
-}
-
-size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
-{
-	if (inputPtr != nullptr && size > 0ull)
-		std::memcpy(&m_data[byteOffset], inputPtr, size);
-	return byteOffset + size;
 }
 
 void Buffer::writeHeader(const Header * header)
@@ -527,37 +573,4 @@ void Buffer::writeHeader(const Header * header)
 
 	// Copy header data
 	(*header) >> (&m_data[0]);
-}
-
-void Buffer::resize(const size_t & size)
-{
-	// Ensure this is a valid buffer
-	if (m_data != nullptr && m_size > 0ull && m_capacity > 0ull) {
-		// Check if we've previously allocated enough memory
-		if (size > m_capacity) {
-			// Need to expand our container
-			m_capacity = size * 2ull;
-			std::byte * temp = new std::byte[m_capacity];
-			// Copy over old memory
-			//std::memcpy(temp, m_data, size < m_size ? size : m_size);
-			std::memcpy(temp, m_data, m_size);
-			release();
-			m_data = temp;
-		}
-	}
-	// Otherwise generate new memory
-	else {
-		m_capacity = size * 2ull;
-		m_data = new std::byte[m_capacity];
-	}
-	m_size = size;
-}
-
-void Buffer::release()
-{
-	if (m_data != nullptr && m_size > 0ull && m_ownsData)
-		delete[] m_data;
-
-	m_data = nullptr;
-	m_size = 0ull;
 }

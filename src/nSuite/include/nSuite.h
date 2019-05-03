@@ -87,22 +87,22 @@ struct PackageHeader : NST::Buffer::Header {
 	virtual size_t size() const override {
 		return size_t(sizeof(size_t) + (sizeof(char) * m_charCount));
 	}
-	virtual void * operator << (void * ptr) override {
+	virtual std::byte * operator << (std::byte * ptr) override {
 		ptr = Header::operator<<(ptr);
-		std::memcpy(&m_charCount, ptr, size_t(sizeof(size_t)));
-		ptr = &reinterpret_cast<char*>(ptr)[size_t(sizeof(size_t))];
+		std::copy(ptr, &ptr[size_t(sizeof(size_t))], reinterpret_cast<std::byte*>(&m_charCount));
+		ptr = &ptr[size_t(sizeof(size_t))];
 		char * folderArray = new char[m_charCount];
-		std::memcpy(folderArray, ptr, size_t(sizeof(char) * m_charCount));
+		std::copy(ptr, &ptr[size_t(sizeof(char) * m_charCount)], reinterpret_cast<std::byte*>(&folderArray[0]));
 		m_folderName = std::string(folderArray, m_charCount);
 		delete[] folderArray;
-		return &reinterpret_cast<char*>(ptr)[size_t(sizeof(char) * m_charCount)];
+		return &ptr[size_t(sizeof(char) * m_charCount)];
 	}
-	virtual void *operator >> (void * ptr) const override {
+	virtual std::byte *operator >> (std::byte * ptr) const override {
 		ptr = Header::operator>>(ptr);
-		std::memcpy(ptr, &m_charCount, size_t(sizeof(size_t)));
-		ptr = &reinterpret_cast<char*>(ptr)[size_t(sizeof(size_t))];
-		std::memcpy(ptr, &m_folderName[0], size_t(sizeof(char) * m_charCount));
-		return &reinterpret_cast<char*>(ptr)[size_t(sizeof(char) * m_charCount)];
+		*reinterpret_cast<size_t*>(ptr) = m_charCount;
+		ptr = &ptr[size_t(sizeof(size_t))];
+		std::copy(m_folderName.begin(), m_folderName.end(), reinterpret_cast<char*>(ptr));
+		return &ptr[size_t(sizeof(char) * m_charCount)];
 	}
 };
 /** Holds and performs Patch I/O operations on buffers. */
@@ -120,15 +120,15 @@ struct PatchHeader : NST::Buffer::Header {
 	virtual size_t size() const override {
 		return size_t(sizeof(size_t));
 	}
-	virtual void * operator << (void * ptr) override {
+	virtual std::byte * operator << (std::byte * ptr) override {
 		ptr = Header::operator<<(ptr);
-		std::memcpy(&m_fileCount, ptr, size());
-		return &(reinterpret_cast<char*>(ptr)[size()]);
+		std::copy(ptr, &ptr[size()], reinterpret_cast<std::byte*>(&m_fileCount));
+		return &ptr[size()];
 	}
-	virtual void *operator >> (void * ptr) const override {
+	virtual std::byte *operator >> (std::byte * ptr) const override {
 		ptr = Header::operator>>(ptr);
-		std::memcpy(ptr, &m_fileCount, size());
-		return &reinterpret_cast<char*>(ptr)[size()];
+		*reinterpret_cast<size_t*>(ptr) = m_fileCount;
+		return &ptr[size()];
 	}
 };
 

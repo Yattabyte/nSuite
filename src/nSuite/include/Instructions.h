@@ -43,7 +43,7 @@ public:
 	// Public Attributes
 	static constexpr char TYPE = 'I';
 	size_t index = 0ull;
-	std::vector<char> newData;
+	std::vector<std::byte> newData;
 };
 
 /** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
@@ -63,7 +63,7 @@ public:
 	// Public Attributes
 	static constexpr char TYPE = 'R';
 	size_t index = 0ull, amount = 0ull;
-	char value = 0;
+	std::byte value;
 };
 
 /** All the types of instructions currently supported. */
