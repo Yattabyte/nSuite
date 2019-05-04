@@ -7,7 +7,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Uninstall::~Uninstall()
+Uninstall_Screen::~Uninstall_Screen()
 {
 	UnregisterClass("UNINSTALL_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -18,7 +18,7 @@ Uninstall::~Uninstall()
 	NST::Progress::RemoveObserver(m_taskIndex);
 }
 
-Uninstall::Uninstall(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Uninstall_Screen::Uninstall_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -63,12 +63,12 @@ Uninstall::Uninstall(Uninstaller * uninstaller, const HINSTANCE hInstance, const
 	EnableWindow(m_btnFinish, false);
 }
 
-void Uninstall::enact()
+void Uninstall_Screen::enact()
 {
 	m_uninstaller->beginUninstallation();
 }
 
-void Uninstall::paint()
+void Uninstall_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -94,14 +94,14 @@ void Uninstall::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Uninstall::goFinish()
+void Uninstall_Screen::goFinish()
 {
 	m_uninstaller->setScreen(Uninstaller::ScreenEnums::FINISH_SCREEN);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Uninstall*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Uninstall_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

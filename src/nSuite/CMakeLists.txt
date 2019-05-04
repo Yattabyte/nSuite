@@ -10,11 +10,13 @@ configure_file(Resource.h.in include/Resource.h)
 set(FILES
 	# Source files
 	src/Buffer.cpp
+	src/Directory.cpp
 	src/nSuite.cpp
 	src/Instructions.cpp	
 	
 	# Header files
 	include/Buffer.h
+	include/Directory.h
 	include/nSuite.h
 	include/Instructions.h
 	include/StringConversions.h

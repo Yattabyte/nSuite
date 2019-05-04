@@ -5,7 +5,7 @@
 #include <optional>
 
 
-/** Add Buffer-related classes to the nSuite namespace. */
+/** Add buffer-related classes to the nSuite namespace. */
 namespace NST {
 	/** An expandable container representing a contiguous memory space. 
 	Allocates 2x its creation size, expanding when its capacity is exhausted. */
@@ -100,7 +100,7 @@ namespace NST {
 
 		// Public Derivation Methods
 		/** Generates a compressed version of this buffer.
-		Compressed buffer format:
+		Buffer format:
 		------------------------------------------------------------------
 		| header: identifier title, uncompressed size | compressed data  |
 		------------------------------------------------------------------
@@ -110,7 +110,7 @@ namespace NST {
 		@return						a pointer to the decompressed buffer on decompression succes, empty otherwise. */
 		std::optional<Buffer> decompress() const;
 		/** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
-		Diff buffer format:
+		Buffer format:
 		-----------------------------------------------------------------------------------
 		| header: identifier title, final target file size | compressed instruction data  |
 		-----------------------------------------------------------------------------------

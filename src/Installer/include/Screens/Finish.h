@@ -1,6 +1,6 @@
 #pragma once
-#ifndef FINISH_H
-#define FINISH_H
+#ifndef FINISH_SCREEN_H
+#define FINISH_SCREEN_H
 
 #include "Screen.h"
 #include <string>
@@ -8,11 +8,11 @@
 
 
 /** This state encapuslates the "Finished - Screen" state. */
-class Finish: public Screen {
+class Finish_Screen: public Screen {
 public:
 	// Public (de)Constructors
-	~Finish();
-	Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Finish_Screen();
+	Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -37,4 +37,4 @@ public:
 	std::vector<std::wstring> m_shortcuts_d, m_shortcuts_s;
 };
 
-#endif // FINISH_H
+#endif // FINISH_SCREEN_H

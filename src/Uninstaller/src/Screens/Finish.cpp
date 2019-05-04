@@ -6,14 +6,14 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Finish::~Finish()
+Finish_Screen::~Finish_Screen()
 {
 	UnregisterClass("FINISH_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_btnClose);
 }
 
-Finish::Finish(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Finish_Screen::Finish_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -40,12 +40,12 @@ Finish::Finish(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND 
 	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Finish::enact()
+void Finish_Screen::enact()
 {
 	// Does nothing
 }
 
-void Finish::paint()
+void Finish_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -71,7 +71,7 @@ void Finish::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Finish::goClose()
+void Finish_Screen::goClose()
 {
 #ifndef DEBUG
 	// Delete scraps of the installation directory (nuke the remaining directory)
@@ -94,7 +94,7 @@ void Finish::goClose()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Finish*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Finish_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

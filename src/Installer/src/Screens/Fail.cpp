@@ -7,7 +7,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Fail::~Fail()
+Fail_Screen::~Fail_Screen()
 {
 	UnregisterClass("FAIL_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -16,7 +16,7 @@ Fail::~Fail()
 	NST::Log::RemoveObserver(m_logIndex);
 }
 
-Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Fail_Screen::Fail_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -50,12 +50,12 @@ Fail::Fail(Installer * installer, const HINSTANCE hInstance, const HWND parent, 
 	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Fail::enact()
+void Fail_Screen::enact()
 {
 	Installer::dumpErrorLog();
 }
 
-void Fail::paint()
+void Fail_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -82,14 +82,14 @@ void Fail::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Fail::goClose()
+void Fail_Screen::goClose()
 {
 	PostQuitMessage(0);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Fail*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Fail_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

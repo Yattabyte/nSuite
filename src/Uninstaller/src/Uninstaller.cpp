@@ -110,10 +110,10 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_screens[WELCOME_SCREEN] = new Welcome(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[UNINSTALL_SCREEN] = new Uninstall(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FINISH_SCREEN] = new Finish(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FAIL_SCREEN] = new Fail(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[UNINSTALL_SCREEN] = new Uninstall_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
 		setScreen(WELCOME_SCREEN);
 	}
 

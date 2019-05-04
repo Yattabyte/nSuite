@@ -6,7 +6,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Finish::~Finish()
+Finish_Screen::~Finish_Screen()
 {
 	UnregisterClass("FINISH_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -16,7 +16,7 @@ Finish::~Finish()
 		DestroyWindow(checkboxHandle);
 }
 
-Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -101,12 +101,12 @@ Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND pare
 	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Finish::enact()
+void Finish_Screen::enact()
 {
 	// Does nothing
 }
 
-void Finish::paint()
+void Finish_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -132,7 +132,7 @@ void Finish::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Finish::goClose()
+void Finish_Screen::goClose()
 {
 	m_showDirectory = IsDlgButtonChecked(m_hwnd, 1);
 	const auto instDir = m_installer->getDirectory() + "\\" + m_installer->getPackageName();
@@ -171,7 +171,7 @@ void Finish::goClose()
 	PostQuitMessage(0);	
 }
 
-void Finish::createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
+void Finish_Screen::createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
 {
 	IShellLink* psl;
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
@@ -200,7 +200,7 @@ void Finish::createShortcut(const std::string & srcPath, const std::string & wrk
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Finish*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Finish_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

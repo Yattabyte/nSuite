@@ -1,16 +1,16 @@
 #pragma once
-#ifndef DIRECTORY_H
-#define DIRECTORY_H
+#ifndef DIRECTORY_SCREEN_H
+#define DIRECTORY_SCREEN_H
 
 #include "Screen.h"
 
 
 /** This state encapuslates the "Choose a directory - Screen" state. */
-class Directory : public Screen {
+class Directory_Screen : public Screen {
 public:
 	// Public (de)Constructors
-	~Directory();
-	Directory(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Directory_Screen();
+	Directory_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -33,4 +33,4 @@ public:
 	HWND m_directoryField = nullptr, m_packageField = nullptr, m_browseButton = nullptr, m_btnPrev = nullptr, m_btnInst = nullptr, m_btnCancel = nullptr;
 };
 
-#endif // DIRECTORY_H
+#endif // DIRECTORY_SCREEN_H

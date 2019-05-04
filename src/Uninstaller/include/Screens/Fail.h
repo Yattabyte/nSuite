@@ -1,16 +1,16 @@
 #pragma once
-#ifndef FAILSTATE_H
-#define FAILSTATE_H
+#ifndef FAIL_SCREEN_UN_H
+#define FAIL_SCREEN_UN_H
 
 #include "Screen.h"
 
 
 /** This state encapuslates the "Failure - Screen" state. */
-class Fail: public Screen {
+class Fail_Screen: public Screen {
 public:
 	// Public (de)Constructors
-	~Fail();
-	Fail(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Fail_Screen();
+	Fail_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -28,4 +28,4 @@ public:
 	size_t m_logIndex = 0ull;
 };
 
-#endif // FAILSTATE_H
+#endif // FAIL_SCREEN_UN_H

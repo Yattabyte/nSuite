@@ -8,7 +8,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Install::~Install()
+Install_Screen::~Install_Screen()
 {
 	UnregisterClass("INSTALL_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -19,7 +19,7 @@ Install::~Install()
 	NST::Progress::RemoveObserver(m_taskIndex);
 }
 
-Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Install_Screen::Install_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -64,12 +64,12 @@ Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND pa
 	EnableWindow(m_btnFinish, false);
 }
 
-void Install::enact()
+void Install_Screen::enact()
 {
 	m_installer->beginInstallation();
 }
 
-void Install::paint()
+void Install_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -95,14 +95,14 @@ void Install::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Install::goFinish()
+void Install_Screen::goFinish()
 {
 	m_installer->setScreen(Installer::ScreenEnums::FINISH_SCREEN);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Install*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Install_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	

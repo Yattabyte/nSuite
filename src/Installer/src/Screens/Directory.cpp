@@ -11,7 +11,7 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 static HRESULT CreateDialogEventHandler(REFIID, void **);
 static HRESULT OpenFileDialog(std::string &);
 
-Directory::~Directory()
+Directory_Screen::~Directory_Screen()
 {
 	UnregisterClass("DIRECTORY_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -23,7 +23,7 @@ Directory::~Directory()
 	DestroyWindow(m_btnCancel);
 }
 
-Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Directory_Screen::Directory_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -57,12 +57,12 @@ Directory::Directory(Installer * installer, const HINSTANCE hInstance, const HWN
 	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Directory::enact()
+void Directory_Screen::enact()
 {
 	// Does nothing
 }
 
-void Directory::paint()
+void Directory_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -112,7 +112,7 @@ void Directory::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Directory::browse()
+void Directory_Screen::browse()
 {
 	std::string directory("");
 	if (SUCCEEDED(OpenFileDialog(directory))) {
@@ -125,12 +125,12 @@ void Directory::browse()
 	}
 }
 
-void Directory::goPrevious()
+void Directory_Screen::goPrevious()
 {
 	m_installer->setScreen(Installer::ScreenEnums::AGREEMENT_SCREEN);
 }
 
-void Directory::goInstall()
+void Directory_Screen::goInstall()
 {
 	const auto directory = m_installer->getDirectory();
 	if (directory == "" || directory == " " || directory.length() < 3)
@@ -144,7 +144,7 @@ void Directory::goInstall()
 		m_installer->setScreen(Installer::INSTALL_SCREEN);
 }
 
-void Directory::goCancel()
+void Directory_Screen::goCancel()
 {
 	PostQuitMessage(0);
 }
@@ -260,7 +260,7 @@ static HRESULT OpenFileDialog(std::string & directory)
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Directory*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Directory_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	

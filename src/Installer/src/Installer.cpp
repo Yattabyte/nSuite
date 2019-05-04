@@ -69,42 +69,29 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	setDirectory(std::string(pf));
 	
 	// Check archive integrity
-	bool success = true;
-	if (!m_archive.exists()) {
+	bool success_archive = false;
+	if (!m_archive.exists()) 
 		NST::Log::PushText("Critical failure: archive doesn't exist!\r\n");
-		success = false;
-	}
 	else {
 		// Read in header
-		/////////////////////////////////////////////////
-		NST::Buffer DELETE_ME1(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize());
-		/////////////////////////////////////////////////
-		PackageHeader packageHeader;
-		std::byte * dataPtr1(nullptr);
-		size_t dataSize1(0ull);
-		DELETE_ME1.readHeader(&packageHeader, &dataPtr1, dataSize1);
+		NST::Directory::PackageHeader packageHeader;
+		NST::Buffer archiveBuffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize());
+		std::byte * dataPtr(nullptr);
+		size_t dataSize(0ull);
+		archiveBuffer.readHeader(&packageHeader, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(packageHeader.m_title, PackageHeader::TITLE) != 0) {
-			NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");
-			success = false;
-		}
+		if (std::strcmp(packageHeader.m_title, NST::Directory::PackageHeader::TITLE) != 0)
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");		
 		else {
 			m_packageName = packageHeader.m_folderName;
-			// Read in header
-			/////////////////////////////////////////////////
-			NST::Buffer DELETE_ME(dataPtr1, dataSize1);
-			/////////////////////////////////////////////////
 			NST::Buffer::CompressionHeader header;
-			std::byte * dataPtr(nullptr);
-			size_t dataSize(0ull);
-			DELETE_ME.readHeader(&header, &dataPtr, dataSize);
+			archiveBuffer = NST::Buffer(dataPtr, dataSize);
+			archiveBuffer.readHeader(&header, &dataPtr, dataSize);
 
 			// Ensure header title matches
-			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0) {
-				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
-				success = false;
-			}
+			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0)
+				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");			
 			else {
 				// Get header payload -> uncompressed size
 				m_maxSize = header.m_uncompressedSize;
@@ -112,10 +99,13 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
 					m_mfStrings[L"name"] = to_wideString(m_packageName);
+
+				success_archive = true;
 			}			
 		}
 	}
 	// Create window class
+	bool success_window = false;
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -129,10 +119,8 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-	if (!RegisterClassEx(&wcex)) {
-		NST::Log::PushText("Critical failure: could not create main window.\r\n");
-		success = false;
-	}
+	if (!RegisterClassEx(&wcex)) 
+		NST::Log::PushText("Critical failure: could not create main window.\r\n");	
 	else {
 		// Create window
 		m_hwnd = CreateWindowW(
@@ -152,17 +140,19 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_screens[WELCOME_SCREEN] = new Welcome(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[AGREEMENT_SCREEN] = new Agreement(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[DIRECTORY_SCREEN] = new Directory(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[INSTALL_SCREEN] = new Install(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FINISH_SCREEN] = new Finish(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FAIL_SCREEN] = new Fail(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[AGREEMENT_SCREEN] = new Agreement_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[DIRECTORY_SCREEN] = new Directory_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[INSTALL_SCREEN] = new Install_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
 		setScreen(WELCOME_SCREEN);
+
+		success_window = true;
 	}
 
 #ifndef DEBUG
-	if (!success)
+	if (!success_archive || !success_window)
 		invalidate();
 #endif
 }

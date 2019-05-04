@@ -44,8 +44,8 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".npack";
 	
 	// Try to compress the directory specified
-	size_t maxSize(0ull), fileCount(0ull);
-	const auto packBuffer = NST::CompressDirectory(srcDirectory, &maxSize, &fileCount);
+	NST::Directory directory(srcDirectory);
+	auto packBuffer = directory.package();
 	if (!packBuffer)
 		NST::Log::PushText("Cannot create package from the directory specified, aborting...\r\n");
 	else {
@@ -61,8 +61,8 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 
 			// Output results
 			NST::Log::PushText(
-				"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
-				"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
+				"Files packaged:  " + std::to_string(directory.file_count()) + "\r\n" +
+				"Bytes packaged:  " + std::to_string(directory.space_used()) + "\r\n" +
 				"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
 			);
 

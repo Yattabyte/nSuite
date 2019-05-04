@@ -13,128 +13,6 @@
 using namespace NST;
 
 
-std::optional<Buffer> NST::CompressDirectory(const std::string & srcDirectory, size_t * byteCount, size_t * fileCount, const std::vector<std::string> & exclusions)
-{
-	// Variables
-	const auto absolute_path_length = srcDirectory.size();
-	const auto directoryArray = GetFilePaths(srcDirectory);
-	struct FileData {
-		std::string fullpath, trunc_path;
-		size_t size, unitSize;
-	};
-	std::vector<FileData> files;
-	files.reserve(directoryArray.size());
-
-	// Ensure the source-directory has files
-	if (!directoryArray.size())
-		Log::PushText("Error: the directory specified has no (useable) files!\r\n");
-	else {
-		// Get a folder name, to name the package after
-		auto srcPath = std::filesystem::path(srcDirectory);
-		auto folderName = srcPath.stem().string();
-		while (folderName.empty()) {
-			srcPath = srcPath.parent_path();
-			folderName = srcPath.stem().string();
-		};
-
-		// Calculate final file size using all the files in this directory,
-		// and make a list containing all relevant files and their attributes
-		size_t archiveSize(0ull);
-		for each (const auto & entry in directoryArray) {
-			const auto extension = std::filesystem::path(entry).extension();
-			auto path = entry.path().string();
-			path = path.substr(absolute_path_length, path.size() - absolute_path_length);
-			bool useEntry(true);
-			for each (const auto & excl in exclusions) {
-				if (excl.empty())
-					continue;
-				// Compare Paths && Extensions
-				if (path == excl || extension == excl) {
-					useEntry = false;
-					break;
-				}
-			}
-			if (useEntry) {
-				const auto pathSize = path.size();
-				const size_t unitSize =
-					size_t(sizeof(size_t)) +	// size of path size variable in bytes
-					pathSize +					// the actual path data
-					size_t(sizeof(size_t)) +	// size of the file size variable in bytes
-					entry.file_size();			// the actual file data
-				archiveSize += unitSize;
-				files.push_back({ entry.path().string(), path, entry.file_size(), unitSize });
-			}
-		}
-
-		// Ensure we have a non-zero sized archive
-		if (archiveSize <= 0ull)
-			Log::PushText("Error: the archive has no data in it!\r\n");
-		else {
-			// Update optional parameter
-			if (byteCount != nullptr)
-				*byteCount = archiveSize;
-
-			// Create file buffer to contain all the file data
-			Buffer filebuffer(archiveSize);
-
-			// Write file data into the buffer
-			Threader threader;
-			size_t byteIndex(0ull);
-			for each (const auto & file in files) {
-				threader.addJob([file, byteIndex, &filebuffer]() {
-					// Write the total number of characters in the path string, into the archive
-					const auto pathSize = file.trunc_path.size();
-					auto index = filebuffer.writeData(&pathSize, size_t(sizeof(size_t)), byteIndex);
-
-					// Write the file path string, into the archive
-					index = filebuffer.writeData(file.trunc_path.data(), size_t(sizeof(char)) * pathSize, index);
-
-					// Write the file size in bytes, into the archive
-					index = filebuffer.writeData(&file.size, size_t(sizeof(size_t)), index);
-
-					// Read the file
-					std::ifstream fileOnDisk(file.fullpath, std::ios::binary | std::ios::beg);
-					fileOnDisk.read(&filebuffer.cArray()[index], (std::streamsize)file.size);
-					fileOnDisk.close();
-				});
-
-				byteIndex += file.unitSize;
-			}
-
-			// Wait for threaded operations to complete
-			threader.prepareForShutdown();
-			while (!threader.isFinished())
-				continue;
-			threader.shutdown();
-
-			// Update optional parameters
-			if (fileCount != nullptr)
-				*fileCount = files.size();
-
-			// Free up memory
-			files.clear();
-			files.shrink_to_fit();
-
-			// Compress the archive
-			auto compressedBuffer = filebuffer.compress();
-			filebuffer.release();
-			if (!compressedBuffer)
-				Log::PushText("Error: cannot compress the file-buffer for the chosen source directory.\r\n");
-			else {
-				// Prepend header information
-				PackageHeader header(folderName.size(), folderName.c_str());
-				compressedBuffer->writeHeader(&header);
-
-				// Success
-				return compressedBuffer;
-			}
-		}
-	}
-
-	// Failure
-	return {};
-}
-
 bool NST::DecompressDirectory(const std::string & dstDirectory, const Buffer & packBuffer, size_t * byteCount, size_t * fileCount)
 {
 	// Ensure buffer at least *exists*
@@ -142,13 +20,13 @@ bool NST::DecompressDirectory(const std::string & dstDirectory, const Buffer & p
 		Log::PushText("Error: package buffer has no content.\r\n");
 	else {
 		// Read in header
-		PackageHeader header;
+		Directory::PackageHeader header;
 		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		packBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(header.m_title, PackageHeader::TITLE) != 0)
+		if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
 			Log::PushText("Critical failure: supplied an invalid nSuite package!\r\n");
 		else {
 			// Try to decompress the buffer
@@ -283,13 +161,13 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 			}
 
 			// Read in header		
-			PackageHeader header;
+			Directory::PackageHeader header;
 			std::byte * dataPtr(nullptr);
 			size_t dataSize(0ull);
 			packBuffer.readHeader(&header, &dataPtr, dataSize);
 
 			// Ensure header title matches
-			if (std::strcmp(header.m_title, PackageHeader::TITLE) != 0)
+			if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
 				NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");
 			else {
 				// Try to decompress the buffer
@@ -464,7 +342,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 			Log::PushText("Critical failure: cannot compress diff instructions.\r\n");
 		else {
 			// Prepend header information
-			PatchHeader header(fileCount);
+			Directory::PatchHeader header(fileCount);
 			compressedBuffer->writeHeader(&header);
 
 			// Success
@@ -483,13 +361,13 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 		Log::PushText("Error: patch buffer doesn't exist or has no content.\r\n");
 	else {
 		// Read in header
-		PatchHeader header;
+		Directory::PatchHeader header;
 		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(header.m_title, PatchHeader::TITLE) != 0)
+		if (std::strcmp(header.m_title, Directory::PatchHeader::TITLE) != 0)
 			Log::PushText("Critical failure: supplied an invalid nSuite patch!\r\n");
 		else {
 			// Try to decompress the instruction buffer

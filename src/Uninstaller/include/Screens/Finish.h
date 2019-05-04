@@ -1,16 +1,16 @@
 #pragma once
-#ifndef FINISHSTATE_H
-#define FINISHSTATE_H
+#ifndef FINISH_SCREEN_UN_H
+#define FINISH_SCREEN_UN_H
 
 #include "Screen.h"
 
 
 /** This state encapuslates the "Finished - Screen" state. */
-class Finish: public Screen {
+class Finish_Screen: public Screen {
 public:
 	// Public (de)Constructors
-	~Finish();
-	Finish(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Finish_Screen();
+	Finish_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -27,4 +27,4 @@ public:
 	HWND m_btnClose = nullptr;
 };
 
-#endif // FINISHSTATE_H
+#endif // FINISH_SCREEN_UN_H
