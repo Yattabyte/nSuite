@@ -88,7 +88,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	wcex.lpszClassName = "Uninstaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
-		NST::Log::PushText("Critical failure: could not create main window.\r\n");
+		NST::Log::PushText("Critical failure: could not create main window!\r\n");
 		success = false;
 	}
 	else {

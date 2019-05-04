@@ -82,7 +82,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 		// Ensure header title matches
 		if (std::strcmp(packageHeader.m_title, NST::Directory::PackageHeader::TITLE) != 0)
-			NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");		
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");		
 		else {
 			m_packageName = packageHeader.m_folderName;
 			NST::Buffer::CompressionHeader header;
@@ -91,7 +91,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 			// Ensure header title matches
 			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0)
-				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");			
+				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header!\r\n");			
 			else {
 				// Get header payload -> uncompressed size
 				m_maxSize = header.m_uncompressedSize;
@@ -120,7 +120,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) 
-		NST::Log::PushText("Critical failure: could not create main window.\r\n");	
+		NST::Log::PushText("Critical failure: could not create main window!\r\n");	
 	else {
 		// Create window
 		m_hwnd = CreateWindowW(
@@ -226,7 +226,8 @@ void Installer::beginInstallation()
 		else {
 			// Unpackage using the rest of the resource file
 			auto directory = NST::SanitizePath(getDirectory());
-			if (!NST::DecompressDirectory(directory, NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize())))
+			NST::Directory virtual_directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()));
+			if (!virtual_directory.unpackage(directory))			
 				invalidate();
 			else {
 				// Write uninstaller to disk

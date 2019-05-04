@@ -13,87 +13,6 @@
 using namespace NST;
 
 
-bool NST::DecompressDirectory(const std::string & dstDirectory, const Buffer & packBuffer, size_t * byteCount, size_t * fileCount)
-{
-	// Ensure buffer at least *exists*
-	if (!packBuffer.hasData())
-		Log::PushText("Error: package buffer has no content.\r\n");
-	else {
-		// Read in header
-		Directory::PackageHeader header;
-		std::byte * dataPtr(nullptr);
-		size_t dataSize(0ull);
-		packBuffer.readHeader(&header, &dataPtr, dataSize);
-
-		// Ensure header title matches
-		if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
-			Log::PushText("Critical failure: supplied an invalid nSuite package!\r\n");
-		else {
-			// Try to decompress the buffer
-			auto decompressedBuffer = Buffer(dataPtr, dataSize).decompress();
-			if (!decompressedBuffer)
-				Log::PushText("Error: cannot complete directory decompression, as the package file cannot be decompressed.\r\n");
-			else {
-				// Begin reading the archive
-				Threader threader;
-				size_t byteIndex(0ull);
-				std::atomic_size_t filesProcessed(0ull);
-				Progress::SetRange(decompressedBuffer->size() + 100);
-				const auto finalDestionation = SanitizePath(dstDirectory + "\\" + header.m_folderName);
-				while (byteIndex < decompressedBuffer->size()) {
-					// Read path char count, path string, and file size
-					size_t pathSize(0ull);
-					byteIndex = decompressedBuffer->readData(&pathSize, size_t(sizeof(size_t)), byteIndex);
-					char * pathArray = new char[pathSize];
-					byteIndex = decompressedBuffer->readData(pathArray, pathSize, byteIndex);
-					const std::string path(pathArray, pathSize);
-					delete[] pathArray;
-					size_t fileSize(0ull);
-					byteIndex = decompressedBuffer->readData(&fileSize, size_t(sizeof(size_t)), byteIndex);
-
-					// Write file out to disk, from the archive
-					const auto fullPath = finalDestionation + path;
-					const char * data = &((decompressedBuffer->cArray())[byteIndex]);
-					threader.addJob([fullPath, data, fileSize, &filesProcessed]() {
-						// Write-out the file if it doesn't exist yet, if the size is different, or if it's older
-						std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-						std::ofstream file(fullPath, std::ios::binary | std::ios::out);
-						if (!file.is_open())
-							Log::PushText("Error writing file: \"" + fullPath + "\" to disk.\r\n");
-						else 
-							file.write(data, (std::streamsize)fileSize);						
-						file.close();
-						filesProcessed++;
-					});
-
-					byteIndex += fileSize;
-					Log::PushText("Writing file: \"" + path + "\"\r\n");
-					Progress::SetProgress(byteIndex);
-				}
-
-				// Wait for threaded operations to complete
-				threader.prepareForShutdown();
-				while (!threader.isFinished())
-					continue;
-				threader.shutdown();
-				Progress::SetProgress(byteIndex + 100);
-
-				// Update optional parameters
-				if (byteCount != nullptr)
-					*byteCount = byteIndex;
-				if (fileCount != nullptr)
-					*fileCount = filesProcessed;
-
-				// Success
-				return true;
-			}
-		}
-	}
-
-	// Failure
-	return false;
-}
-
 std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory)
 {
 	// Declarations that will only be used here	
@@ -152,7 +71,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 				// Last resort: try to treat the file as an nSuite package
 				std::ifstream packFile(directory, std::ios::binary | std::ios::beg);
 				if (!packFile.is_open()) {
-					Log::PushText("Error: cannot open the package file specified.\r\n");
+					Log::PushText("Error: cannot open the package file specified!\r\n");
 					return false;
 				}
 				packBuffer = NST::Buffer(std::filesystem::file_size(directory));
@@ -168,7 +87,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 
 			// Ensure header title matches
 			if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
-				NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");
+				NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");
 			else {
 				// Try to decompress the buffer
 				auto decompressedBuffer = Buffer(dataPtr, dataSize).decompress();
@@ -176,7 +95,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 
 				// Handle decompression failure now
 				if (!decompressedBuffer)
-					Log::PushText("Critical failure: cannot decompress package file.\r\n");
+					Log::PushText("Critical failure: cannot decompress package file!\r\n");
 				else {
 					// Get lists of all files involved
 					snapshot = *decompressedBuffer;
@@ -208,7 +127,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 		// Get files
 		std::vector<File*> srcOld_Files, srcNew_Files;
 		if (!getFiles(oldDirectory, oldSnapshot, srcOld_Files) || !getFiles(newDirectory, newSnapshot, srcNew_Files))
-			Log::PushText("Error: cannot retrieve both lists of files.\r\n");
+			Log::PushText("Error: cannot retrieve both lists of files!\r\n");
 		else {
 			// Find all common and new files first
 			for each (const auto & nFile in srcNew_Files) {
@@ -275,7 +194,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 	PathList addedFiles, removedFiles;
 	Buffer oldSnap, newSnap;
 	if (!getFileLists(oldDirectory, oldSnap, newDirectory, newSnap, commonFiles, addedFiles, removedFiles))
-		Log::PushText("Error: could not retrieve all requisite file lists for diffing.\r\n");
+		Log::PushText("Error: could not retrieve all requisite file lists for diffing!\r\n");
 	else {
 		// Generate Instructions from file lists, store them in this expanding buffer
 		Buffer instructionBuffer;
@@ -339,7 +258,7 @@ std::optional<Buffer> NST::DiffDirectories(const std::string & oldDirectory, con
 		auto compressedBuffer = instructionBuffer.compress();
 		instructionBuffer.release();
 		if (!compressedBuffer)
-			Log::PushText("Critical failure: cannot compress diff instructions.\r\n");
+			Log::PushText("Critical failure: cannot compress diff instructions!\r\n");
 		else {
 			// Prepend header information
 			Directory::PatchHeader header(fileCount);
@@ -358,7 +277,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 {
 	// Ensure buffer at least *exists*
 	if (!diffBuffer.hasData())
-		Log::PushText("Error: patch buffer doesn't exist or has no content.\r\n");
+		Log::PushText("Error: patch buffer doesn't exist or has no content!\r\n");
 	else {
 		// Read in header
 		Directory::PatchHeader header;
@@ -373,7 +292,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 			// Try to decompress the instruction buffer
 			auto instructionBuffer = Buffer(dataPtr, dataSize).decompress();
 			if (!instructionBuffer)
-				Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed.\r\n");
+				Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed!\r\n");
 			else {
 				static constexpr auto readFile = [](const std::string & path, Buffer & buffer, size_t & hash) -> bool {
 					std::ifstream f(path, std::ios::binary | std::ios::beg);
@@ -447,7 +366,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 
 					// Try to read source file
 					if (!readFile(file.fullPath, oldBuffer, oldHash))
-						Log::PushText("Critical failure: Cannot read source file from disk.\r\n");
+						Log::PushText("Critical failure: Cannot read source file from disk!\r\n");
 					else {
 						// Patch if this source file hasn't been patched yet
 						if (oldHash == file.diff_newHash) {
@@ -457,7 +376,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 							continue;
 						}
 						else if (oldHash != file.diff_oldHash) 
-							Log::PushText("Critical failure: the file \"" + file.path + "\" is of an unexpected version. \r\n");
+							Log::PushText("Critical failure: the file \"" + file.path + "\" is of an unexpected version!\r\n");
 						else {
 							// Patch buffer
 							Log::PushText("patching file \"" + file.path + "\"\r\n");
@@ -468,12 +387,12 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 								// Confirm new hashes match
 								const size_t newHash = newBuffer->hash();
 								if (newHash != file.diff_newHash) 
-									Log::PushText("Critical failure: patched file is corrupted (hash mismatch).\r\n");
+									Log::PushText("Critical failure: patched file is corrupted (hash mismatch)!\r\n");
 								else {
 									// Write patched buffer to disk
 									std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 									if (!newFile.is_open()) 
-										Log::PushText("Critical failure: cannot write patched file to disk.\r\n");
+										Log::PushText("Critical failure: cannot write patched file to disk!\r\n");
 									else {
 										newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 										newFile.close();
@@ -503,17 +422,17 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 						// Remember that we use the diff/patch function to add new files too
 						auto newBuffer = Buffer().patch(file.instructionBuffer);
 						if (!newBuffer)
-							Log::PushText("Critical failure: cannot derive new file from patch instructions.\r\n");
+							Log::PushText("Critical failure: cannot derive new file from patch instructions!\r\n");
 						else {
 							// Confirm new hashes match
 							const size_t newHash = newBuffer->hash();
 							if (newHash != file.diff_newHash)
-								Log::PushText("Critical failure: new file is corrupted (hash mismatch).\r\n");
+								Log::PushText("Critical failure: new file is corrupted (hash mismatch)!\r\n");
 							else {
 								// Write new file to disk
 								std::ofstream newFile(file.fullPath, std::ios::binary | std::ios::out);
 								if (!newFile.is_open())
-									Log::PushText("Critical failure: cannot write new file to disk.\r\n");
+									Log::PushText("Critical failure: cannot write new file to disk!\r\n");
 								else {
 									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
 									newFile.close();
@@ -544,7 +463,7 @@ bool NST::PatchDirectory(const std::string & dstDirectory, const Buffer & diffBu
 								// Only remove source files if they match entirely
 								if (oldHash == file.diff_oldHash) {
 									if (!std::filesystem::remove(file.fullPath))
-										Log::PushText("Error: cannot delete file \"" + file.path + "\" from disk, delete this file manually if you can.\r\n");
+										Log::PushText("Error: cannot delete file \"" + file.path + "\" from disk, delete this file manually if you can!\r\n");
 									else
 										Log::PushText("Removing file: \"" + file.path + "\"\r\n");
 								}

@@ -11,13 +11,6 @@
 
 /** Namespace declaration for all nSuite methods and classes. */
 namespace NST {
-	/** Decompresses an .npack - package formatted buffer into its component files in the destination directory.
-	@param	dstDirectory		the absolute path to the directory to decompress.
-	@param	packBuffer			the buffer containing the compressed package contents.
-	@param	byteCount			(optional) pointer updated with the number of bytes written to disk.
-	@param	fileCount			(optional) pointer updated with the number of files written to disk.
-	@return						true if decompression success, false otherwise. */
-	bool DecompressDirectory(const std::string & dstDirectory, const Buffer & buffer, size_t * byteCount = nullptr, size_t * fileCount = nullptr);
 	/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
 	diffBuffer format:
 	-------------------------------------------------------------------------------

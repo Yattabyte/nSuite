@@ -24,7 +24,6 @@ int main()
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
 	const auto dstDirectory = NST::SanitizePath(NST::GetRunningDirectory());
-	size_t fileCount(0ull), byteCount(0ull);
 	NST::Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	if (!archive.exists()) 
 		NST::Log::PushText("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");
@@ -39,15 +38,16 @@ int main()
 		);
 
 		// Unpackage using the resource file
-		if (!NST::DecompressDirectory(dstDirectory, NST::Buffer(reinterpret_cast<std::byte*>(archive.getPtr()), archive.getSize()), &byteCount, &fileCount))
+		NST::Directory directory(NST::Buffer(reinterpret_cast<std::byte*>(archive.getPtr()), archive.getSize()));
+		if (!directory.unpackage(dstDirectory))
 			NST::Log::PushText("Cannot decompress embedded package resource, aborting...\r\n");
 		else {
 			// Success, report results
 			const auto end = std::chrono::system_clock::now();
 			const std::chrono::duration<double> elapsed_seconds = end - start;
 			NST::Log::PushText(
-				"Files written:  " + std::to_string(fileCount) + "\r\n" +
-				"Bytes written:  " + std::to_string(byteCount) + "\r\n" +
+				"Files processed: " + std::to_string(directory.file_count()) + "\r\n" +
+				"Bytes processed: " + std::to_string(directory.space_used()) + "\r\n"
 				"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
 			);
 

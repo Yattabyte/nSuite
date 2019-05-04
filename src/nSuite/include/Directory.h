@@ -17,14 +17,14 @@ namespace NST {
 		/***/
 		~Directory();
 		/**
-		@param	directoryPath		the absolute path to a desired directory, or (embedded) package file.
+		@param	directoryPath		the absolute path to a desired directory or a package file.
 		@param	exclusions			(optional) list of filenames/types to skip. "string" match relative path, ".ext" match extension.*/
-		Directory(const std::string & directoryPath = std::string(""), const std::vector<std::string> & exclusions = std::vector<std::string>());
+		Directory(const std::string & path = std::string(""), const std::vector<std::string> & exclusions = std::vector<std::string>());
+		/***/
+		Directory(const Buffer & package);
 		
 
 		// Public Methods
-		/***/
-		void changeDirectory(const std::string & directoryPath);
 		/***/
 		size_t file_count() const;
 		/***/
@@ -39,8 +39,13 @@ namespace NST {
 		-----------------------------------------------------------------------------------------------------	
 		@return						a buffer pointer, containing the compressed directory contents on package success, empty otherwise. */
 		std::optional<Buffer> package();
-		/***/
-		bool unpackage(Directory & destinationDirectory);
+		/** Decompresses an .npack - package formatted buffer into its component files in the destination directory.
+		@param	dstDirectory		the absolute path to the directory to decompress.
+		@param	packBuffer			the buffer containing the compressed package contents.
+		@param	byteCount			(optional) pointer updated with the number of bytes written to disk.
+		@param	fileCount			(optional) pointer updated with the number of files written to disk.
+		@return						true if decompression success, false otherwise. */
+		bool unpackage(const std::string & outputPath);
 
 
 		// Public Header Structs
@@ -111,25 +116,26 @@ namespace NST {
 	private:
 		// Public Data Structs
 		struct DirFile {
-			std::string fullpath = "", trunc_path = "";
-			size_t size = 0ull, unitSize = 0ull;
+			std::string trunc_path = "";
+			size_t size = 0ull;
 			std::byte * data = nullptr;
 		};
 
 
-		// Private Methods/
+		// Private Methods
 		/***/
-		void parse();
+		void virtualize_from_path(const std::string & path);
 		/***/
-		void loadIntoMemory();
+		void virtualize_from_buffer(const Buffer & buffer);
 		/***/
-		void unloadFromMemory();
+		void release();
 
 
 		// Private Attributes
-		std::string m_directoryPath = "";
+		std::string m_directoryPath = "", m_directoryName = "";
 		std::vector<std::string> m_exclusions;
 		std::vector<DirFile> m_files;
+		size_t m_spaceUsed = 0ull;
 	};
 };
 
