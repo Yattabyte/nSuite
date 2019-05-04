@@ -12,6 +12,8 @@
 #include "Commands/PackCommand.h"
 #include "Commands/UnpackCommand.h"
 
+// Test
+#include "Buffer.h"
 
 /** Entry point. */
 int main(int argc, char *argv[])
@@ -27,13 +29,13 @@ int main(int argc, char *argv[])
 		{	"-diff"			,	new DiffCommand()		},
 		{	"-patch"		,	new PatchCommand()		}
 	};
-	auto index = Log::AddObserver([&](const std::string & message) {
+	auto index = NST::Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
 	});
 
 	// Check for valid arguments
 	if (argc <= 1 || commandMap.find(argv[1]) == commandMap.end()) {
-		Log::PushText(
+		NST::Log::PushText(
 			"                       ~\r\n"
 			"      Wizard Help:    /\r\n"
 			"  ~------------------~\r\n"
@@ -55,10 +57,10 @@ int main(int argc, char *argv[])
 	auto result = commandMap.at(argv[1])->execute(argc, argv);
 	const auto end = std::chrono::system_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	Log::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");	
+	NST::Log::PushText("Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n");	
 
 	// Pause and exit
-	Log::RemoveObserver(index);
+	NST::Log::RemoveObserver(index);
 	system("pause");
 	exit(result);
 }

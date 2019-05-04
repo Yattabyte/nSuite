@@ -1,4 +1,4 @@
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "Log.h"
 #include <chrono>
 #include <fstream>
@@ -21,16 +21,16 @@ static auto get_patches(const std::string & srcDirectory)
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	auto index = Log::AddObserver([&](const std::string & message) {
+	auto index = NST::Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
 	});
 
 	// Find all patch files?
-	const auto dstDirectory = DRT::SanitizePath(DRT::GetRunningDirectory());
+	const auto dstDirectory = NST::SanitizePath(NST::GetRunningDirectory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	Log::PushText(
+	NST::Log::PushText(
 		"                       ~\r\n"
 		"        Updater       /\r\n"
 		"  ~------------------~\r\n"
@@ -40,7 +40,7 @@ int main()
 		"\r\n"
 	);
 	if (patches.size()) {
-		Log::PushText(std::string("Ready to update?") + ' ');
+		NST::Log::PushText(std::string("Ready to update?") + ' ');
 		system("pause");
 		std::printf("\033[A\33[2K\r");
 		std::printf("\033[A\33[2K\r\n");
@@ -51,34 +51,31 @@ int main()
 		for each (const auto & patch in patches) {
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
-			const size_t diffSize = std::filesystem::file_size(patch);
 			if (!diffFile.is_open()) {
-				Log::PushText("Cannot read diff file, skipping...\r\n");
+				NST::Log::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
 			else {
 				// Apply patch
-				char * diffBuffer = new char[diffSize];
-				diffFile.read(diffBuffer, std::streamsize(diffSize));
+				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
+				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 				diffFile.close();
-				if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten)) {
-					Log::PushText("skipping patch...\r\n");
-					delete[] diffBuffer;
+				if (!NST::PatchDirectory(dstDirectory, diffBuffer, &bytesWritten)) {
+					NST::Log::PushText("skipping patch...\r\n");
 					continue;
 				}
 
 				// Delete patch file at very end
 				if (!std::filesystem::remove(patch))
-					Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
+					NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
 				patchesApplied++;
-				delete[] diffBuffer;
 			}
 		}
 
 		// Success, report results
 		const auto end = std::chrono::system_clock::now();
 		const std::chrono::duration<double> elapsed_seconds = end - start;
-		Log::PushText(
+		NST::Log::PushText(
 			"Patches used:   " + std::to_string(patchesApplied) + " out of " + std::to_string(patches.size()) + "\r\n" +
 			"Bytes written:  " + std::to_string(bytesWritten) + "\r\n" +
 			"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
@@ -86,7 +83,7 @@ int main()
 	}
 
 	// Pause and exit
-	Log::RemoveObserver(index);
+	NST::Log::RemoveObserver(index);
 	system("pause");
 	exit(EXIT_SUCCESS);	
 }

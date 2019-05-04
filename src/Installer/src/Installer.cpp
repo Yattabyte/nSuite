@@ -1,7 +1,7 @@
 #include "Installer.h"
 #include "StringConversions.h"
-#include "DirectoryTools.h"
-#include "BufferTools.h"
+#include "nSuite.h"
+#include "Buffer.h"
 #include "Log.h"
 #include <fstream>
 #include <regex>
@@ -71,29 +71,48 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	// Check archive integrity
 	bool success = true;
 	if (!m_archive.exists()) {
-		Log::PushText("Critical failure: archive doesn't exist!\r\n");
+		NST::Log::PushText("Critical failure: archive doesn't exist!\r\n");
 		success = false;
 	}
 	else {
-		// Parse the header
-		char * packagedData(nullptr);
-		size_t packagedDataSize(0ull);
-		bool result = DRT::ParseHeader(reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize(), m_packageName, &packagedData, packagedDataSize);
-		if (!result) {
-			Log::PushText("Critical failure: cannot parse archive package's header.\r\n");
+		// Read in header
+		/////////////////////////////////////////////////
+		NST::Buffer DELETE_ME1(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize());
+		/////////////////////////////////////////////////
+		PackageHeader packageHeader;
+		std::byte * dataPtr1(nullptr);
+		size_t dataSize1(0ull);
+		DELETE_ME1.readHeader(&packageHeader, &dataPtr1, dataSize1);
+
+		// Ensure header title matches
+		if (std::strcmp(packageHeader.m_title, PackageHeader::TITLE) != 0) {
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header.\r\n");
 			success = false;
 		}
 		else {
-			result = BFT::ParseHeader(packagedData, packagedDataSize, m_maxSize, &packagedData, packagedDataSize);
-			if (!result) {
-				Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
+			m_packageName = packageHeader.m_folderName;
+			// Read in header
+			/////////////////////////////////////////////////
+			NST::Buffer DELETE_ME(dataPtr1, dataSize1);
+			/////////////////////////////////////////////////
+			NST::Buffer::CompressionHeader header;
+			std::byte * dataPtr(nullptr);
+			size_t dataSize(0ull);
+			DELETE_ME.readHeader(&header, &dataPtr, dataSize);
+
+			// Ensure header title matches
+			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0) {
+				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header.\r\n");
 				success = false;
 			}
 			else {
+				// Get header payload -> uncompressed size
+				m_maxSize = header.m_uncompressedSize;
+				
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
 					m_mfStrings[L"name"] = to_wideString(m_packageName);
-			}
+			}			
 		}
 	}
 	// Create window class
@@ -111,7 +130,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
-		Log::PushText("Critical failure: could not create main window.\r\n");
+		NST::Log::PushText("Critical failure: could not create main window.\r\n");
 		success = false;
 	}
 	else {
@@ -209,15 +228,15 @@ void Installer::beginInstallation()
 {
 	m_threader.addJob([&]() {
 		// Acquire the uninstaller resource
-		Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
+		NST::Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
 		if (!uninstaller.exists()) {
-			Log::PushText("Cannot access installer resource, aborting...\r\n");
+			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
 			setScreen(Installer::FAIL_SCREEN);
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = DRT::SanitizePath(getDirectory());
-			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
+			auto directory = NST::SanitizePath(getDirectory());
+			if (!NST::DecompressDirectory(directory, NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize())))
 				invalidate();
 			else {
 				// Write uninstaller to disk
@@ -226,10 +245,10 @@ void Installer::beginInstallation()
 				std::filesystem::create_directories(std::filesystem::path(uninstallerPath).parent_path());
 				std::ofstream file(uninstallerPath, std::ios::binary | std::ios::out);
 				if (!file.is_open()) {
-					Log::PushText("Cannot write uninstaller to disk, aborting...\r\n");
+					NST::Log::PushText("Cannot write uninstaller to disk, aborting...\r\n");
 					invalidate();
 				}
-				Log::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
+				NST::Log::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
 				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
 				file.close();
 
@@ -241,7 +260,7 @@ void Installer::beginInstallation()
 				);
 				auto handle = BeginUpdateResource(uninstallerPath.c_str(), false);
 				if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPVOID)newManifest.c_str(), (DWORD)newManifest.size())) {
-					Log::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
+					NST::Log::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
 					invalidate();
 				}
 				EndUpdateResource(handle, FALSE);
@@ -278,7 +297,7 @@ void Installer::beginInstallation()
 void Installer::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = DRT::GetRunningDirectory() + "\\error_log.txt";
+	const auto dir = NST::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);
@@ -289,13 +308,13 @@ void Installer::dumpErrorLog()
 		logData += "Installer error log:\r\n";
 
 	// Add remaining log data
-	logData += std::string(dateData) + Log::PullText() + "\r\n";
+	logData += std::string(dateData) + NST::Log::PullText() + "\r\n";
 
 	// Try to create the file
 	std::filesystem::create_directories(std::filesystem::path(dir).parent_path());
 	std::ofstream file(dir, std::ios::binary | std::ios::out | std::ios::app);
 	if (!file.is_open())
-		Log::PushText("Cannot dump error log to disk...\r\n");
+		NST::Log::PushText("Cannot dump error log to disk...\r\n");
 	else
 		file.write(logData.c_str(), (std::streamsize)logData.size());
 	file.close();

@@ -4,23 +4,26 @@
 set (ModuleStatic nSuite-Static)
 set (ModuleShared nSuite-Shared)
 
-# Grou Files
+configure_file(Resource.h.in include/Resource.h)
+
+# Group Files
 set(FILES
 	# Source files
-	src/BufferTools.cpp
-	src/DirectoryTools.cpp
+	src/Buffer.cpp
+	src/nSuite.cpp
 	src/Instructions.cpp	
 	
 	# Header files
-	include/BufferTools.h
+	include/Buffer.h
+	include/nSuite.h
+	include/Instructions.h
 	include/StringConversions.h
-	include/DirectoryTools.h
-	include/Instructions.h	
 	include/Log.h
 	include/Progress.h
-	include/Resource.h	
-	include/Threader.h	
+	include/Resource.h
+	include/Threader.h
 )
+
 
 # Create Library
 add_library(${ModuleStatic} STATIC ${FILES})

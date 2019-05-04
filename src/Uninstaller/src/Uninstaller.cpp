@@ -1,6 +1,6 @@
 #include "Uninstaller.h"
 #include "StringConversions.h"
-#include "DirectoryTools.h"
+#include "nSuite.h"
 #include "Log.h"
 #include "Progress.h"
 #include <fstream>
@@ -64,14 +64,14 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	// Ensure that a manifest exists
 	bool success = true;
 	if (!m_manifest.exists()) {
-		Log::PushText("Critical failure: uninstaller manifest doesn't exist!\r\n");
+		NST::Log::PushText("Critical failure: uninstaller manifest doesn't exist!\r\n");
 		success = false;
 	}
 
 	// Acquire the installation directory
 	m_directory = m_mfStrings[L"directory"];
 	if (m_directory.empty())
-		m_directory = to_wideString(DRT::GetRunningDirectory());
+		m_directory = to_wideString(NST::GetRunningDirectory());
 
 	// Create window class
 	WNDCLASSEX wcex;
@@ -88,7 +88,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	wcex.lpszClassName = "Uninstaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
-		Log::PushText("Critical failure: could not create main window.\r\n");
+		NST::Log::PushText("Critical failure: could not create main window.\r\n");
 		success = false;
 	}
 	else {
@@ -150,8 +150,8 @@ void Uninstaller::beginUninstallation()
 {
 	m_threader.addJob([&]() {
 		// Find all installed files
-		const auto directory = DRT::SanitizePath(from_wideString(m_directory));
-		const auto entries = DRT::GetFilePaths(directory);
+		const auto directory = NST::SanitizePath(from_wideString(m_directory));
+		const auto entries = NST::GetFilePaths(directory);
 
 		// Find all shortcuts
 		const auto desktopStrings = m_mfStrings[L"shortcut"], startmenuStrings = m_mfStrings[L"startmenu"];
@@ -193,49 +193,49 @@ void Uninstaller::beginUninstallation()
 			}
 
 		// Set progress bar range to include all files + shortcuts + 1 (cleanup step)
-		Progress::SetRange(entries.size() + shortcuts_d.size() + shortcuts_s.size() + 2);
+		NST::Progress::SetRange(entries.size() + shortcuts_d.size() + shortcuts_s.size() + 2);
 		size_t progress = 0ull;
 
 		// Remove all files in the installation folder, list them
 		std::error_code er;
 		if (!entries.size())
-			Log::PushText("Already uninstalled / no files found.\r\n");
+			NST::Log::PushText("Already uninstalled / no files found.\r\n");
 		else {
 			for each (const auto & entry in entries) {
-				Log::PushText("Deleting file: \"" + entry.path().string() + "\"\r\n");
+				NST::Log::PushText("Deleting file: \"" + entry.path().string() + "\"\r\n");
 				std::filesystem::remove(entry, er);
-				Progress::SetProgress(++progress);
+				NST::Progress::SetProgress(++progress);
 			}
 		}
 
 		// Remove all shortcuts
 		for each (const auto & shortcut in shortcuts_d) {
-			const auto path = DRT::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
-			Log::PushText("Deleting desktop shortcut: \"" + path + "\"\r\n");
+			const auto path = NST::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			NST::Log::PushText("Deleting desktop shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
 		}
 		for each (const auto & shortcut in shortcuts_s) {
-			const auto path = DRT::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
-			Log::PushText("Deleting start-menu shortcut: \"" + path + "\"\r\n");
+			const auto path = NST::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			NST::Log::PushText("Deleting start-menu shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
 		}
 
 		// Clean up whatever's left (empty folders)
 		std::filesystem::remove_all(directory, er);
-		Progress::SetProgress(++progress);
+		NST::Progress::SetProgress(++progress);
 
 		// Remove registry entry for this uninstaller		
 		RegDeleteKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), KEY_ALL_ACCESS, NULL);		
-		Progress::SetProgress(++progress);
+		NST::Progress::SetProgress(++progress);
 	});
 }
 
 void Uninstaller::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = DRT::GetRunningDirectory() + "\\error_log.txt";
+	const auto dir = NST::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);
@@ -246,13 +246,13 @@ void Uninstaller::dumpErrorLog()
 		logData += "Uninstaller error log:\r\n";
 
 	// Add remaining log data
-	logData += std::string(dateData) + Log::PullText() + "\r\n";
+	logData += std::string(dateData) + NST::Log::PullText() + "\r\n";
 
 	// Try to create the file
 	std::filesystem::create_directories(std::filesystem::path(dir).parent_path());
 	std::ofstream file(dir, std::ios::binary | std::ios::out | std::ios::app);
 	if (!file.is_open())
-		Log::PushText("Cannot dump error log to disk...\r\n");
+		NST::Log::PushText("Cannot dump error log to disk...\r\n");
 	else
 		file.write(logData.c_str(), (std::streamsize)logData.size());
 	file.close();

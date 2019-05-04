@@ -2,6 +2,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
+#include "Buffer.h"
 #include <variant>
 #include <vector>
 
@@ -13,11 +14,11 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Copy_Instruction READ(void ** pointer);
+	static Copy_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
@@ -32,17 +33,17 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Insert_Instruction READ(void ** pointer);
+	static Insert_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
 	static constexpr char TYPE = 'I';
 	size_t index = 0ull;
-	std::vector<char> newData;
+	std::vector<std::byte> newData;
 };
 
 /** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
@@ -52,17 +53,17 @@ public:
 	/** Retrieve the bytesize of this instruction. */
 	size_t SIZE() const;
 	/** Exectute this instruction. */
-	void DO(char * bufferNew, const size_t & newSize, const char *const bufferOld, const size_t & oldSize) const;
+	void DO(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const;
 	/** Write-out this instruction to a buffer. */
-	void WRITE(void ** pointer) const;
+	void WRITE(NST::Buffer & outputBuffer, size_t & byteIndex) const;
 	/** Read-in this instruction from a buffer. */
-	static Repeat_Instruction READ(void ** pointer);
+	static Repeat_Instruction READ(NST::Buffer & outputBuffer, size_t & byteIndex);
 
 
 	// Public Attributes
 	static constexpr char TYPE = 'R';
 	size_t index = 0ull, amount = 0ull;
-	char value = 0;
+	std::byte value;
 };
 
 /** All the types of instructions currently supported. */
@@ -71,7 +72,7 @@ using InstructionTypes = std::variant<Copy_Instruction, Insert_Instruction, Repe
 /** Creates an instruction and returns it after reading it in from a buffer. */
 struct Instruction_Maker {
 	/** Make an instruction, reading it in from a buffer. */
-	static InstructionTypes Make(void ** pointer);
+	static InstructionTypes Make(NST::Buffer & outputBuffer, size_t & byteIndex);
 };
 
 #endif // INSTRUCTIONS_H
