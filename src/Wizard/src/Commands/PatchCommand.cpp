@@ -50,14 +50,11 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 		diffFile.close();
 
 		// Try to patch the destination directory
-		size_t bytesWritten(0ull);
-		if (!NST::PatchDirectory(dstDirectory, diffBuffer, &bytesWritten))
-			NST::Log::PushText("aborting...\r\n");
-		else {
+		if (NST::Directory(dstDirectory).update(diffBuffer)) {
 			// Output results
-			NST::Log::PushText(
+			/*NST::Log::PushText(
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
-			);
+			);*/
 
 			return EXIT_SUCCESS;
 		}

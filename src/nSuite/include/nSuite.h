@@ -11,13 +11,6 @@
 
 /** Namespace declaration for all nSuite methods and classes. */
 namespace NST {
-	/** Decompresses and executes the instructions contained within a previously - generated diff buffer.
-	Transforms the contents of an 'old' directory into that of the 'new' directory.
-	@param	dstDirectory		the destination directory to transform.
-	@param	diffBuffer			the buffer containing the compressed diff instructions.
-	@param	bytesWritten		(optional) pointer updated with the number of bytes written to disk.
-	@return						true if patch success, false otherwise. */
-	bool PatchDirectory(const std::string & dstDirectory, const Buffer & diffBuffer, size_t * bytesWritten = nullptr);
 	/** Returns a list of file information for all files within the directory specified.
 	@param	directory			the directory to retrieve file-info from.
 	@return						a vector of file information, including file names, sizes, meta-data, etc. */

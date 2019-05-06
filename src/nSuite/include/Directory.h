@@ -55,7 +55,14 @@ namespace NST {
 		@param	oldDirectory		the older directory or path to an .npack file.
 		@param	newDirectory		the newer directory or path to an .npack file.
 		@return						a pointer to a buffer holding the patch instructions. */
-		std::optional<Buffer> diff(const Directory & newDirectory);
+		std::optional<Buffer> delta(const Directory & newDirectory);
+		/** Decompresses and executes the instructions contained within a previously - generated diff buffer.
+		Transforms the contents of an 'old' directory into that of the 'new' directory.
+		@param	dstDirectory		the destination directory to transform.
+		@param	diffBuffer			the buffer containing the compressed diff instructions.
+		@param	bytesWritten		(optional) pointer updated with the number of bytes written to disk.
+		@return						true if patch success, false otherwise. */
+		bool update(const Buffer & diffBuffer);
 
 
 		// Public Header Structs

@@ -147,7 +147,7 @@ bool NST::Directory::unpackage(const std::string & outputPath)
 	return false;
 }
 
-std::optional<Buffer> NST::Directory::diff(const Directory & newDirectory)
+std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 {
 	// Declarations that will only be used here	
 	typedef std::vector<DirFile> PathList;
@@ -277,6 +277,221 @@ std::optional<Buffer> NST::Directory::diff(const Directory & newDirectory)
 
 	// Failure
 	return {};
+}
+
+bool NST::Directory::update(const Buffer & diffBuffer)
+{
+	// Ensure buffer at least *exists*
+	if (!diffBuffer.hasData())
+		Log::PushText("Error: patch buffer doesn't exist or has no content!\r\n");
+	else {
+		// Read in header
+		Directory::PatchHeader header;
+		std::byte * dataPtr(nullptr);
+		size_t dataSize(0ull);
+		diffBuffer.readHeader(&header, &dataPtr, dataSize);
+
+		// Ensure header title matches
+		if (std::strcmp(header.m_title, Directory::PatchHeader::TITLE) != 0)
+			Log::PushText("Critical failure: supplied an invalid nSuite patch!\r\n");
+		else {
+			// Try to decompress the instruction buffer
+			auto instructionBuffer = Buffer(dataPtr, dataSize).decompress();
+			if (!instructionBuffer)
+				Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed!\r\n");
+			else {
+				// Start reading diff file
+				struct FileInstruction {
+					std::string path = "", fullPath = "";
+					Buffer instructionBuffer;
+					size_t diff_oldHash = 0ull, diff_newHash = 0ull;
+				};
+				std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
+				size_t files(0ull), byteIndex(0ull);
+				while (files < header.m_fileCount) {
+					FileInstruction FI;
+
+					// Read file path length
+					size_t pathLength(0ull);
+					byteIndex = instructionBuffer->readData(&pathLength, size_t(sizeof(size_t)), byteIndex);
+					FI.path.resize(pathLength);
+
+					// Read file path
+					byteIndex = instructionBuffer->readData(FI.path.data(), size_t(sizeof(char)) * pathLength, byteIndex);
+					FI.fullPath = m_directoryPath + FI.path;
+
+					// Read operation flag
+					char flag(0);
+					byteIndex = instructionBuffer->readData(&flag, size_t(sizeof(char)), byteIndex);
+
+					// Read old hash
+					byteIndex = instructionBuffer->readData(&FI.diff_oldHash, size_t(sizeof(size_t)), byteIndex);
+
+					// Read new hash
+					byteIndex = instructionBuffer->readData(&FI.diff_newHash, size_t(sizeof(size_t)), byteIndex);
+
+					// Read buffer size
+					size_t instructionSize(0ull);
+					byteIndex = instructionBuffer->readData(&instructionSize, size_t(sizeof(size_t)), byteIndex);
+
+					// Copy buffer
+					if (instructionSize > 0)
+						FI.instructionBuffer = Buffer(&(*instructionBuffer)[byteIndex], instructionSize, true);
+					byteIndex += instructionSize;
+
+					// Sort instructions
+					if (flag == 'U')
+						diffFiles.push_back(std::move(FI));
+					else if (flag == 'N')
+						addedFiles.push_back(std::move(FI));
+					else if (flag == 'D')
+						removedFiles.push_back(std::move(FI));
+					files++;
+				}
+				instructionBuffer->release();
+
+				// Patch all files first
+				size_t byteNum(0ull);
+				bool failed = false;
+				for (FileInstruction & inst : diffFiles) {
+					// Try to read the target file
+					Buffer oldBuffer;
+					size_t oldHash(0ull);
+
+					// Try to find the source file
+					bool found = false;
+					for each (const auto & file in m_files)
+						if (file.relativePath == inst.path) {
+							oldBuffer = Buffer(file.data, file.size);
+							oldHash = oldBuffer.hash();
+							found = true;
+							break;
+						}
+					// Fail on missing Files
+					if (!found) 
+						Log::PushText("Critical failure: Cannot update \"" + inst.path + "\", the file is missing!\r\n");
+					// Fail on empty files
+					else if (!oldBuffer.hasData()) 
+						Log::PushText("Critical failure: Cannot update \"" + inst.path + "\", the file is empty!\r\n");
+					// Skip updated files
+					else if (oldHash == inst.diff_newHash) {
+						Log::PushText("The file \"" + inst.path + "\" is already up to date, skipping...\r\n");
+						inst.instructionBuffer.release();
+						continue;
+					}
+					// Fail on different version
+					else if (oldHash != inst.diff_oldHash)
+						Log::PushText("Critical failure: the file \"" + inst.path + "\" is of an unexpected version!\r\n");
+					// Attempt Patching Process
+					else {
+						Log::PushText("patching file \"" + inst.path + "\"\r\n");
+						auto newBuffer = oldBuffer.patch(inst.instructionBuffer);
+						if (!newBuffer)
+							Log::PushText("Critical failure: patching failed!\r\n");
+						else {
+							// Confirm new hashes match
+							const size_t newHash = newBuffer->hash();
+							if (newHash != inst.diff_newHash)
+								Log::PushText("Critical failure: patched file is corrupted (hash mismatch)!\r\n");
+							else {
+								// Write patched buffer to disk
+								std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
+								if (!newFile.is_open())
+									Log::PushText("Critical failure: cannot write patched file to disk!\r\n");
+								else {
+									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
+									newFile.close();
+									byteNum += newBuffer->size();
+									inst.instructionBuffer.release();
+									continue;
+								}
+							}
+						}
+					}
+					
+					failed = true;
+					inst.instructionBuffer.release();
+					break;
+				}
+				diffFiles.clear();
+				diffFiles.shrink_to_fit();
+
+				if (!failed) {
+					// By this point all files matched, safe to add new ones
+					for (FileInstruction & inst : addedFiles) {
+						std::filesystem::create_directories(std::filesystem::path(inst.fullPath).parent_path());
+						Log::PushText("Writing file: \"" + inst.path + "\"\r\n");
+
+						// Write the 'insert' instructions
+						// Remember that we use the diff/patch function to add new files too
+						auto newBuffer = Buffer().patch(inst.instructionBuffer);
+						if (!newBuffer)
+							Log::PushText("Critical failure: cannot derive new file from patch instructions!\r\n");
+						else {
+							// Confirm new hashes match
+							const size_t newHash = newBuffer->hash();
+							if (newHash != inst.diff_newHash)
+								Log::PushText("Critical failure: new file is corrupted (hash mismatch)!\r\n");
+							else {
+								// Write new file to disk
+								std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
+								if (!newFile.is_open())
+									Log::PushText("Critical failure: cannot write new file to disk!\r\n");
+								else {
+									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
+									newFile.close();
+									byteNum += newBuffer->size();
+									inst.instructionBuffer.release();
+									continue;
+								}
+							}
+						}
+						failed = true;
+						inst.instructionBuffer.release();
+						break;
+					}
+					addedFiles.clear();
+					addedFiles.shrink_to_fit();
+
+					if (!failed) {
+						// If we made it this far, it should be safe to delete all files
+						for (FileInstruction & inst : removedFiles) {
+							// Try to read the target file (may not exist)
+							size_t oldHash(0ull);
+
+							// Try to find the source file (may not exist)
+							bool found = false;
+							for each (const auto & file in m_files)
+								if (file.relativePath == inst.path) {
+									oldHash = Buffer(file.data, file.size).hash();
+									found = true;
+									break;
+								}
+							if (!found)
+								Log::PushText("The file \"" + inst.path + "\" has already been removed, skipping...\r\n");
+							else {
+								// Only remove source files if they match entirely
+								if (oldHash == inst.diff_oldHash) {
+									if (!std::filesystem::remove(inst.fullPath))
+										Log::PushText("Error: cannot delete file \"" + inst.path + "\" from disk, delete this file manually if you can!\r\n");
+									else
+										Log::PushText("Removing file: \"" + inst.path + "\"\r\n");
+								}
+							}
+							inst.instructionBuffer.release();
+						}
+						removedFiles.clear();
+						removedFiles.shrink_to_fit();
+
+						// Success
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 
