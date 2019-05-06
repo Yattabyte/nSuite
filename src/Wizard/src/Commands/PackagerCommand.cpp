@@ -48,7 +48,7 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 	bool success = false;
 	HANDLE handle(nullptr);
 	NST::Directory directory(srcDirectory);
-	auto packBuffer = directory.package();
+	auto packBuffer = directory.make_package();
 	if (!packBuffer)
 		NST::Log::PushText("Cannot create package from the directory specified, aborting...\r\n");
 	else {
@@ -74,8 +74,8 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 				else {
 					// Output results
 					NST::Log::PushText(
-						"Files packaged:  " + std::to_string(directory.file_count()) + "\r\n" +
-						"Bytes packaged:  " + std::to_string(directory.space_used()) + "\r\n" +
+						"Files packaged:  " + std::to_string(directory.fileCount()) + "\r\n" +
+						"Bytes packaged:  " + std::to_string(directory.byteCount()) + "\r\n" +
 						"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
 					);
 					success = true;

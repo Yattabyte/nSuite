@@ -51,6 +51,11 @@ namespace NST {
 			for each (const auto & callback in instance.m_observers)
 				callback(instance.m_pos, instance.m_range);
 		}
+		/** Increment the progress by 1. */
+		inline static void IncrementProgress() {
+			auto & instance = GetInstance();
+			instance.SetProgress(instance.m_pos + 1ull);
+		}
 
 
 	private:

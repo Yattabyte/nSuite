@@ -7,52 +7,221 @@
 
 using namespace NST;
 
-static std::string SanitizePath(const std::string & path)
+
+// Private Static Methods
+
+static auto check_exclusion(const std::string & path, const std::vector<std::string> & exclusions)
 {
-	std::string cpy(path);
-	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')
-		cpy.erase(0ull, 1ull);
-	while (cpy.back() == '"' || cpy.back() == '\'' || cpy.back() == '\"' || cpy.back() == '\\')
-		cpy.erase(cpy.size() - 1ull);
-	return cpy;
+	const auto extension = std::filesystem::path(path).extension();
+	for each (const auto & excl in exclusions) {
+		if (excl.empty())
+			continue;
+		// Compare Paths && Extensions
+		if (path == excl || extension == excl) {
+			// Don't use path
+			return false;
+		}
+	}
+	// Safe to use path
+	return true;
+}
+
+static auto get_file_paths(const std::string & directory, const std::vector<std::string> & exclusions)
+{
+	std::vector<std::filesystem::directory_entry> paths;
+	if (std::filesystem::is_directory(directory))
+		for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+			if (entry.is_regular_file()) {
+				auto path = entry.path().string();
+				path = path.substr(directory.size(), path.size() - directory.size());
+				if (check_exclusion(path, exclusions))
+					paths.emplace_back(entry);
+			}
+	return paths;
 }
 
 
 // Public (de)Constructors
 
+void NST::Directory::devirtualize()
+{
+	for (auto & file : m_files) {
+		if (file.data != nullptr) {
+			delete[] file.data;
+			file.data = nullptr;
+		}
+	}
+}
+
 NST::Directory::~Directory()
 {
-	release();
+	devirtualize();
 }
 
-Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions)
-	: m_directoryPath(path), m_exclusions(exclusions)
-{	
-	virtualize_from_path(path);
-}
-
-NST::Directory::Directory(const Buffer & package)
-{	
-	virtualize_from_buffer(package);
-}
-
-size_t NST::Directory::file_count() const
+NST::Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions)
 {
-	return m_files.size();
+	m_directoryPath = path;
+	m_exclusions = exclusions;
+
+	// Treat path as a folder
+	if (std::filesystem::is_directory(path))
+		virtualize_folder(path);
+
+	// Treat path as a resource
+	else if (std::filesystem::path(path).extension() == ".exe") {
+		auto libSuccess = LoadLibraryA(path.c_str());
+		auto handle = GetModuleHandle(path.c_str());
+		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
+		if (!libSuccess || handle == NULL || fileResource.exists())
+			Log::PushText("Error: cannot load the resource file specified!\r\n");
+		else {
+			Buffer packBuffer = NST::Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
+			FreeLibrary(handle);
+			virtualize_package(packBuffer);
+		}
+	}
+
+	// Treat path as a package
+	else {
+		// Last resort: try to treat the file as an nSuite package
+		std::ifstream packFile(path, std::ios::binary | std::ios::beg);
+		if (!packFile.is_open())
+			Log::PushText("Error: cannot open the package file specified!\r\n");
+		else {
+			Buffer packBuffer = NST::Buffer(std::filesystem::file_size(path));
+			packFile.read(packBuffer.cArray(), std::streamsize(packBuffer.size()));
+			packFile.close();
+			virtualize_package(packBuffer);
+		}
+	}
 }
 
-size_t NST::Directory::space_used() const
+NST::Directory::Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions)
 {
-	return m_spaceUsed;
+	m_directoryPath = path;
+	m_exclusions = exclusions;
+	virtualize_package(package);
+}
+
+NST::Directory::Directory(const Directory & other)
+	: m_files(other.m_files), m_directoryPath(other.m_directoryPath), m_directoryName(other.m_directoryName), m_exclusions(other.m_exclusions)
+{
+	for (size_t x = 0, size = m_files.size(); x < size; ++x) {
+		m_files[x].data = new std::byte[m_files[x].size];
+		std::copy(other.m_files[x].data, &other.m_files[x].data[m_files[x].size], m_files[x].data);
+	}
+}
+
+NST::Directory::Directory(Directory && other)
+{
+	m_files = other.m_files;
+	m_directoryPath = other.m_directoryPath;
+	m_directoryName = other.m_directoryName;
+	m_exclusions = other.m_exclusions;
+
+	other.m_files.clear();
+	other.m_files.shrink_to_fit();
+	other.m_directoryName = "";
+	other.m_directoryName = "";
+	other.m_exclusions.clear();
+	other.m_exclusions.shrink_to_fit();
+}
+
+Directory & NST::Directory::operator=(const Directory & other)
+{
+	if (this != &other) {
+		devirtualize();
+		m_files = other.m_files;
+		m_directoryPath = other.m_directoryPath;
+		m_directoryName = other.m_directoryName;
+		m_exclusions = other.m_exclusions;
+
+		for (size_t x = 0, size = m_files.size(); x < size; ++x) {
+			m_files[x].data = new std::byte[m_files[x].size];
+			std::copy(other.m_files[x].data, &other.m_files[x].data[m_files[x].size], m_files[x].data);
+		}
+	}
+	return *this;
+}
+
+Directory & NST::Directory::operator=(Directory && other)
+{
+	if (this != &other) {
+		devirtualize();
+		m_files = other.m_files;
+		m_directoryPath = other.m_directoryPath;
+		m_directoryName = other.m_directoryName;
+		m_exclusions = other.m_exclusions;
+
+		other.m_files.clear();
+		other.m_files.shrink_to_fit();
+		other.m_directoryName = "";
+		other.m_directoryName = "";
+		other.m_exclusions.clear();
+		other.m_exclusions.shrink_to_fit();
+	}
+	return *this;
 }
 
 
-// Public Methods
+// Public Output Methods
 
+bool NST::Directory::make_folder() const
+{
+	// Ensure the source-directory has files
+	if (!m_files.size())
+		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
+	else {
+		// Remove all files in the folder who don't appear in this virtual directory 
+		// (have disk changes reflect the virtual directory changes)
+		auto virt_files = m_files;
+		auto current_dir_files = get_file_paths(m_directoryPath, m_exclusions);
+		for each (const auto & virt_file in virt_files) {
+			bool found = false;
+			size_t oIndex(0ull);
+			for each (const auto & curr_file in current_dir_files) {
+				auto nRelativePath = curr_file.path().string().substr(m_directoryPath.size(), curr_file.path().string().size() - m_directoryPath.size());
+				if (nRelativePath == virt_file.relativePath) {
+					// Remove old file from list (so we can use all that remain)
+					current_dir_files.erase(current_dir_files.begin() + oIndex);
+					found = true;
+					break;
+				}
+				oIndex++;
+			}
+		}
 
-// Public Derivation Methods
+		// Remove extraneous files 
+		for each (const auto & file in current_dir_files)
+			if (!std::filesystem::remove(file.path() ))
+				Log::PushText("Error: cannot delete file \"" + file.path().string() + "\" from disk, delete this file manually if you can!\r\n");		
+		
+		Log::PushText("Dumping directory contents...\r\n");
+		Progress::SetRange(m_files.size());
+		size_t fileCount(0ull);
+		for (auto & file : m_files) {
+			// Write-out the file
+			const auto fullPath = m_directoryPath + "\\" + m_directoryName + file.relativePath;
+			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
+			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
+			if (!fileWriter.is_open())
+				Log::PushText("Error: cannot write file \"" + file.relativePath + "\" to disk.\r\n");
+			else {
+				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
+			}
+			Progress::SetProgress(++fileCount);
+			fileWriter.close();
+		}
 
-std::optional<Buffer> NST::Directory::package()
+		// Success
+		return true;
+	}
+
+	// Failure
+	return false;
+}
+
+std::optional<Buffer> NST::Directory::make_package() const
 {
 	// Ensure the source-directory has files
 	if (!m_files.size())
@@ -67,7 +236,7 @@ std::optional<Buffer> NST::Directory::package()
 		};
 
 		// Ensure we have a non-zero sized archive
-		size_t archiveSize(space_used());
+		size_t archiveSize(byteCount());
 		if (archiveSize <= 0ull)
 			Log::PushText("Error: the archive has no data in it!\r\n");
 		else {
@@ -75,6 +244,7 @@ std::optional<Buffer> NST::Directory::package()
 			Buffer filebuffer(archiveSize);
 
 			// Write file data into the buffer
+			Progress::SetRange(archiveSize + 2);
 			size_t byteIndex(0ull);
 			for (auto & file : m_files) {
 				// Write the total number of characters in the path string, into the archive
@@ -90,20 +260,21 @@ std::optional<Buffer> NST::Directory::package()
 				// Copy the file data
 				if (file.size > 0ull && file.data != nullptr)
 					std::copy(file.data, file.data + file.size, &filebuffer[byteIndex]);
-				delete[] file.data;
-				file.data = nullptr;
 				byteIndex += file.size;
+				Progress::SetProgress(byteIndex);
 			}
 
 			// Compress the archive
 			auto compressedBuffer = filebuffer.compress();
 			filebuffer.release();
+			Progress::IncrementProgress();
 			if (!compressedBuffer)
 				Log::PushText("Error: cannot compress the file-buffer for the chosen source directory!\r\n");
 			else {
 				// Prepend header information
 				PackageHeader header(folderName.size(), folderName.c_str());
 				compressedBuffer->writeHeader(&header);
+				Progress::IncrementProgress();
 
 				// Success
 				return compressedBuffer;
@@ -115,39 +286,7 @@ std::optional<Buffer> NST::Directory::package()
 	return {};
 }
 
-bool NST::Directory::unpackage(const std::string & outputPath)
-{
-	// Ensure the source-directory has files
-	if (!m_files.size())
-		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
-	else {
-		const auto finalDestionation = SanitizePath(outputPath + "\\" + m_directoryName);
-		Progress::SetRange(m_files.size());
-		size_t fileCount(0ull);
-		for (auto & file : m_files) {
-			// Write-out the file
-			const auto fullPath = finalDestionation + file.relativePath;
-			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
-			if (!fileWriter.is_open())
-				Log::PushText("Error writing file: \"" + file.relativePath + "\" to disk.\r\n");
-			else {
-				Log::PushText("Writing file: \"" + file.relativePath + "\"\r\n");
-				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
-			}
-			Progress::SetProgress(++fileCount);
-			fileWriter.close();
-		}		
-
-		// Success
-		return true;
-	}
-
-	// Failure
-	return false;
-}
-
-std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
+std::optional<Buffer> NST::Directory::make_delta(const Directory & newDirectory) const
 {
 	// Declarations that will only be used here	
 	typedef std::vector<DirFile> PathList;
@@ -177,7 +316,7 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 		}
 
 		// All 'old files' that remain didn't exist in the 'new file' set
-		delFiles = srcOld_Files;		
+		delFiles = srcOld_Files;
 	};
 	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, const Buffer & buffer, const char & flag, Buffer & instructionBuffer) {
 		const auto bufferSize = buffer.size();
@@ -207,7 +346,7 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 		// Write buffer
 		byteIndex = instructionBuffer.writeData(buffer.data(), (size_t(sizeof(std::byte)) * bufferSize), byteIndex);
 	};
-	if (file_count() <= 0 && newDirectory.file_count() <= 0)
+	if (fileCount() <= 0 && newDirectory.fileCount() <= 0)
 		Log::PushText("Error: input directories are empty!\r\n");
 	else {
 		// Retrieve all common, added, and removed files
@@ -226,7 +365,7 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 				// Files are different versions
 				auto diffBuffer = oldBuffer.diff(newBuffer);
 				if (diffBuffer) {
-					Log::PushText("Diffing file: \"" + cFiles.first.relativePath + "\"\r\n");
+					Log::PushText("Diffing file \"" + cFiles.first.relativePath + "\"\r\n");
 					writeInstructions(cFiles.first.relativePath, oldHash, newHash, *diffBuffer, 'U', instructionBuffer);
 					fileCount++;
 				}
@@ -241,7 +380,7 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 			size_t newHash(newBuffer.hash());
 			auto diffBuffer = Buffer().diff(newBuffer);
 			if (diffBuffer) {
-				Log::PushText("Adding file: \"" + nFile.relativePath + "\"\r\n");
+				Log::PushText("Adding file \"" + nFile.relativePath + "\"\r\n");
 				writeInstructions(nFile.relativePath, 0ull, newHash, *diffBuffer, 'N', instructionBuffer);
 				fileCount++;
 			}
@@ -253,9 +392,9 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 		for each (const auto & oFile in removedFiles) {
 			Buffer oldBuffer(oFile.data, oFile.size);
 			size_t oldHash(oldBuffer.hash());
-			Log::PushText("Removing file: \"" + oFile.relativePath + "\"\r\n");
+			Log::PushText("Removing file \"" + oFile.relativePath + "\"\r\n");
 			writeInstructions(oFile.relativePath, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
-			fileCount++;			
+			fileCount++;
 		}
 		removedFiles.clear();
 		removedFiles.shrink_to_fit();
@@ -279,7 +418,10 @@ std::optional<Buffer> NST::Directory::delta(const Directory & newDirectory)
 	return {};
 }
 
-bool NST::Directory::update(const Buffer & diffBuffer)
+
+// Public Methods
+
+bool NST::Directory::apply_delta(const Buffer & diffBuffer)
 {
 	// Ensure buffer at least *exists*
 	if (!diffBuffer.hasData())
@@ -357,18 +499,16 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 					// Try to read the target file
 					Buffer oldBuffer;
 					size_t oldHash(0ull);
-
-					// Try to find the source file
-					bool found = false;
-					for each (const auto & file in m_files)
+					DirFile * storedFile = nullptr;
+					for (auto & file : m_files)
 						if (file.relativePath == inst.path) {
+							storedFile = &file;
 							oldBuffer = Buffer(file.data, file.size);
 							oldHash = oldBuffer.hash();
-							found = true;
 							break;
 						}
 					// Fail on missing Files
-					if (!found) 
+					if (!storedFile)
 						Log::PushText("Critical failure: Cannot update \"" + inst.path + "\", the file is missing!\r\n");
 					// Fail on empty files
 					else if (!oldBuffer.hasData()) 
@@ -384,7 +524,7 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 						Log::PushText("Critical failure: the file \"" + inst.path + "\" is of an unexpected version!\r\n");
 					// Attempt Patching Process
 					else {
-						Log::PushText("patching file \"" + inst.path + "\"\r\n");
+						Log::PushText("Patching file \"" + inst.path + "\"\r\n");
 						auto newBuffer = oldBuffer.patch(inst.instructionBuffer);
 						if (!newBuffer)
 							Log::PushText("Critical failure: patching failed!\r\n");
@@ -394,17 +534,19 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 							if (newHash != inst.diff_newHash)
 								Log::PushText("Critical failure: patched file is corrupted (hash mismatch)!\r\n");
 							else {
-								// Write patched buffer to disk
-								std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
-								if (!newFile.is_open())
-									Log::PushText("Critical failure: cannot write patched file to disk!\r\n");
-								else {
-									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
-									newFile.close();
-									byteNum += newBuffer->size();
-									inst.instructionBuffer.release();
-									continue;
-								}
+								// Update virtualized folder
+								// Remove old data
+								delete[] storedFile->data;
+
+								// Replace with new data
+								storedFile->data = new std::byte[newBuffer->size()];
+								storedFile->size = newBuffer->size();
+								std::copy(newBuffer->data(), &newBuffer->data()[newBuffer->size()], storedFile->data);
+
+								newBuffer->release();
+								inst.instructionBuffer.release();
+								byteNum += newBuffer->size();
+								continue;
 							}
 						}
 					}
@@ -418,37 +560,53 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 
 				if (!failed) {
 					// By this point all files matched, safe to add new ones
-					for (FileInstruction & inst : addedFiles) {
-						std::filesystem::create_directories(std::filesystem::path(inst.fullPath).parent_path());
-						Log::PushText("Writing file: \"" + inst.path + "\"\r\n");
-
-						// Write the 'insert' instructions
-						// Remember that we use the diff/patch function to add new files too
-						auto newBuffer = Buffer().patch(inst.instructionBuffer);
-						if (!newBuffer)
-							Log::PushText("Critical failure: cannot derive new file from patch instructions!\r\n");
+					for (FileInstruction & inst : addedFiles) {					
+						// Try to read the target file
+						Buffer oldBuffer;
+						size_t oldHash(0ull);
+						DirFile * storedFile = nullptr;
+						for (auto & file : m_files)
+							if (file.relativePath == inst.path) {
+								storedFile = &file;
+								oldBuffer = Buffer(file.data, file.size);
+								oldHash = oldBuffer.hash();
+								break;
+							}
+						if (storedFile) {
+							// Skip updated files
+							if (oldHash == inst.diff_newHash) {
+								Log::PushText("The file \"" + inst.path + "\" already exists, skipping...\r\n");
+								inst.instructionBuffer.release();
+								continue;
+							}
+						}
 						else {
-							// Confirm new hashes match
-							const size_t newHash = newBuffer->hash();
-							if (newHash != inst.diff_newHash)
-								Log::PushText("Critical failure: new file is corrupted (hash mismatch)!\r\n");
+							Log::PushText("Adding file \"" + inst.path + "\"\r\n");
+
+							// Write the 'insert' instructions
+							// Remember that we use the diff/patch function to add new files too
+							auto newBuffer = Buffer().patch(inst.instructionBuffer);
+							if (!newBuffer)
+								Log::PushText("Critical failure: cannot derive new file from patch instructions!\r\n");
 							else {
-								// Write new file to disk
-								std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
-								if (!newFile.is_open())
-									Log::PushText("Critical failure: cannot write new file to disk!\r\n");
+								// Confirm new hashes match
+								const size_t newHash = newBuffer->hash();
+								if (newHash != inst.diff_newHash)
+									Log::PushText("Critical failure: new file is corrupted (hash mismatch)!\r\n");
 								else {
-									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
-									newFile.close();
+									// Update virtualized folder
+									std::byte * fileData = new std::byte[newBuffer->size()];
+									std::copy(newBuffer->data(), &newBuffer->data()[newBuffer->size()], fileData);
+									m_files.push_back(DirFile{ inst.path, newBuffer->size(), fileData });
 									byteNum += newBuffer->size();
 									inst.instructionBuffer.release();
 									continue;
 								}
 							}
+							failed = true;
+							inst.instructionBuffer.release();
+							break;
 						}
-						failed = true;
-						inst.instructionBuffer.release();
-						break;
 					}
 					addedFiles.clear();
 					addedFiles.shrink_to_fit();
@@ -460,23 +618,20 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 							size_t oldHash(0ull);
 
 							// Try to find the source file (may not exist)
-							bool found = false;
-							for each (const auto & file in m_files)
+							size_t index(0ull);
+							for each (const auto & file in m_files) {
 								if (file.relativePath == inst.path) {
 									oldHash = Buffer(file.data, file.size).hash();
-									found = true;
+									// Only remove source files if they match entirely
+									if (oldHash == inst.diff_oldHash) {
+										Log::PushText("Removing file \"" + inst.path + "\"\r\n");
+
+										// Update virtualized folder
+										m_files.erase(m_files.begin() + index);
+									}
 									break;
 								}
-							if (!found)
-								Log::PushText("The file \"" + inst.path + "\" has already been removed, skipping...\r\n");
-							else {
-								// Only remove source files if they match entirely
-								if (oldHash == inst.diff_oldHash) {
-									if (!std::filesystem::remove(inst.fullPath))
-										Log::PushText("Error: cannot delete file \"" + inst.path + "\" from disk, delete this file manually if you can!\r\n");
-									else
-										Log::PushText("Removing file: \"" + inst.path + "\"\r\n");
-								}
+								index++;
 							}
 							inst.instructionBuffer.release();
 						}
@@ -494,92 +649,51 @@ bool NST::Directory::update(const Buffer & diffBuffer)
 	return false;
 }
 
+size_t NST::Directory::fileCount() const
+{
+	return m_files.size();
+}
+
+size_t NST::Directory::byteCount() const
+{
+	size_t spaceUsed(0ull);
+	for each (const auto & file in m_files) {
+		const auto pathSize = file.relativePath.size();
+		const size_t unitSize =
+			size_t(sizeof(size_t)) +	// size of path size variable in bytes
+			pathSize +					// the actual path data
+			size_t(sizeof(size_t)) +	// size of the file size variable in bytes
+			file.size;					// the actual file data
+		spaceUsed += unitSize;
+	}
+	return spaceUsed;
+}
+
 
 // Private Methods
-/***/
 
-std::vector<std::filesystem::directory_entry> NST::Directory::GetFilePaths(const std::string & directory, const std::vector<std::string> & exclusions)
+void NST::Directory::virtualize_folder(const std::string & input_path) 
 {
-	std::vector<std::filesystem::directory_entry> paths;
-	if (std::filesystem::is_directory(directory))
-		for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
-			if (entry.is_regular_file()) {
-				const auto extension = std::filesystem::path(entry).extension();
-				auto path = entry.path().string();
-				path = path.substr(directory.size(), path.size() - directory.size());
-				bool useEntry(true);
-				for each (const auto & excl in exclusions) {
-					if (excl.empty())
-						continue;
-					// Compare Paths && Extensions
-					if (path == excl || extension == excl) {
-						useEntry = false;
-						break;
-					}
-				}
-				if (useEntry)
-					paths.emplace_back(entry);
+	m_directoryName = std::filesystem::path(m_directoryPath).stem().string();
+	for (const auto & entry : get_file_paths(input_path, m_exclusions)) {
+		if (entry.is_regular_file()) {
+			auto path = entry.path().string();
+			path = path.substr(input_path.size(), path.size() - input_path.size());
+			
+			// Read the file data
+			DirFile file{ path, entry.file_size(), nullptr };
+			std::ifstream fileOnDisk(input_path + path, std::ios::binary | std::ios::beg | std::ios::in);
+			if (fileOnDisk.is_open()) {
+				file.data = new std::byte[file.size];
+				fileOnDisk.read(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
+				fileOnDisk.close();
 			}
-	return paths;
-}
-
-void NST::Directory::virtualize_from_path(const std::string & input_path)
-{
-	if (std::filesystem::is_directory(input_path)) {
-		m_directoryName = std::filesystem::path(m_directoryPath).stem().string();
-		for (const auto & entry : GetFilePaths(input_path, m_exclusions)) {
-			if (entry.is_regular_file()) {
-				const auto extension = std::filesystem::path(entry).extension();
-				auto path = entry.path().string();
-				path = path.substr(input_path.size(), path.size() - input_path.size());
-				const auto pathSize = path.size();
-				const size_t unitSize =
-					size_t(sizeof(size_t)) +	// size of path size variable in bytes
-					pathSize +					// the actual path data
-					size_t(sizeof(size_t)) +	// size of the file size variable in bytes
-					entry.file_size();			// the actual file data
-				m_spaceUsed += unitSize;
-
-				// Read the file data
-				DirFile file{ path, entry.file_size(), nullptr };
-				std::ifstream fileOnDisk(input_path + path, std::ios::binary | std::ios::beg | std::ios::in);
-				if (fileOnDisk.is_open()) {
-					file.data = new std::byte[file.size];
-					fileOnDisk.read(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
-					fileOnDisk.close();
-				}
-				m_files.push_back(file);	
-			}
+			m_files.push_back(file);
 		}
-	}
-	else {
-		// See if the file is actually a program with an embedded archive
-		NST::Buffer packBuffer;
-		bool success = std::filesystem::path(input_path).extension() == ".exe" ? LoadLibraryA(input_path.c_str()) : false;
-		auto handle = GetModuleHandle(input_path.c_str());
-		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
-		if (success && handle != NULL && fileResource.exists()) {
-			packBuffer = NST::Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
-			FreeLibrary(handle);
-		}
-		else {
-			// Last resort: try to treat the file as an nSuite package
-			std::ifstream packFile(input_path, std::ios::binary | std::ios::beg);
-			if (!packFile.is_open())
-				Log::PushText("Error: cannot open the package file specified!\r\n");
-			else {
-				packBuffer = NST::Buffer(std::filesystem::file_size(input_path));
-				packFile.read(packBuffer.cArray(), std::streamsize(packBuffer.size()));
-				packFile.close();
-				success = true;
-			}
-		}
-		if (success)
-			virtualize_from_buffer(packBuffer);
 	}
 }
 
-void NST::Directory::virtualize_from_buffer(const Buffer & buffer)
+void NST::Directory::virtualize_package(const Buffer & buffer)
 {
 	// Read in header		
 	Directory::PackageHeader header;
@@ -607,34 +721,19 @@ void NST::Directory::virtualize_from_buffer(const Buffer & buffer)
 				char * pathArray = new char[pathSize];
 				byteIndex = decompressedBuffer->readData(pathArray, pathSize, byteIndex);
 				const std::string path(pathArray, pathSize);
+				const auto extension = std::filesystem::path(path).extension();
 				delete[] pathArray;
 				size_t fileSize(0ull);
 				byteIndex = decompressedBuffer->readData(&fileSize, size_t(sizeof(size_t)), byteIndex);
 
-				const size_t unitSize =
-					size_t(sizeof(size_t)) +	// size of path size variable in bytes
-					pathSize +					// the actual path data
-					size_t(sizeof(size_t)) +	// size of the file size variable in bytes
-					fileSize;					// the actual file data
-				m_spaceUsed += unitSize;
-
 				// Save the file data
-				DirFile file{ path, fileSize, nullptr };
-				file.data = new std::byte[file.size];
-				std::copy(&((*decompressedBuffer)[byteIndex]), &((*decompressedBuffer)[byteIndex + fileSize]), file.data);
-				m_files.push_back(file);
+				if (check_exclusion(path, m_exclusions)) {
+					std::byte * fileData = new std::byte[fileSize];
+					std::copy(&((*decompressedBuffer)[byteIndex]), &((*decompressedBuffer)[byteIndex + fileSize]), fileData);
+					m_files.push_back(DirFile{ path, fileSize, fileData });
+				}
 				byteIndex += fileSize;
 			}
-		}
-	}
-}
-
-void NST::Directory::release()
-{
-	for (auto & file : m_files) {
-		if (file.data != nullptr) {
-			delete[] file.data;
-			file.data = nullptr;
 		}
 	}
 }

@@ -38,16 +38,16 @@ int main()
 		);
 
 		// Unpackage using the resource file
-		NST::Directory directory(NST::Buffer(reinterpret_cast<std::byte*>(archive.getPtr()), archive.getSize()));
-		if (!directory.unpackage(dstDirectory))
+		NST::Directory directory(NST::Buffer(reinterpret_cast<std::byte*>(archive.getPtr()), archive.getSize()), dstDirectory);
+		if (!directory.make_folder())
 			NST::Log::PushText("Cannot decompress embedded package resource, aborting...\r\n");
 		else {
 			// Success, report results
 			const auto end = std::chrono::system_clock::now();
 			const std::chrono::duration<double> elapsed_seconds = end - start;
 			NST::Log::PushText(
-				"Files processed: " + std::to_string(directory.file_count()) + "\r\n" +
-				"Bytes processed: " + std::to_string(directory.space_used()) + "\r\n"
+				"Files processed: " + std::to_string(directory.fileCount()) + "\r\n" +
+				"Bytes processed: " + std::to_string(directory.byteCount()) + "\r\n"
 				"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
 			);
 

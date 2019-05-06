@@ -60,16 +60,22 @@ int main()
 				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
 				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 				diffFile.close();
-				const bool updateResult = NST::Directory(dstDirectory).update(diffBuffer);
+				NST::Directory directory(dstDirectory);
+				const bool updateResult = directory.apply_delta(diffBuffer);
 
-				// Delete patch file at very end
-				if (!updateResult) {
+				// If patching success, write changes to disk
+				if (updateResult) {
+					directory.make_folder();
+					patchesApplied++;
+
+					// Delete patch file at very end
+					if (!std::filesystem::remove(patch))
+						NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
+				}
+				else {
 					NST::Log::PushText("skipping patch...\r\n");
 					continue;
 				}
-				else if (!std::filesystem::remove(patch))
-					NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
-				patchesApplied++;
 			}
 		}
 

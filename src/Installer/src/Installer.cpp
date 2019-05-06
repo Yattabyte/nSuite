@@ -226,8 +226,8 @@ void Installer::beginInstallation()
 		else {
 			// Unpackage using the rest of the resource file
 			auto directory = NST::SanitizePath(getDirectory());
-			NST::Directory virtual_directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()));
-			if (!virtual_directory.unpackage(directory))			
+			auto virtual_directory = NST::Directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()), directory);
+			if (!virtual_directory.make_folder())			
 				invalidate();
 			else {
 				// Write uninstaller to disk

@@ -14,55 +14,72 @@ namespace NST {
 	class Directory {
 	public:
 		// Public (de)Constructors
-		/***/
+		/** Destroy this virtual directory. */
 		~Directory();
-		/**
-		@param	directoryPath		the absolute path to a desired directory or a package file.
-		@param	exclusions			(optional) list of filenames/types to skip. "string" match relative path, ".ext" match extension.*/
-		Directory(const std::string & path = std::string(""), const std::vector<std::string> & exclusions = std::vector<std::string>());
-		/***/
-		Directory(const Buffer & package);
-		
+		/** Constructs a virtual directory from a path on disk.
+		If the path is to a folder, the folder is immediately virtualized.
+		If the path is to a .npack file, the package is read and virtualized.
+		If the path is to an application with an embedded .npack resource, the application is mounted then the package is read and virtualized.
+		@param	path				the absolute path to a desired folder or a package file.
+		@param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
+		@return						directory generated from the parameters chosen. */
+		Directory(const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
+		/** Constructs a virtual directory directly from a package buffer.
+		@param	package				the package buffer to unpack and virtualize.
+		@param	path				the absolute path to a desired folder or a package file.
+		@param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
+		@return						directory generated from the parameters chosen. */
+		Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
+		/** Copy Constructor.
+		@param	other				the directory to copy from. */
+		Directory(const Directory & other);
+		/** Move Constructor.
+		@param	other				the directory to move from and invalidate. */
+		Directory(Directory && other);
 
-		// Public Methods
-		/***/
-		size_t file_count() const;
-		/***/
-		size_t space_used() const;
-		
-		
-		// Public Derivation Methods
-		/** Compresses all disk contents found within this directory, into an .npack - package formatted buffer.		
+
+		// Public Assignment Operators
+		/** Copy-assignment operator.
+		@param	other				the buffer to copy from.
+		@return						reference to this. */
+		Directory & operator=(const Directory & other);
+		/** Move-assignment operator.
+		@param	other				the buffer to move from.
+		@return						reference to this. */
+		Directory & operator=(Directory && other);
+				
+
+		// Public Output Methods
+		/** Writes this virtual directory's contents to disk. */
+		bool make_folder() const;
+		/** Compresses all data found within this directory into an .npack - package formatted buffer.
+		@return						on success a pointer to a buffer containing the compressed directory contents, empty otherwise. 
 		Buffer format:
-		-----------------------------------------------------------------------------------------------------
-		| header: identifier title, package name size, package name  | remaining compressed directory data  |
-		-----------------------------------------------------------------------------------------------------	
-		@return						a buffer pointer, containing the compressed directory contents on package success, empty otherwise. */
-		std::optional<Buffer> package();
-		/** Decompresses an .npack - package formatted buffer into its component files in the destination directory.
-		@param	dstDirectory		the absolute path to the directory to decompress.
-		@param	packBuffer			the buffer containing the compressed package contents.
-		@param	byteCount			(optional) pointer updated with the number of bytes written to disk.
-		@param	fileCount			(optional) pointer updated with the number of files written to disk.
-		@return						true if decompression success, false otherwise. */
-		bool unpackage(const std::string & outputPath);
-		/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
-		diffBuffer format:
+		-------------------------------------------------------------------------------------------
+		| header: identifier title, package name size, package name  | compressed directory data  |
+		------------------------------------------------------------------------------------------- */
+		std::optional<Buffer> make_package() const;
+		/** Compares this directory against another, generating a .ndiff - delta formatted buffer, for transforming this into the new directory.		
+		@param	newDirectory		the newer directory to compare against.
+		@return						on success a pointer to a buffer containing the patch instructions. 
+		Buffer format:
 		-------------------------------------------------------------------------------
 		| header: identifier title, modified file count  | compressed directory data  |
-		-------------------------------------------------------------------------------
-		@note						caller is responsible for cleaning-up diffBuffer.
-		@param	oldDirectory		the older directory or path to an .npack file.
-		@param	newDirectory		the newer directory or path to an .npack file.
-		@return						a pointer to a buffer holding the patch instructions. */
-		std::optional<Buffer> delta(const Directory & newDirectory);
-		/** Decompresses and executes the instructions contained within a previously - generated diff buffer.
-		Transforms the contents of an 'old' directory into that of the 'new' directory.
-		@param	dstDirectory		the destination directory to transform.
+		------------------------------------------------------------------------------- */
+		std::optional<Buffer> make_delta(const Directory & newDirectory) const;
+
+
+		// Public Methods
+		/** Executes the instructions contained within a .ndiff - delta formatted buffer upon this directory.
 		@param	diffBuffer			the buffer containing the compressed diff instructions.
-		@param	bytesWritten		(optional) pointer updated with the number of bytes written to disk.
-		@return						true if patch success, false otherwise. */
-		bool update(const Buffer & diffBuffer);
+		@return						true on update success, false otherwise. */
+		bool apply_delta(const Buffer & diffBuffer);
+		/** Retrieve the number of files in this directory. 
+		@return						the file-count for this directory. */
+		size_t fileCount() const;
+		/** Calculates the number of bytes this directory uses.
+		@return						the number of bytes used by this directory. */
+		size_t byteCount() const;			
 
 
 		// Public Header Structs
@@ -131,30 +148,32 @@ namespace NST {
 
 
 	private:
-		// Public Data Structs
+		// Private Default Constructor
+		Directory() = default;
+
+
+		// Private Destruction Method
+		void devirtualize();
+
+
+		// Private Methods
+		/** Populates this virtual directory with the contents found in the specified path.
+		@param	path				the path to pull data from, on disk. */
+		void virtualize_folder(const std::string & path);
+		/** Populates this virtual directory with the contents found in the specified package.
+		@param	buffer				the package buffer to pull data from. */
+		void virtualize_package(const Buffer & buffer);
+
+
+		// Private Attributes
 		struct DirFile {
 			std::string relativePath = "";
 			size_t size = 0ull;
 			std::byte * data = nullptr;
 		};
-
-
-		// Private Methods
-		/***/
-		static std::vector<std::filesystem::directory_entry> GetFilePaths(const std::string & directory, const std::vector<std::string> & exclusions = {});
-		/***/
-		void virtualize_from_path(const std::string & path);
-		/***/
-		void virtualize_from_buffer(const Buffer & buffer);
-		/***/
-		void release();
-
-
-		// Private Attributes
+		std::vector<DirFile> m_files;
 		std::string m_directoryPath = "", m_directoryName = "";
 		std::vector<std::string> m_exclusions;
-		std::vector<DirFile> m_files;
-		size_t m_spaceUsed = 0ull;
 	};
 };
 

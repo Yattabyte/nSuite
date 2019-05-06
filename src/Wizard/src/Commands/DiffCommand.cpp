@@ -51,7 +51,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 		dstDirectory += ".ndiff";
 	
 	// Try to diff the 2 directories specified	
-	const auto diffBuffer = NST::Directory(oldDirectory).delta(NST::Directory(newDirectory));
+	const auto diffBuffer = NST::Directory(oldDirectory).make_delta(NST::Directory(newDirectory));
 	if (!diffBuffer)
 		NST::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
 	else {

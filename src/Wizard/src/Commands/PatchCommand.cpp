@@ -50,7 +50,9 @@ int PatchCommand::execute(const int & argc, char * argv[]) const
 		diffFile.close();
 
 		// Try to patch the destination directory
-		if (NST::Directory(dstDirectory).update(diffBuffer)) {
+		NST::Directory directory(dstDirectory);
+		if (directory.apply_delta(diffBuffer)) {
+			directory.make_folder();
 			// Output results
 			/*NST::Log::PushText(
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
