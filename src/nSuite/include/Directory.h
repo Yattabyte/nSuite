@@ -46,6 +46,16 @@ namespace NST {
 		@param	fileCount			(optional) pointer updated with the number of files written to disk.
 		@return						true if decompression success, false otherwise. */
 		bool unpackage(const std::string & outputPath);
+		/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
+		diffBuffer format:
+		-------------------------------------------------------------------------------
+		| header: identifier title, modified file count  | compressed directory data  |
+		-------------------------------------------------------------------------------
+		@note						caller is responsible for cleaning-up diffBuffer.
+		@param	oldDirectory		the older directory or path to an .npack file.
+		@param	newDirectory		the newer directory or path to an .npack file.
+		@return						a pointer to a buffer holding the patch instructions. */
+		std::optional<Buffer> diff(const Directory & newDirectory);
 
 
 		// Public Header Structs
@@ -116,13 +126,15 @@ namespace NST {
 	private:
 		// Public Data Structs
 		struct DirFile {
-			std::string trunc_path = "";
+			std::string relativePath = "";
 			size_t size = 0ull;
 			std::byte * data = nullptr;
 		};
 
 
 		// Private Methods
+		/***/
+		static std::vector<std::filesystem::directory_entry> GetFilePaths(const std::string & directory, const std::vector<std::string> & exclusions = {});
 		/***/
 		void virtualize_from_path(const std::string & path);
 		/***/

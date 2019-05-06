@@ -50,8 +50,8 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".ndiff";
 	
-	// Try to diff the 2 directories specified
-	const auto diffBuffer = NST::DiffDirectories(oldDirectory, newDirectory);
+	// Try to diff the 2 directories specified	
+	const auto diffBuffer = NST::Directory(oldDirectory).diff(NST::Directory(newDirectory));
 	if (!diffBuffer)
 		NST::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
 	else {

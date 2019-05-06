@@ -17,6 +17,7 @@ static std::string SanitizePath(const std::string & path)
 	return cpy;
 }
 
+
 // Public (de)Constructors
 
 NST::Directory::~Directory()
@@ -77,11 +78,11 @@ std::optional<Buffer> NST::Directory::package()
 			size_t byteIndex(0ull);
 			for (auto & file : m_files) {
 				// Write the total number of characters in the path string, into the archive
-				const auto pathSize = file.trunc_path.size();
+				const auto pathSize = file.relativePath.size();
 				byteIndex = filebuffer.writeData(&pathSize, size_t(sizeof(size_t)), byteIndex);
 
 				// Write the file path string, into the archive
-				byteIndex = filebuffer.writeData(file.trunc_path.data(), size_t(sizeof(char)) * pathSize, byteIndex);
+				byteIndex = filebuffer.writeData(file.relativePath.data(), size_t(sizeof(char)) * pathSize, byteIndex);
 
 				// Write the file size in bytes, into the archive
 				byteIndex = filebuffer.writeData(&file.size, size_t(sizeof(size_t)), byteIndex);
@@ -125,13 +126,13 @@ bool NST::Directory::unpackage(const std::string & outputPath)
 		size_t fileCount(0ull);
 		for (auto & file : m_files) {
 			// Write-out the file
-			const auto fullPath = finalDestionation + file.trunc_path;
+			const auto fullPath = finalDestionation + file.relativePath;
 			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
 			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
 			if (!fileWriter.is_open())
-				Log::PushText("Error writing file: \"" + file.trunc_path + "\" to disk.\r\n");
+				Log::PushText("Error writing file: \"" + file.relativePath + "\" to disk.\r\n");
 			else {
-				Log::PushText("Writing file: \"" + file.trunc_path + "\"\r\n");
+				Log::PushText("Writing file: \"" + file.relativePath + "\"\r\n");
 				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
 			}
 			Progress::SetProgress(++fileCount);
@@ -146,17 +147,153 @@ bool NST::Directory::unpackage(const std::string & outputPath)
 	return false;
 }
 
-void NST::Directory::virtualize_from_path(const std::string & input_path)
+std::optional<Buffer> NST::Directory::diff(const Directory & newDirectory)
 {
-	if (std::filesystem::is_directory(input_path)) {
-		m_directoryName = std::filesystem::path(m_directoryPath).stem().string();
-		for (const auto & entry : std::filesystem::recursive_directory_iterator(input_path)) {
+	// Declarations that will only be used here	
+	typedef std::vector<DirFile> PathList;
+	typedef std::vector<std::pair<DirFile, DirFile>> PathPairList;
+	static constexpr auto getFileLists = [](const Directory & oldDirectory, const Directory & newDirectory, PathPairList & commonFiles, PathList & addFiles, PathList & delFiles) {
+		// Find all common and new files first
+		auto srcOld_Files = oldDirectory.m_files;
+		auto srcNew_Files = newDirectory.m_files;
+		for each (const auto & nFile in srcNew_Files) {
+			bool found = false;
+			size_t oIndex(0ull);
+			for each (const auto & oFile in srcOld_Files) {
+				if (nFile.relativePath == oFile.relativePath) {
+					// Common file found		
+					commonFiles.push_back(std::make_pair(oFile, nFile));
+
+					// Remove old file from list (so we can use all that remain)
+					srcOld_Files.erase(srcOld_Files.begin() + oIndex);
+					found = true;
+					break;
+				}
+				oIndex++;
+			}
+			// New file found, add it
+			if (!found)
+				addFiles.push_back(nFile);
+		}
+
+		// All 'old files' that remain didn't exist in the 'new file' set
+		delFiles = srcOld_Files;		
+	};
+	static constexpr auto writeInstructions = [](const std::string & path, const size_t & oldHash, const size_t & newHash, const Buffer & buffer, const char & flag, Buffer & instructionBuffer) {
+		const auto bufferSize = buffer.size();
+		auto pathLength = path.length();
+		const size_t instructionSize = (sizeof(size_t) * 4) + (size_t(sizeof(char)) * pathLength) + size_t(sizeof(char)) + bufferSize;
+		const size_t bufferOldSize = instructionBuffer.size();
+		instructionBuffer.resize(bufferOldSize + instructionSize);
+
+		// Write file path length
+		size_t byteIndex = instructionBuffer.writeData(&pathLength, size_t(sizeof(size_t)), bufferOldSize);
+
+		// Write file path
+		byteIndex = instructionBuffer.writeData(path.data(), size_t(sizeof(char)) * pathLength, byteIndex);
+
+		// Write operation flag
+		byteIndex = instructionBuffer.writeData(&flag, size_t(sizeof(char)), byteIndex);
+
+		// Write old hash
+		byteIndex = instructionBuffer.writeData(&oldHash, size_t(sizeof(size_t)), byteIndex);
+
+		// Write new hash
+		byteIndex = instructionBuffer.writeData(&newHash, size_t(sizeof(size_t)), byteIndex);
+
+		// Write buffer size
+		byteIndex = instructionBuffer.writeData(&bufferSize, size_t(sizeof(size_t)), byteIndex);
+
+		// Write buffer
+		byteIndex = instructionBuffer.writeData(buffer.data(), (size_t(sizeof(std::byte)) * bufferSize), byteIndex);
+	};
+	if (file_count() <= 0 && newDirectory.file_count() <= 0)
+		Log::PushText("Error: input directories are empty!\r\n");
+	else {
+		// Retrieve all common, added, and removed files
+		PathPairList commonFiles;
+		PathList addedFiles, removedFiles;
+		getFileLists(*this, newDirectory, commonFiles, addedFiles, removedFiles);
+		// Generate Instructions from file lists, store them in this expanding buffer
+		Buffer instructionBuffer;
+
+		// These files are common, maybe some have changed
+		size_t fileCount(0ull);
+		for each (const auto & cFiles in commonFiles) {
+			Buffer oldBuffer(cFiles.first.data, cFiles.first.size), newBuffer(cFiles.second.data, cFiles.second.size);
+			size_t oldHash(oldBuffer.hash()), newHash(newBuffer.hash());
+			if (oldHash != newHash) {
+				// Files are different versions
+				auto diffBuffer = oldBuffer.diff(newBuffer);
+				if (diffBuffer) {
+					Log::PushText("Diffing file: \"" + cFiles.first.relativePath + "\"\r\n");
+					writeInstructions(cFiles.first.relativePath, oldHash, newHash, *diffBuffer, 'U', instructionBuffer);
+					fileCount++;
+				}
+			}
+		}
+		commonFiles.clear();
+		commonFiles.shrink_to_fit();
+
+		// These files are brand new
+		for each (const auto & nFile in addedFiles) {
+			Buffer newBuffer(nFile.data, nFile.size);
+			size_t newHash(newBuffer.hash());
+			auto diffBuffer = Buffer().diff(newBuffer);
+			if (diffBuffer) {
+				Log::PushText("Adding file: \"" + nFile.relativePath + "\"\r\n");
+				writeInstructions(nFile.relativePath, 0ull, newHash, *diffBuffer, 'N', instructionBuffer);
+				fileCount++;
+			}
+		}
+		addedFiles.clear();
+		addedFiles.shrink_to_fit();
+
+		// These files are deprecated
+		for each (const auto & oFile in removedFiles) {
+			Buffer oldBuffer(oFile.data, oFile.size);
+			size_t oldHash(oldBuffer.hash());
+			Log::PushText("Removing file: \"" + oFile.relativePath + "\"\r\n");
+			writeInstructions(oFile.relativePath, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
+			fileCount++;			
+		}
+		removedFiles.clear();
+		removedFiles.shrink_to_fit();
+
+		// Try to compress the instruction buffer
+		auto compressedBuffer = instructionBuffer.compress();
+		instructionBuffer.release();
+		if (!compressedBuffer)
+			Log::PushText("Critical failure: cannot compress diff instructions!\r\n");
+		else {
+			// Prepend header information
+			Directory::PatchHeader header(fileCount);
+			compressedBuffer->writeHeader(&header);
+
+			// Success
+			return compressedBuffer;
+		}
+	}
+
+	// Failure
+	return {};
+}
+
+
+// Private Methods
+/***/
+
+std::vector<std::filesystem::directory_entry> NST::Directory::GetFilePaths(const std::string & directory, const std::vector<std::string> & exclusions)
+{
+	std::vector<std::filesystem::directory_entry> paths;
+	if (std::filesystem::is_directory(directory))
+		for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
 			if (entry.is_regular_file()) {
 				const auto extension = std::filesystem::path(entry).extension();
 				auto path = entry.path().string();
-				path = path.substr(input_path.size(), path.size() - input_path.size());
+				path = path.substr(directory.size(), path.size() - directory.size());
 				bool useEntry(true);
-				for each (const auto & excl in m_exclusions) {
+				for each (const auto & excl in exclusions) {
 					if (excl.empty())
 						continue;
 					// Compare Paths && Extensions
@@ -165,25 +302,38 @@ void NST::Directory::virtualize_from_path(const std::string & input_path)
 						break;
 					}
 				}
-				if (useEntry) {
-					const auto pathSize = path.size();
-					const size_t unitSize =
-						size_t(sizeof(size_t)) +	// size of path size variable in bytes
-						pathSize +					// the actual path data
-						size_t(sizeof(size_t)) +	// size of the file size variable in bytes
-						entry.file_size();			// the actual file data
-					m_spaceUsed += unitSize;
+				if (useEntry)
+					paths.emplace_back(entry);
+			}
+	return paths;
+}
 
-					// Read the file data
-					DirFile file{ path, entry.file_size(), nullptr };
-					std::ifstream fileOnDisk(input_path + path, std::ios::binary | std::ios::beg | std::ios::in);
-					if (fileOnDisk.is_open()) {
-						file.data = new std::byte[file.size];
-						fileOnDisk.read(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
-						fileOnDisk.close();
-					}
-					m_files.push_back(file);
+void NST::Directory::virtualize_from_path(const std::string & input_path)
+{
+	if (std::filesystem::is_directory(input_path)) {
+		m_directoryName = std::filesystem::path(m_directoryPath).stem().string();
+		for (const auto & entry : GetFilePaths(input_path, m_exclusions)) {
+			if (entry.is_regular_file()) {
+				const auto extension = std::filesystem::path(entry).extension();
+				auto path = entry.path().string();
+				path = path.substr(input_path.size(), path.size() - input_path.size());
+				const auto pathSize = path.size();
+				const size_t unitSize =
+					size_t(sizeof(size_t)) +	// size of path size variable in bytes
+					pathSize +					// the actual path data
+					size_t(sizeof(size_t)) +	// size of the file size variable in bytes
+					entry.file_size();			// the actual file data
+				m_spaceUsed += unitSize;
+
+				// Read the file data
+				DirFile file{ path, entry.file_size(), nullptr };
+				std::ifstream fileOnDisk(input_path + path, std::ios::binary | std::ios::beg | std::ios::in);
+				if (fileOnDisk.is_open()) {
+					file.data = new std::byte[file.size];
+					fileOnDisk.read(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
+					fileOnDisk.close();
 				}
+				m_files.push_back(file);	
 			}
 		}
 	}

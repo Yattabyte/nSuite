@@ -11,16 +11,6 @@
 
 /** Namespace declaration for all nSuite methods and classes. */
 namespace NST {
-	/** Processes two input directories and generates a compressed instruction set for transforming the old directory into the new directory.
-	diffBuffer format:
-	-------------------------------------------------------------------------------
-	| header: identifier title, modified file count  | compressed directory data  |
-	-------------------------------------------------------------------------------
-	@note						caller is responsible for cleaning-up diffBuffer.
-	@param	oldDirectory		the older directory or path to an .npack file.  
-	@param	newDirectory		the newer directory or path to an .npack file.  
-	@return						a pointer to a buffer holding the patch instructions. */
-	std::optional<Buffer> DiffDirectories(const std::string & oldDirectory, const std::string & newDirectory);
 	/** Decompresses and executes the instructions contained within a previously - generated diff buffer.
 	Transforms the contents of an 'old' directory into that of the 'new' directory.
 	@param	dstDirectory		the destination directory to transform.
