@@ -1,7 +1,8 @@
 #include "Commands/PackCommand.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "StringConversions.h"
 #include "Log.h"
+#include <filesystem>
 #include <fstream>
 
 
@@ -21,9 +22,9 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
 			NST::Log::PushText(
 				" Arguments Expected:\r\n"
@@ -37,7 +38,7 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) 
-		dstDirectory = NST::SanitizePath(dstDirectory) + "\\" + std::filesystem::path(srcDirectory).stem().string() + ".npack";
+		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::filesystem::path(srcDirectory).stem().string() + ".npack";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())

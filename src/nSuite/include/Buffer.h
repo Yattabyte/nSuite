@@ -38,7 +38,7 @@ namespace NST {
 		Buffer(Buffer && other);
 
 
-		// Public Assignment Operators
+		// Public Operators
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
@@ -100,22 +100,22 @@ namespace NST {
 
 		// Public Derivation Methods
 		/** Generates a compressed version of this buffer.
+		@return						a pointer to the compressed buffer on compression succes, empty otherwise.		
 		Buffer format:
 		------------------------------------------------------------------
 		| header: identifier title, uncompressed size | compressed data  |
-		------------------------------------------------------------------
-		@return						a pointer to the compressed buffer on compression succes, empty otherwise. */
+		------------------------------------------------------------------ */
 		std::optional<Buffer> compress() const;
 		/** Generates a decompressed version of this buffer.
 		@return						a pointer to the decompressed buffer on decompression succes, empty otherwise. */
 		std::optional<Buffer> decompress() const;
 		/** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
+		@param	target				the newer of the 2 buffers.
+		@return						a pointer to the diff buffer on diff succes, empty otherwise. 		
 		Buffer format:
 		-----------------------------------------------------------------------------------
 		| header: identifier title, final target file size | compressed instruction data  |
-		-----------------------------------------------------------------------------------
-		@param	target				the newer of the 2 buffers.
-		@return						a pointer to the diff buffer on diff succes, empty otherwise. */
+		----------------------------------------------------------------------------------- */
 		std::optional<Buffer> diff(const Buffer & target) const;
 		/** Generates a patched version of this buffer, using data found in the supplied diff buffer.
 		@param	diffBuffer			the diff buffer to patch with.
@@ -223,6 +223,29 @@ namespace NST {
 		};
 
 
+		// Public Diff-Instruction Structure
+		struct Differential_Instruction {
+			// Constructor
+			explicit Differential_Instruction(const char & t) : m_type(t) {}
+
+
+			// Interface Declaration
+			/** Retrieve the bytesize of this instruction. */
+			virtual size_t size() const = 0;
+			/** Exectute this instruction. */
+			virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const = 0;
+			/** Write-out this instruction to a buffer. */
+			virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const = 0;
+			/** Read-in this instruction from a buffer. */
+			virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) = 0;
+
+
+			// Attributes
+			const char m_type = 0;
+			size_t m_index = 0ull;
+		};
+
+		
 	private:
 		// Private Methods
 		/** Allocate @capacity amount of memory for this buffer.

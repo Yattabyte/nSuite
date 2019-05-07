@@ -1,5 +1,4 @@
 #include "Buffer.h"
-#include "Instructions.h"
 #include "Threader.h"
 #include "lz4.h"
 #include <algorithm>
@@ -55,7 +54,7 @@ Buffer::Buffer(Buffer && other)
 }
 
 
-// Public Assignment Operators
+// Public Operators
 
 Buffer & Buffer::operator=(const Buffer & other)
 {
@@ -265,21 +264,71 @@ std::optional<Buffer> Buffer::decompress() const
 	return {};
 }
 
+/** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */
+struct Copy_Instruction : public Buffer::Differential_Instruction {
+	// Constructor 
+	Copy_Instruction() : Differential_Instruction('C') {}
+
+
+	// Interface Implementation
+	virtual size_t size() const override;
+	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
+	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
+	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+
+
+	// Public Attributes
+	size_t m_beginRead = 0ull, m_endRead = 0ull;
+};
+/** Contains a block of data to insert into the 'new' file, at a given point. */
+struct Insert_Instruction : public Buffer::Differential_Instruction {
+	// Constructor 
+	Insert_Instruction() : Differential_Instruction('I') {}
+
+
+	// Interface Implementation
+	virtual size_t size() const override;
+	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
+	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
+	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+
+
+	// Attributes
+	std::vector<std::byte> m_newData;
+};
+/** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
+struct Repeat_Instruction : public Buffer::Differential_Instruction {
+	// Constructor 
+	Repeat_Instruction() : Differential_Instruction('R') {}
+
+
+	// Interface Implementation
+	virtual size_t size() const override;
+	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
+	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
+	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+
+
+	// Attributes
+	size_t m_amount = 0ull;
+	std::byte m_value;
+};
+
 std::optional<Buffer> Buffer::diff(const Buffer & target) const
 {
 	// Ensure that at least ONE of the two source buffers exists
 	if (hasData() || target.hasData()) {
 		const auto size_old = size();
 		const auto size_new = target.size();
-		std::vector<InstructionTypes> instructions;
+		std::vector<Differential_Instruction*> instructions;
 		instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
 		std::mutex instructionMutex;
 		Threader threader;
-		constexpr size_t amount(4096);
+		constexpr size_t m_amount(4096);
 		size_t bytesUsed_old(0ull), bytesUsed_new(0ull);
 		while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
 			// Variables for this current chunk
-			auto windowSize = std::min<size_t>(amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
+			auto windowSize = std::min<size_t>(m_amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
 
 			// Find best matches for this chunk
 			threader.addJob([&, windowSize, bytesUsed_old, bytesUsed_new]() {
@@ -336,10 +385,10 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 				if (!bestSeries.size()) {
 					// NO MATCHES
 					// NEW INSERT_INSTRUCTION: use entire window
-					Insert_Instruction inst;
-					inst.index = bytesUsed_new;
-					inst.newData.resize(windowSize);
-					std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst.newData.data());
+					Insert_Instruction * inst = new Insert_Instruction();
+					inst->m_index = bytesUsed_new;
+					inst->m_newData.resize(windowSize);
+					std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst->m_newData.data());
 					std::unique_lock<std::mutex> writeGuard(instructionMutex);
 					instructions.push_back(inst);
 				}
@@ -351,19 +400,19 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						const auto newDataLength = match.start2 - lastMatchEnd;
 						if (newDataLength > 0ull) {
 							// NEW INSERT_INSTRUCTION: Use data from end of last match until beginning of current match
-							Insert_Instruction inst;
-							inst.index = lastMatchEnd;
-							inst.newData.resize(newDataLength);
-							std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst.newData.data());
+							Insert_Instruction * inst = new Insert_Instruction();
+							inst->m_index = lastMatchEnd;
+							inst->m_newData.resize(newDataLength);
+							std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
 							std::unique_lock<std::mutex> writeGuard(instructionMutex);
 							instructions.push_back(inst);
 						}
 
 						// NEW COPY_INSTRUCTION: Use data from begining of match until end of match
-						Copy_Instruction inst;
-						inst.index = match.start2;
-						inst.beginRead = match.start1;
-						inst.endRead = match.start1 + match.length;
+						Copy_Instruction * inst = new Copy_Instruction();
+						inst->m_index = match.start2;
+						inst->m_beginRead = match.start1;
+						inst->m_endRead = match.start1 + match.length;
 						lastMatchEnd = match.start2 + match.length;
 						std::unique_lock<std::mutex> writeGuard(instructionMutex);
 						instructions.push_back(inst);
@@ -372,10 +421,10 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 					const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
 					if (newDataLength > 0ull) {
 						// NEW INSERT_INSTRUCTION: Use data from end of last match until end of window
-						Insert_Instruction inst;
-						inst.index = lastMatchEnd;
-						inst.newData.resize(newDataLength);
-						std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst.newData.data());
+						Insert_Instruction * inst = new Insert_Instruction();
+						inst->m_index = lastMatchEnd;
+						inst->m_newData.resize(newDataLength);
+						std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
 						std::unique_lock<std::mutex> writeGuard(instructionMutex);
 						instructions.push_back(inst);
 					}
@@ -388,10 +437,10 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 
 		if (bytesUsed_new < size_new) {
 			// NEW INSERT_INSTRUCTION: Use data from end of last block until end-of-file
-			Insert_Instruction inst;
-			inst.index = bytesUsed_new;
-			inst.newData.resize(size_new - bytesUsed_new);
-			std::copy(&target[bytesUsed_new], &target[bytesUsed_new + (size_new - bytesUsed_new)], inst.newData.data());
+			Insert_Instruction * inst = new Insert_Instruction();
+			inst->m_index = bytesUsed_new;
+			inst->m_newData.resize(size_new - bytesUsed_new);
+			std::copy(&target[bytesUsed_new], &target[bytesUsed_new + (size_new - bytesUsed_new)], inst->m_newData.data());
 			std::unique_lock<std::mutex> writeGuard(instructionMutex);
 			instructions.push_back(inst);
 		}
@@ -403,20 +452,20 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 		// Replace insertions with some repeat instructions
 		for (size_t i = 0, mi = instructions.size(); i < mi; ++i) {
 			threader.addJob([i, &instructions, &instructionMutex]() {
-				auto & instruction = instructions[i];
-				if (const auto inst(std::get_if<Insert_Instruction>(&instruction)); inst) {
+				auto instruction = instructions[i];
+				if (auto inst = dynamic_cast<Insert_Instruction*>(instruction)) {
 					// We only care about repeats larger than 36 bytes.
-					if (inst->newData.size() > 36ull) {
+					if (inst->m_newData.size() > 36ull) {
 						// Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-						size_t max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
+						size_t max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
 						for (size_t x = 0ull; x < max; ++x) {
-							const auto & value_at_x = inst->newData[x];
-							if (inst->newData[x + 36ull] != value_at_x)
+							const auto & value_at_x = inst->m_newData[x];
+							if (inst->m_newData[x + 36ull] != value_at_x)
 								continue; // quit early if the value 36 units away isn't the same as this index
 
 							size_t y = x + 1;
 							while (y < max) {
-								if (value_at_x == inst->newData[y])
+								if (value_at_x == inst->m_newData[y])
 									y++;
 								else
 									break;
@@ -426,30 +475,30 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 							if (length > 36ull) {
 								// Worthwhile to insert a new instruction
 								// Keep data up-until region where repeats occur
-								Insert_Instruction instBefore;
-								instBefore.index = inst->index;
-								instBefore.newData.resize(x);
-								std::copy(inst->newData.data(), inst->newData.data() + x, instBefore.newData.data());
+								Insert_Instruction * instBefore = new Insert_Instruction();
+								instBefore->m_index = inst->m_index;
+								instBefore->m_newData.resize(x);
+								std::copy(inst->m_newData.data(), inst->m_newData.data() + x, instBefore->m_newData.data());
 
 								// Generate new Repeat Instruction
-								Repeat_Instruction instRepeat;
-								instRepeat.index = inst->index + x;
-								instRepeat.value = value_at_x;
-								instRepeat.amount = length;
+								Repeat_Instruction * instRepeat = new Repeat_Instruction();
+								instRepeat->m_index = inst->m_index + x;
+								instRepeat->m_value = value_at_x;
+								instRepeat->m_amount = length;
 
 								// Modifying instructions vector
 								std::unique_lock<std::mutex> writeGuard(instructionMutex);
 								instructions.push_back(instBefore);
 								instructions.push_back(instRepeat);
 								// Modify original insert-instruction to contain remainder of the data
-								inst->index = inst->index + x + length;
-								std::memmove(&inst->newData[0], &inst->newData[y], inst->newData.size() - y);
-								inst->newData.resize(inst->newData.size() - y);
+								inst->m_index = inst->m_index + x + length;
+								std::memmove(&inst->m_newData[0], &inst->m_newData[y], inst->m_newData.size() - y);
+								inst->m_newData.resize(inst->m_newData.size() - y);
 								writeGuard.unlock();
 								writeGuard.release();
 
 								x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
-								max = std::min<size_t>(inst->newData.size(), inst->newData.size() - 37ull);
+								max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
 								break;
 							}
 							x = y - 1;
@@ -468,18 +517,18 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 
 		// Create a buffer to contain all the diff instructions
 		size_t size_patch(0ull);
-		constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
 		for each (const auto & instruction in instructions)
-			size_patch += std::visit(CallSize, instruction);
+			size_patch += instruction->size();
 		Buffer patchBuffer(size_patch);
 
 		// Write instruction data to the buffer
-		size_t index(0ull);
-		const auto CallWrite = [&patchBuffer, &index](const auto & obj) { obj.WRITE(patchBuffer, index); };
-		for (auto & instruction : instructions)
-			std::visit(CallWrite, instruction);
+		size_t m_index(0ull);
+		for each (const auto & instruction in instructions)
+			instruction->write(patchBuffer, m_index);
 
 		// Free up memory
+		for (auto * inst : instructions)
+			delete inst;
 		instructions.clear();
 		instructions.shrink_to_fit();
 
@@ -516,27 +565,37 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 			auto diffInstructionBuffer = Buffer(dataPtr, dataSize).decompress();
 			if (diffInstructionBuffer) {
 				// Convert buffer into instructions
-				Threader threader;
 				Buffer bufferNew(header.m_targetSize);
 				size_t bytesRead(0ull), byteIndex(0ull);
-				constexpr auto CallSize = [](const auto & obj) { return obj.SIZE(); };
-				const auto CallDo = [&](const auto & obj) { return obj.DO(bufferNew, *this); };
 				while (bytesRead < diffInstructionBuffer->size()) {
-					// Make the instruction, reading it in from memory
-					const auto & instruction = Instruction_Maker::Make(*diffInstructionBuffer, byteIndex);
-					// Read the instruction size
-					bytesRead += std::visit(CallSize, instruction);
-					threader.addJob([instruction, &CallDo]() {
-						// Execute the instruction on a separate thread
-						std::visit(CallDo, instruction);
-					});
-				}
+					// Deduce the instruction type
+					char type(0);
+					byteIndex = diffInstructionBuffer->readData(&type, size_t(sizeof(char)), byteIndex);
 
-				// Wait for jobs to finish, then prepare to end
-				threader.prepareForShutdown();
-				while (!threader.isFinished())
-					continue;
-				threader.shutdown();
+					// Make the instruction, reading it in from memory
+					Differential_Instruction * instruction(nullptr);
+					switch (type) {
+					case 'R':
+						instruction = new Repeat_Instruction();
+						break;
+					case 'I':
+						instruction = new Insert_Instruction();
+						break;
+					case 'C':
+					default:
+						instruction = new Copy_Instruction();
+						break;
+					}
+					instruction->read(*diffInstructionBuffer, byteIndex);
+
+					// Read the instruction size
+					bytesRead += instruction->size();
+
+					// Execute the instruction
+					instruction->execute(bufferNew, *this);
+
+					delete instruction;
+				}
 
 				// Success
 				return bufferNew;
@@ -573,4 +632,113 @@ void Buffer::writeHeader(const Header * header)
 
 	// Copy header data
 	(*header) >> (&m_data[0]);
+}
+
+size_t Copy_Instruction::size() const
+{
+	return sizeof(char) + (sizeof(size_t) * 3ull);
+}
+
+void Copy_Instruction::execute(Buffer & bufferNew, const Buffer & bufferOld) const
+{
+	for (auto i = m_index, x = m_beginRead; i < bufferNew.size() && x < m_endRead && x < bufferOld.size(); ++i, ++x)
+		bufferNew[i] = bufferOld[x];
+}
+
+void Copy_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+{
+	// Write Type
+	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
+	// Write Index
+	byteIndex = outputBuffer.writeData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Write Begin
+	byteIndex = outputBuffer.writeData(&m_beginRead, size_t(sizeof(size_t)), byteIndex);
+	// Write End
+	byteIndex = outputBuffer.writeData(&m_endRead, size_t(sizeof(size_t)), byteIndex);
+}
+
+void Copy_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+{
+	// Type already read
+	// Read Index
+	byteIndex = inputBuffer.readData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Read Begin
+	byteIndex = inputBuffer.readData(&m_beginRead, size_t(sizeof(size_t)), byteIndex);
+	// Read End
+	byteIndex = inputBuffer.readData(&m_endRead, size_t(sizeof(size_t)), byteIndex);
+}
+
+size_t Insert_Instruction::size() const
+{
+	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * m_newData.size());
+}
+
+void Insert_Instruction::execute(Buffer & bufferNew, const Buffer &) const
+{
+	for (auto i = m_index, x = size_t(0ull), length = m_newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
+		bufferNew[i] = m_newData[x];
+}
+
+void Insert_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+{
+	// Write Type
+	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
+	// Write Index
+	byteIndex = outputBuffer.writeData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Write Length
+	auto length = m_newData.size();
+	byteIndex = outputBuffer.writeData(&length, size_t(sizeof(size_t)), byteIndex);
+	if (length) {
+		// Write Data
+		byteIndex = outputBuffer.writeData(m_newData.data(), length, byteIndex);
+	}
+}
+
+void Insert_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+{
+	// Type already read
+	// Read Index
+	byteIndex = inputBuffer.readData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Read Length
+	size_t length;
+	byteIndex = inputBuffer.readData(&length, size_t(sizeof(size_t)), byteIndex);
+	if (length) {
+		// Read Data
+		m_newData.resize(length);
+		byteIndex = inputBuffer.readData(m_newData.data(), length, byteIndex);
+	}
+}
+
+size_t Repeat_Instruction::size() const
+{
+	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
+}
+
+void Repeat_Instruction::execute(Buffer & bufferNew, const Buffer &) const
+{
+	for (auto i = m_index, x = size_t(0ull); i < bufferNew.size() && x < m_amount; ++i, ++x)
+		bufferNew[i] = m_value;
+}
+
+void Repeat_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+{
+	// Write Type
+	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
+	// Write Index
+	byteIndex = outputBuffer.writeData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Write Amount
+	byteIndex = outputBuffer.writeData(&m_amount, size_t(sizeof(size_t)), byteIndex);
+	// Write Value
+	byteIndex = outputBuffer.writeData(&m_value, size_t(sizeof(char)), byteIndex);
+}
+
+void Repeat_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+{
+	// Type already read
+	// Read Index
+	byteIndex = inputBuffer.readData(&m_index, size_t(sizeof(size_t)), byteIndex);
+	// Read Amount
+	byteIndex = inputBuffer.readData(&m_amount, size_t(sizeof(size_t)), byteIndex);
+	// Read Value
+	byteIndex = inputBuffer.readData(&m_value, size_t(sizeof(char)), byteIndex);
 }

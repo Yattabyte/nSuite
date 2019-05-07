@@ -1,7 +1,8 @@
 #include "Screens/Finish.h"
 #include "StringConversions.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "Installer.h"
+#include <filesystem>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -150,7 +151,7 @@ void Finish_Screen::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = NST::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			const auto dstPath = NST::Directory::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
@@ -163,7 +164,7 @@ void Finish_Screen::goClose()
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = NST::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			const auto dstPath = NST::Directory::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;

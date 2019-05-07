@@ -1,6 +1,7 @@
-#include "nSuite.h"
+#include "Directory.h"
 #include "Log.h"
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -26,7 +27,7 @@ int main()
 	});
 
 	// Find all patch files?
-	const auto dstDirectory = NST::SanitizePath(NST::GetRunningDirectory());
+	const auto dstDirectory = NST::Directory::SanitizePath(NST::Directory::GetRunningDirectory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure

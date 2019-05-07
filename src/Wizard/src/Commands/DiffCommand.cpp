@@ -1,7 +1,8 @@
 #include "Commands/DiffCommand.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "StringConversions.h"
 #include "Log.h"
+#include <filesystem>
 #include <fstream>
 
 
@@ -21,11 +22,11 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
-			oldDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			oldDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-new=")
-			newDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			newDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
 			NST::Log::PushText(
 				" Arguments Expected:\r\n"
@@ -43,7 +44,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 		const auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::tm bt;
 		localtime_s(&bt, &time);
-		dstDirectory = NST::SanitizePath(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
+		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
 	}
 
 	// Ensure a file-extension is chosen

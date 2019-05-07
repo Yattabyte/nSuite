@@ -1,8 +1,8 @@
 #include "Installer.h"
 #include "StringConversions.h"
-#include "nSuite.h"
-#include "Buffer.h"
+#include "Directory.h"
 #include "Log.h"
+#include <filesystem>
 #include <fstream>
 #include <regex>
 #include <sstream>
@@ -225,7 +225,7 @@ void Installer::beginInstallation()
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = NST::SanitizePath(getDirectory());
+			auto directory = NST::Directory::SanitizePath(getDirectory());
 			auto virtual_directory = NST::Directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()), directory);
 			if (!virtual_directory.make_folder())			
 				invalidate();
@@ -288,7 +288,7 @@ void Installer::beginInstallation()
 void Installer::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = NST::GetRunningDirectory() + "\\error_log.txt";
+	const auto dir = NST::Directory::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);

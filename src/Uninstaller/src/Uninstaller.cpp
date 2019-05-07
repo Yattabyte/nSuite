@@ -1,8 +1,9 @@
 #include "Uninstaller.h"
 #include "StringConversions.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "Log.h"
 #include "Progress.h"
+#include <filesystem>
 #include <fstream>
 #include <regex>
 #include <sstream>
@@ -71,7 +72,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	// Acquire the installation directory
 	m_directory = m_mfStrings[L"directory"];
 	if (m_directory.empty())
-		m_directory = to_wideString(NST::GetRunningDirectory());
+		m_directory = to_wideString(NST::Directory::GetRunningDirectory());
 
 	// Create window class
 	WNDCLASSEX wcex;
@@ -150,8 +151,12 @@ void Uninstaller::beginUninstallation()
 {
 	m_threader.addJob([&]() {
 		// Find all installed files
-		const auto directory = NST::SanitizePath(from_wideString(m_directory));
-		const auto entries = NST::GetFilePaths(directory);
+		const auto directory = NST::Directory::SanitizePath(from_wideString(m_directory));
+		std::vector<std::filesystem::directory_entry> entries;
+		if (std::filesystem::is_directory(directory))
+			for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+				if (entry.is_regular_file())
+					entries.emplace_back(entry);
 
 		// Find all shortcuts
 		const auto desktopStrings = m_mfStrings[L"shortcut"], startmenuStrings = m_mfStrings[L"startmenu"];
@@ -210,13 +215,13 @@ void Uninstaller::beginUninstallation()
 
 		// Remove all shortcuts
 		for each (const auto & shortcut in shortcuts_d) {
-			const auto path = NST::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			const auto path = NST::Directory::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			NST::Log::PushText("Deleting desktop shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
 		}
 		for each (const auto & shortcut in shortcuts_s) {
-			const auto path = NST::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
+			const auto path = NST::Directory::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			NST::Log::PushText("Deleting start-menu shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
@@ -235,7 +240,7 @@ void Uninstaller::beginUninstallation()
 void Uninstaller::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = NST::GetRunningDirectory() + "\\error_log.txt";
+	const auto dir = NST::Directory::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);

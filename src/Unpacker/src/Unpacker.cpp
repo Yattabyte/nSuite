@@ -1,5 +1,5 @@
 #include "Log.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "Resource.h"
 #include <chrono>
 #include <iostream>
@@ -23,7 +23,7 @@ int main()
 
 	// Acquire archive resource
 	const auto start = std::chrono::system_clock::now();
-	const auto dstDirectory = NST::SanitizePath(NST::GetRunningDirectory());
+	const auto dstDirectory = NST::Directory::SanitizePath(NST::Directory::GetRunningDirectory());
 	NST::Resource archive(IDR_ARCHIVE, "ARCHIVE");
 	if (!archive.exists()) 
 		NST::Log::PushText("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");

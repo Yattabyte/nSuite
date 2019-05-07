@@ -2,8 +2,10 @@
 #include "Log.h"
 #include "Progress.h"
 #include "Resource.h"
-#include "Threader.h"
+#include <direct.h>
+#include <filesystem>
 #include <fstream>
+#include <shlobj.h>
 
 using namespace NST;
 
@@ -43,7 +45,7 @@ static auto get_file_paths(const std::string & directory, const std::vector<std:
 
 // Public (de)Constructors
 
-void NST::Directory::devirtualize()
+void Directory::devirtualize()
 {
 	for (auto & file : m_files) {
 		if (file.data != nullptr) {
@@ -53,12 +55,12 @@ void NST::Directory::devirtualize()
 	}
 }
 
-NST::Directory::~Directory()
+Directory::~Directory()
 {
 	devirtualize();
 }
 
-NST::Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions)
+Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions)
 {
 	m_directoryPath = path;
 	m_exclusions = exclusions;
@@ -75,7 +77,7 @@ NST::Directory::Directory(const std::string & path, const std::vector<std::strin
 		if (!libSuccess || handle == NULL || fileResource.exists())
 			Log::PushText("Error: cannot load the resource file specified!\r\n");
 		else {
-			Buffer packBuffer = NST::Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
+			Buffer packBuffer = Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
 			FreeLibrary(handle);
 			virtualize_package(packBuffer);
 		}
@@ -88,7 +90,7 @@ NST::Directory::Directory(const std::string & path, const std::vector<std::strin
 		if (!packFile.is_open())
 			Log::PushText("Error: cannot open the package file specified!\r\n");
 		else {
-			Buffer packBuffer = NST::Buffer(std::filesystem::file_size(path));
+			Buffer packBuffer = Buffer(std::filesystem::file_size(path));
 			packFile.read(packBuffer.cArray(), std::streamsize(packBuffer.size()));
 			packFile.close();
 			virtualize_package(packBuffer);
@@ -96,14 +98,14 @@ NST::Directory::Directory(const std::string & path, const std::vector<std::strin
 	}
 }
 
-NST::Directory::Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions)
+Directory::Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions)
 {
 	m_directoryPath = path;
 	m_exclusions = exclusions;
 	virtualize_package(package);
 }
 
-NST::Directory::Directory(const Directory & other)
+Directory::Directory(const Directory & other)
 	: m_files(other.m_files), m_directoryPath(other.m_directoryPath), m_directoryName(other.m_directoryName), m_exclusions(other.m_exclusions)
 {
 	for (size_t x = 0, size = m_files.size(); x < size; ++x) {
@@ -112,7 +114,7 @@ NST::Directory::Directory(const Directory & other)
 	}
 }
 
-NST::Directory::Directory(Directory && other)
+Directory::Directory(Directory && other)
 {
 	m_files = other.m_files;
 	m_directoryPath = other.m_directoryPath;
@@ -127,7 +129,10 @@ NST::Directory::Directory(Directory && other)
 	other.m_exclusions.shrink_to_fit();
 }
 
-Directory & NST::Directory::operator=(const Directory & other)
+
+// Public Operators
+
+Directory & Directory::operator=(const Directory & other)
 {
 	if (this != &other) {
 		devirtualize();
@@ -144,7 +149,7 @@ Directory & NST::Directory::operator=(const Directory & other)
 	return *this;
 }
 
-Directory & NST::Directory::operator=(Directory && other)
+Directory & Directory::operator=(Directory && other)
 {
 	if (this != &other) {
 		devirtualize();
@@ -164,9 +169,9 @@ Directory & NST::Directory::operator=(Directory && other)
 }
 
 
-// Public Output Methods
+// Public Manipulation Methods
 
-bool NST::Directory::make_folder() const
+bool Directory::make_folder() const
 {
 	// Ensure the source-directory has files
 	if (!m_files.size())
@@ -201,14 +206,13 @@ bool NST::Directory::make_folder() const
 		size_t fileCount(0ull);
 		for (auto & file : m_files) {
 			// Write-out the file
-			const auto fullPath = m_directoryPath + "\\" + m_directoryName + file.relativePath;
+			const auto fullPath = m_directoryPath + file.relativePath;
 			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
 			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
 			if (!fileWriter.is_open())
 				Log::PushText("Error: cannot write file \"" + file.relativePath + "\" to disk.\r\n");
-			else {
-				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
-			}
+			else 
+				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);			
 			Progress::SetProgress(++fileCount);
 			fileWriter.close();
 		}
@@ -221,7 +225,7 @@ bool NST::Directory::make_folder() const
 	return false;
 }
 
-std::optional<Buffer> NST::Directory::make_package() const
+std::optional<Buffer> Directory::make_package() const
 {
 	// Ensure the source-directory has files
 	if (!m_files.size())
@@ -286,7 +290,7 @@ std::optional<Buffer> NST::Directory::make_package() const
 	return {};
 }
 
-std::optional<Buffer> NST::Directory::make_delta(const Directory & newDirectory) const
+std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) const
 {
 	// Declarations that will only be used here	
 	typedef std::vector<DirFile> PathList;
@@ -418,10 +422,7 @@ std::optional<Buffer> NST::Directory::make_delta(const Directory & newDirectory)
 	return {};
 }
 
-
-// Public Methods
-
-bool NST::Directory::apply_delta(const Buffer & diffBuffer)
+bool Directory::apply_delta(const Buffer & diffBuffer)
 {
 	// Ensure buffer at least *exists*
 	if (!diffBuffer.hasData())
@@ -649,12 +650,15 @@ bool NST::Directory::apply_delta(const Buffer & diffBuffer)
 	return false;
 }
 
-size_t NST::Directory::fileCount() const
+
+// Public Accessor/Information Methods
+
+size_t Directory::fileCount() const
 {
 	return m_files.size();
 }
 
-size_t NST::Directory::byteCount() const
+size_t Directory::byteCount() const
 {
 	size_t spaceUsed(0ull);
 	for each (const auto & file in m_files) {
@@ -669,10 +673,44 @@ size_t NST::Directory::byteCount() const
 	return spaceUsed;
 }
 
+std::string Directory::GetStartMenuPath()
+{
+	char cPath[FILENAME_MAX];
+	if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_COMMON_PROGRAMS, NULL, 0, cPath)))
+		return std::string(cPath);
+	return std::string();
+}
+
+std::string Directory::GetDesktopPath()
+{
+	char cPath[FILENAME_MAX];
+	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE))
+		return std::string(cPath);
+	return std::string();
+}
+
+std::string Directory::GetRunningDirectory()
+{
+	char cCurrentPath[FILENAME_MAX];
+	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
+		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
+	return std::string(cCurrentPath);
+}
+
+std::string Directory::SanitizePath(const std::string & path)
+{
+	std::string cpy(path);
+	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')
+		cpy.erase(0ull, 1ull);
+	while (cpy.back() == '"' || cpy.back() == '\'' || cpy.back() == '\"' || cpy.back() == '\\')
+		cpy.erase(cpy.size() - 1ull);
+	return cpy;
+}
+
 
 // Private Methods
 
-void NST::Directory::virtualize_folder(const std::string & input_path) 
+void Directory::virtualize_folder(const std::string & input_path) 
 {
 	m_directoryName = std::filesystem::path(m_directoryPath).stem().string();
 	for (const auto & entry : get_file_paths(input_path, m_exclusions)) {
@@ -693,7 +731,7 @@ void NST::Directory::virtualize_folder(const std::string & input_path)
 	}
 }
 
-void NST::Directory::virtualize_package(const Buffer & buffer)
+void Directory::virtualize_package(const Buffer & buffer)
 {
 	// Read in header		
 	Directory::PackageHeader header;
@@ -704,7 +742,7 @@ void NST::Directory::virtualize_package(const Buffer & buffer)
 
 	// Ensure header title matches
 	if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
-		NST::Log::PushText("Critical failure: cannot parse package header!\r\n");
+		Log::PushText("Critical failure: cannot parse package header!\r\n");
 	else {
 		// Try to decompress the buffer
 		auto decompressedBuffer = Buffer(dataPtr, dataSize).decompress();

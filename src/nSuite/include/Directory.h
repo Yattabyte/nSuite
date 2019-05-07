@@ -3,7 +3,6 @@
 #define DIRECTORY_H
 
 #include "Buffer.h"
-#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -38,7 +37,7 @@ namespace NST {
 		Directory(Directory && other);
 
 
-		// Public Assignment Operators
+		// Public Operators
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
@@ -49,7 +48,7 @@ namespace NST {
 		Directory & operator=(Directory && other);
 				
 
-		// Public Output Methods
+		// Public Manipulation Methods
 		/** Writes this virtual directory's contents to disk. */
 		bool make_folder() const;
 		/** Compresses all data found within this directory into an .npack - package formatted buffer.
@@ -67,19 +66,32 @@ namespace NST {
 		| header: identifier title, modified file count  | compressed directory data  |
 		------------------------------------------------------------------------------- */
 		std::optional<Buffer> make_delta(const Directory & newDirectory) const;
-
-
-		// Public Methods
 		/** Executes the instructions contained within a .ndiff - delta formatted buffer upon this directory.
 		@param	diffBuffer			the buffer containing the compressed diff instructions.
 		@return						true on update success, false otherwise. */
 		bool apply_delta(const Buffer & diffBuffer);
+
+
+		// Public Accessor/Information Methods
 		/** Retrieve the number of files in this directory. 
 		@return						the file-count for this directory. */
 		size_t fileCount() const;
 		/** Calculates the number of bytes this directory uses.
 		@return						the number of bytes used by this directory. */
-		size_t byteCount() const;			
+		size_t byteCount() const;
+		/** Retrieves the path to the user's start-menu folder.
+		@return						the path to the user's start menu folder. */
+		static std::string GetStartMenuPath();
+		/** Retrieve the path to the user's desktop.
+		@return						the path to the user's desktop folder. */
+		static std::string GetDesktopPath();
+		/** Retrieve the directory this executable is running from.
+		@return						the current directory for this program. */
+		static std::string GetRunningDirectory();
+		/** Cleans up the target string representing a file path, specifically targeting the number of slashes.
+		@param	path				the path to be sanitized.
+		@return						the sanitized version of path. */
+		static std::string SanitizePath(const std::string & path);
 
 
 		// Public Header Structs

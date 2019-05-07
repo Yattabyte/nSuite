@@ -1,7 +1,8 @@
 #include "Commands/UnpackCommand.h"
-#include "nSuite.h"
+#include "Directory.h"
 #include "StringConversions.h"
 #include "Log.h"
+#include <filesystem>
 #include <fstream>
 
 
@@ -21,9 +22,9 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 	for (int x = 2; x < argc; ++x) {
 		std::string command = string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
 			NST::Log::PushText(
 				" Arguments Expected:\r\n"
