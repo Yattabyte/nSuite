@@ -9,13 +9,12 @@
 
 /** Add Progress to nSuite NST namespace. */
 namespace NST {
-	/**
-	A Singleton progress tracker, used for globally manipulating and viewing the progress of a task.
+	/** A Singleton progress tracker, used for globally manipulating and viewing the progress of a task.
 	Can accept observers to listen in on when the progress changes.
-	 */
+	Hides singleton pattern from user, exposes functionality through static methods. */
 	class Progress {
 	public:
-		// Public Methods		
+		// Public Static Methods		
 		/** Add an observer method which will be triggered when the task progress changes.
 		@param	func		the callback function. (params: progress, range)
 		@return				handle for this observer, used to remove it. */

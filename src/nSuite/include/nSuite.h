@@ -4,7 +4,6 @@
 
 #include "Buffer.h"
 #include "Directory.h"
-#include "Instructions.h"
 #include "Log.h"
 #include "Progress.h"
 #include "Resource.h"

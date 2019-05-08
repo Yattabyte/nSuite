@@ -82,5 +82,4 @@ private:
 	HWND m_hwnd = nullptr;
 };
 
-
 #endif // INSTALLER_H

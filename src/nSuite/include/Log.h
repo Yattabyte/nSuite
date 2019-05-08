@@ -10,10 +10,11 @@
 /** Add Log to nSuite NST namespace. */
 namespace NST {
 	/** A Singleton text log which most of the library uses.
-	Accepts observers to listen in on newly logged text. */
+	Accepts observers to listen in on newly logged text. 
+	Hides singleton pattern from user, exposes functionality through static methods. */
 	class Log {
 	public:
-		// Public Methods	
+		// Public Static Methods	
 		/** Add an observer method to be called when new text is pushed into the log.
 		@param	func		the observer function. (only parameter is a string)
 		@param	pullOld		(optional) if true, will immediately call the function with the entire log's contents to this point

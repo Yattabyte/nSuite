@@ -72,7 +72,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	// Acquire the installation directory
 	m_directory = m_mfStrings[L"directory"];
 	if (m_directory.empty())
-		m_directory = to_wideString(NST::Directory::GetRunningDirectory());
+		m_directory = NST::to_wideString(NST::Directory::GetRunningDirectory());
 
 	// Create window class
 	WNDCLASSEX wcex;
@@ -151,7 +151,7 @@ void Uninstaller::beginUninstallation()
 {
 	m_threader.addJob([&]() {
 		// Find all installed files
-		const auto directory = NST::Directory::SanitizePath(from_wideString(m_directory));
+		const auto directory = NST::Directory::SanitizePath(NST::from_wideString(m_directory));
 		std::vector<std::filesystem::directory_entry> entries;
 		if (std::filesystem::is_directory(directory))
 			for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))

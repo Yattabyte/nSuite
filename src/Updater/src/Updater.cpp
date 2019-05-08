@@ -61,12 +61,9 @@ int main()
 				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
 				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 				diffFile.close();
-				NST::Directory directory(dstDirectory);
-				const bool updateResult = directory.apply_delta(diffBuffer);
-
+				
 				// If patching success, write changes to disk
-				if (updateResult) {
-					directory.make_folder();
+				if (NST::Directory(dstDirectory).apply_delta(diffBuffer)) {
 					patchesApplied++;
 
 					// Delete patch file at very end

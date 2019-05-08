@@ -20,7 +20,7 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
-		std::string command = string_to_lower(std::string(argv[x], 5));
+		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
 			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")

@@ -97,23 +97,25 @@ namespace NST {
 		// Public Header Structs
 		struct PackageHeader : NST::Buffer::Header {
 			// Attributes
-			static constexpr const char TITLE[] = "nSuite package";
 			size_t m_charCount = 0ull;
 			std::string m_folderName = "";
 
 
 			// (de)Constructors
 			PackageHeader() = default;
-			PackageHeader(const size_t & folderNameSize, const char * folderName) : Header(TITLE), m_charCount(folderNameSize) {
+			inline PackageHeader(const size_t & folderNameSize, const char * folderName) : Header("nSuite package"), m_charCount(folderNameSize) {
 				m_folderName = std::string(folderName, folderNameSize);
 			}
 
 
 			// Interface Implementation
-			virtual size_t size() const override {
+			inline virtual bool isValid() const override {
+				return (std::strcmp(m_title, "nSuite package") == 0);
+			}
+			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t) + (sizeof(char) * m_charCount));
 			}
-			virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte * operator << (std::byte * ptr) override {
 				ptr = Header::operator<<(ptr);
 				std::copy(ptr, &ptr[size_t(sizeof(size_t))], reinterpret_cast<std::byte*>(&m_charCount));
 				ptr = &ptr[size_t(sizeof(size_t))];
@@ -123,7 +125,7 @@ namespace NST {
 				delete[] folderArray;
 				return &ptr[size_t(sizeof(char) * m_charCount)];
 			}
-			virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte *operator >> (std::byte * ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_charCount;
 				ptr = &ptr[size_t(sizeof(size_t))];
@@ -134,24 +136,26 @@ namespace NST {
 		/** Holds and performs Patch I/O operations on buffers. */
 		struct PatchHeader : NST::Buffer::Header {
 			// Attributes
-			static constexpr const char TITLE[] = "nSuite patch";
 			size_t m_fileCount = 0ull;
 
 
 			// (de)Constructors
-			PatchHeader(const size_t size = 0ull) : Header(TITLE), m_fileCount(size) {}
+			inline PatchHeader(const size_t size = 0ull) : Header("nSuite patch"), m_fileCount(size) {}
 
 
 			// Interface Implementation
-			virtual size_t size() const override {
+			inline virtual bool isValid() const override {
+				return (std::strcmp(m_title, "nSuite patch") == 0);
+			}
+			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
-			virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte * operator << (std::byte * ptr) override {
 				ptr = Header::operator<<(ptr);
 				std::copy(ptr, &ptr[size()], reinterpret_cast<std::byte*>(&m_fileCount));
 				return &ptr[size()];
 			}
-			virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte *operator >> (std::byte * ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_fileCount;
 				return &ptr[size()];

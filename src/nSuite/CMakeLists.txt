@@ -8,10 +8,6 @@ configure_file(Resource.h.in include/Resource.h)
 
 # Group Files
 set(FILES
-	# Source files
-	src/Buffer.cpp
-	src/Directory.cpp
-	
 	# Header files
 	include/Buffer.h
 	include/Directory.h
@@ -21,6 +17,10 @@ set(FILES
 	include/Progress.h
 	include/Resource.h
 	include/Threader.h
+	
+	# Source files
+	src/Buffer.cpp
+	src/Directory.cpp	
 )
 
 

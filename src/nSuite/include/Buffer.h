@@ -153,6 +153,11 @@ namespace NST {
 
 
 			// Interface
+			/** Retrieve whether or not this header is valid, after populating it.
+			@return					true if valid, false otherwise. */
+			virtual bool isValid() const = 0;
+			/** Retrieves the size of this header.
+			@return					the size of this header. */
 			virtual size_t size() const = 0;
 			/** Updates THIS with the data found in the input pointer.
 			@param	ptr				the pointer to source data from.
@@ -172,15 +177,17 @@ namespace NST {
 		/** Holds and performs Compression I/O operations on buffers. */
 		struct CompressionHeader : Header {
 			// Attributes
-			static constexpr const char TITLE[] = "nSuite cmpress";
 			size_t m_uncompressedSize = 0ull;
 
 
 			// (de)Constructors
-			inline CompressionHeader(const size_t size = 0ull) : Header(TITLE), m_uncompressedSize(size) {}
+			inline CompressionHeader(const size_t size = 0ull) : Header("nSuite cmpress"), m_uncompressedSize(size) {}
 
 
 			// Interface Implementation
+			inline virtual bool isValid() const override {
+				return (std::strcmp(m_title, "nSuite cmpress") == 0);
+			}
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
@@ -198,15 +205,17 @@ namespace NST {
 		/** Holds and performs Diff I/O operations on buffers. */
 		struct DiffHeader : Header {
 			// Attributes
-			static constexpr const char TITLE[] = "nSuite differ";
 			size_t m_targetSize = 0ull;
 
 
 			// (de)Constructors
-			inline DiffHeader(const size_t size = 0ull) : Header(TITLE), m_targetSize(size) {}
+			inline DiffHeader(const size_t size = 0ull) : Header("nSuite differ"), m_targetSize(size) {}
 
 
 			// Interface Implementation
+			inline virtual bool isValid() const override {
+				return (std::strcmp(m_title, "nSuite differ") == 0);
+			}
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
@@ -226,7 +235,7 @@ namespace NST {
 		// Public Diff-Instruction Structure
 		struct Differential_Instruction {
 			// Constructor
-			explicit Differential_Instruction(const char & t) : m_type(t) {}
+			inline Differential_Instruction(const char & t) : m_type(t) {}
 
 
 			// Interface Declaration

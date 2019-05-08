@@ -74,12 +74,11 @@ Directory::Directory(const std::string & path, const std::vector<std::string> & 
 		auto libSuccess = LoadLibraryA(path.c_str());
 		auto handle = GetModuleHandle(path.c_str());
 		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
-		if (!libSuccess || handle == NULL || fileResource.exists())
+		if (!libSuccess || handle == NULL || !fileResource.exists())
 			Log::PushText("Error: cannot load the resource file specified!\r\n");
 		else {
-			Buffer packBuffer = Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize());
+			virtualize_package(Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize()));
 			FreeLibrary(handle);
-			virtualize_package(packBuffer);
 		}
 	}
 
@@ -176,43 +175,22 @@ bool Directory::make_folder() const
 	// Ensure the source-directory has files
 	if (!m_files.size())
 		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
-	else {
-		// Remove all files in the folder who don't appear in this virtual directory 
-		// (have disk changes reflect the virtual directory changes)
-		auto virt_files = m_files;
-		auto current_dir_files = get_file_paths(m_directoryPath, m_exclusions);
-		for each (const auto & virt_file in virt_files) {
-			bool found = false;
-			size_t oIndex(0ull);
-			for each (const auto & curr_file in current_dir_files) {
-				auto nRelativePath = curr_file.path().string().substr(m_directoryPath.size(), curr_file.path().string().size() - m_directoryPath.size());
-				if (nRelativePath == virt_file.relativePath) {
-					// Remove old file from list (so we can use all that remain)
-					current_dir_files.erase(current_dir_files.begin() + oIndex);
-					found = true;
-					break;
-				}
-				oIndex++;
-			}
-		}
-
-		// Remove extraneous files 
-		for each (const auto & file in current_dir_files)
-			if (!std::filesystem::remove(file.path() ))
-				Log::PushText("Error: cannot delete file \"" + file.path().string() + "\" from disk, delete this file manually if you can!\r\n");		
-		
+	else {				
 		Log::PushText("Dumping directory contents...\r\n");
+		const auto finalDestionation = SanitizePath(m_directoryPath + "\\" + m_directoryName);
 		Progress::SetRange(m_files.size());
 		size_t fileCount(0ull);
 		for (auto & file : m_files) {
 			// Write-out the file
-			const auto fullPath = m_directoryPath + file.relativePath;
+			const auto fullPath = finalDestionation + file.relativePath;
 			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
 			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
 			if (!fileWriter.is_open())
 				Log::PushText("Error: cannot write file \"" + file.relativePath + "\" to disk.\r\n");
-			else 
-				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);			
+			else {
+				Log::PushText("Writing file: \"" + file.relativePath + "\"\r\n");
+				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
+			}
 			Progress::SetProgress(++fileCount);
 			fileWriter.close();
 		}
@@ -435,7 +413,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(header.m_title, Directory::PatchHeader::TITLE) != 0)
+		if (!header.isValid())
 			Log::PushText("Critical failure: supplied an invalid nSuite patch!\r\n");
 		else {
 			// Try to decompress the instruction buffer
@@ -494,7 +472,6 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 				instructionBuffer->release();
 
 				// Patch all files first
-				size_t byteNum(0ull);
 				bool failed = false;
 				for (FileInstruction & inst : diffFiles) {
 					// Try to read the target file
@@ -544,9 +521,14 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 								storedFile->size = newBuffer->size();
 								std::copy(newBuffer->data(), &newBuffer->data()[newBuffer->size()], storedFile->data);
 
-								newBuffer->release();
+								// Reflect changes on disk
+								std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
+								if (!newFile.is_open())
+									Log::PushText("Critical failure: cannot write patched file to disk!\r\n");
+								else 
+									newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
+								newFile.close();
 								inst.instructionBuffer.release();
-								byteNum += newBuffer->size();
 								continue;
 							}
 						}
@@ -583,6 +565,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 						}
 						else {
 							Log::PushText("Adding file \"" + inst.path + "\"\r\n");
+							std::filesystem::create_directories(std::filesystem::path(inst.fullPath).parent_path());
 
 							// Write the 'insert' instructions
 							// Remember that we use the diff/patch function to add new files too
@@ -599,7 +582,14 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 									std::byte * fileData = new std::byte[newBuffer->size()];
 									std::copy(newBuffer->data(), &newBuffer->data()[newBuffer->size()], fileData);
 									m_files.push_back(DirFile{ inst.path, newBuffer->size(), fileData });
-									byteNum += newBuffer->size();
+									
+									// Reflect changes on disk
+									std::ofstream newFile(inst.fullPath, std::ios::binary | std::ios::out);
+									if (!newFile.is_open())
+										Log::PushText("Critical failure: cannot write new file to disk!\r\n");
+									else
+										newFile.write(newBuffer->cArray(), std::streamsize(newBuffer->size()));
+									newFile.close();
 									inst.instructionBuffer.release();
 									continue;
 								}
@@ -625,10 +615,14 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 									oldHash = Buffer(file.data, file.size).hash();
 									// Only remove source files if they match entirely
 									if (oldHash == inst.diff_oldHash) {
-										Log::PushText("Removing file \"" + inst.path + "\"\r\n");
-
 										// Update virtualized folder
 										m_files.erase(m_files.begin() + index);
+
+										// Reflect changes on disk
+										if (!std::filesystem::remove(inst.fullPath))
+											Log::PushText("Error: cannot delete file \"" + inst.path + "\" from disk, delete this file manually if you can!\r\n");
+										else
+											Log::PushText("Removing file: \"" + inst.path + "\"\r\n");
 									}
 									break;
 								}
@@ -741,7 +735,7 @@ void Directory::virtualize_package(const Buffer & buffer)
 	m_directoryName = header.m_folderName;
 
 	// Ensure header title matches
-	if (std::strcmp(header.m_title, Directory::PackageHeader::TITLE) != 0)
+	if (!header.isValid())
 		Log::PushText("Critical failure: cannot parse package header!\r\n");
 	else {
 		// Try to decompress the buffer

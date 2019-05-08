@@ -5,14 +5,6 @@ set (Module Uninstaller)
 
 # Create Executable
 add_executable(${Module}
-	# Source Files
-	Uninstaller.rc
-	src/Uninstaller.cpp
-	src/Screens/Fail.cpp
-	src/Screens/Finish.cpp
-	src/Screens/Uninstall.cpp
-	src/Screens/Welcome.cpp
- 
 	# Header Files
 	include/Uninstaller.h
 	include/Screens/Fail.h
@@ -20,6 +12,14 @@ add_executable(${Module}
 	include/Screens/Screen.h
 	include/Screens/Uninstall.h
 	include/Screens/Welcome.h
+	
+	# Source Files
+	Uninstaller.rc
+	src/Uninstaller.cpp
+	src/Screens/Fail.cpp
+	src/Screens/Finish.cpp
+	src/Screens/Uninstall.cpp
+	src/Screens/Welcome.cpp 
 )
 
 # Add library dependencies

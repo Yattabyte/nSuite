@@ -5,6 +5,14 @@ set (Module Wizard)
 
 # Create Executable
 add_executable(${Module}	
+	# Header files
+	include/Commands/DiffCommand.h
+	include/Commands/InstallerCommand.h
+	include/Commands/PackagerCommand.h
+	include/Commands/PackCommand.h
+	include/Commands/PatchCommand.h
+	include/Commands/UnpackCommand.h
+	
 	# Source Files
 	Wizard.rc
 	src/Wizard.cpp
@@ -14,14 +22,6 @@ add_executable(${Module}
 	src/Commands/PackCommand.cpp
 	src/Commands/PatchCommand.cpp
 	src/Commands/UnpackCommand.cpp
-
-	# Header files
-	include/Commands/DiffCommand.h
-	include/Commands/InstallerCommand.h
-	include/Commands/PackagerCommand.h
-	include/Commands/PackCommand.h
-	include/Commands/PatchCommand.h
-	include/Commands/UnpackCommand.h
 )
 
 # Add library dependencies

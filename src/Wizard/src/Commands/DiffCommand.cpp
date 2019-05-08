@@ -20,7 +20,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 	// Check command line arguments
 	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
-		std::string command = string_to_lower(std::string(argv[x], 5));
+		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
 			oldDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-new=")

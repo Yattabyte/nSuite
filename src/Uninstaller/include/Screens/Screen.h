@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef SCREEN_UN_H
+#define SCREEN_UN_H
 
 #include <windows.h>
 #pragma warning(push)
@@ -48,4 +48,4 @@ protected:
 	vec2 m_pos, m_size;
 };
 
-#endif // SCREEN_H
+#endif // SCREEN_UN_H

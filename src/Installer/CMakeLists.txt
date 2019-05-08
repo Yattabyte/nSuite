@@ -5,16 +5,6 @@ set (Module Installer)
 
 # Create Executable
 add_executable(${Module} 	
-	# Source Files
-	Installer.rc
-	src/Installer.cpp
-	src/Screens/Agreement.cpp
-	src/Screens/Directory.cpp
-	src/Screens/Fail.cpp
-	src/Screens/Finish.cpp
-	src/Screens/Install.cpp
-	src/Screens/Welcome.cpp
-
 	# Header Files
 	include/Installer.h
 	include/Screens/Agreement.h
@@ -24,6 +14,16 @@ add_executable(${Module}
 	include/Screens/Screen.h
 	include/Screens/Install.h
 	include/Screens/Welcome.h
+	
+	# Source Files
+	Installer.rc
+	src/Installer.cpp
+	src/Screens/Agreement.cpp
+	src/Screens/Directory.cpp
+	src/Screens/Fail.cpp
+	src/Screens/Finish.cpp
+	src/Screens/Install.cpp
+	src/Screens/Welcome.cpp
 )
 
 # Add library dependencies

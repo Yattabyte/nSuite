@@ -146,7 +146,7 @@ void Finish_Screen::goClose()
 	for each (const auto & shortcut in m_shortcuts_d) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
-			const auto nonwideShortcut = from_wideString(shortcut);
+			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
@@ -159,7 +159,7 @@ void Finish_Screen::goClose()
 	for each (const auto & shortcut in m_shortcuts_s) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
-			const auto nonwideShortcut = from_wideString(shortcut);
+			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);

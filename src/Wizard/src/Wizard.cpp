@@ -12,8 +12,6 @@
 #include "Commands/PackCommand.h"
 #include "Commands/UnpackCommand.h"
 
-// Test
-#include "Buffer.h"
 
 /** Entry point. */
 int main(int argc, char *argv[])

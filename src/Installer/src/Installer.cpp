@@ -75,22 +75,20 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	else {
 		// Read in header
 		NST::Directory::PackageHeader packageHeader;
-		NST::Buffer archiveBuffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize());
 		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
-		archiveBuffer.readHeader(&packageHeader, &dataPtr, dataSize);
+		NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()).readHeader(&packageHeader, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(packageHeader.m_title, NST::Directory::PackageHeader::TITLE) != 0)
+		if (!packageHeader.isValid())
 			NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");		
 		else {
 			m_packageName = packageHeader.m_folderName;
 			NST::Buffer::CompressionHeader header;
-			archiveBuffer = NST::Buffer(dataPtr, dataSize);
-			archiveBuffer.readHeader(&header, &dataPtr, dataSize);
+			NST::Buffer(dataPtr, dataSize).readHeader(&header, &dataPtr, dataSize);
 
 			// Ensure header title matches
-			if (std::strcmp(header.m_title, NST::Buffer::CompressionHeader::TITLE) != 0)
+			if (!header.isValid())
 				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header!\r\n");			
 			else {
 				// Get header payload -> uncompressed size
@@ -98,7 +96,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 				
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
-					m_mfStrings[L"name"] = to_wideString(m_packageName);
+					m_mfStrings[L"name"] = NST::to_wideString(m_packageName);
 
 				success_archive = true;
 			}			
@@ -225,8 +223,8 @@ void Installer::beginInstallation()
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = NST::Directory::SanitizePath(getDirectory());
-			auto virtual_directory = NST::Directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()), directory);
+			const auto directory = NST::Directory::SanitizePath(getDirectory());
+			const auto virtual_directory = NST::Directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()), directory);
 			if (!virtual_directory.make_folder())			
 				invalidate();
 			else {
@@ -260,10 +258,10 @@ void Installer::beginInstallation()
 				HKEY hkey;
 				if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, NULL) == ERROR_SUCCESS) {
 					auto
-						name = from_wideString(m_mfStrings[L"name"]),
-						version = from_wideString(m_mfStrings[L"version"]),
-						publisher = from_wideString(m_mfStrings[L"publisher"]),
-						icon = from_wideString(m_mfStrings[L"icon"]);
+						name = NST::from_wideString(m_mfStrings[L"name"]),
+						version = NST::from_wideString(m_mfStrings[L"version"]),
+						publisher = NST::from_wideString(m_mfStrings[L"publisher"]),
+						icon = NST::from_wideString(m_mfStrings[L"icon"]);
 					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize/1024ull);
 					if (icon.empty())
 						icon = uninstallerPath;

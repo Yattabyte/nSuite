@@ -242,7 +242,7 @@ std::optional<Buffer> Buffer::decompress() const
 		readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(header.m_title, CompressionHeader::TITLE) == 0) {
+		if (header.isValid()) {
 			// Uncompress the remaining data
 			Buffer uncompressedBuffer(header.m_uncompressedSize);
 			const auto decompressionResult = LZ4_decompress_safe(
@@ -560,7 +560,7 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
-		if (std::strcmp(header.m_title, DiffHeader::TITLE) == 0) {
+		if (header.isValid()) {
 			// Try to decompress the diff buffer
 			auto diffInstructionBuffer = Buffer(dataPtr, dataSize).decompress();
 			if (diffInstructionBuffer) {
