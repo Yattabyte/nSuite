@@ -22,7 +22,7 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 # add all sub-projects and plugins here
-add_subdirectory( "src/nSuite" )
+add_subdirectory( "src/Library" )
 add_subdirectory( "src/Installer" )
 add_subdirectory( "src/Uninstaller" )
 add_subdirectory( "src/Unpacker" )

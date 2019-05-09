@@ -1,4 +1,4 @@
-# nSuite
+# Wizard
 The nSuite wizard program is intended to be used by developers or those who wish to package/diff/distribute one or many files. 
 It is a command-line application and is run by using one of the following arguments:
 

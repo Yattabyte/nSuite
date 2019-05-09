@@ -1,9 +1,10 @@
 # nSuite
 
 This library allows users to package, compress, and diff buffers & directories. 
-The code is written in C++17, and makes heavy use of std::filesystem.
+The code is written in C++17, and makes heavy use of [std::filesystem](https://en.cppreference.com/w/cpp/header/filesystem).
 
 Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
+
 
 ## Library
 All classes and methods provided by this library are found within the NST namespace. The most important classes are:
@@ -20,7 +21,7 @@ The nSuite wizard is a stand-alone example program that can generate installers 
 
 
 ### Packaging
-The nSuite wizard can package directories in 3 ways (in increasing complexity):
+The nSuite wizard can package directories in 3 ways (ordered by increasing complexity):
 - A .npack file
   - Can be unpacked using the nSuite wizard
 
@@ -30,19 +31,22 @@ The nSuite wizard can package directories in 3 ways (in increasing complexity):
   - Doesn't modify registry - no uninstaller
   - .npack file embedded within
 
-- A fully fledged installer with a GUI (Windows)
+- A fully-fledged installer with a GUI (Windows)
   - Customizable by writing attributes into a manifest file
   - Generates an uninstaller (adds it to the registry)
   - .npack file embedded within
   
 
 ### Diffing
-The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.
+The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.  
+All input directories are parsed into NST::Directory objects, so the "old" and/or "new" directories can be actual folders on disk, .npack files, or programs with packages embedded in them (e.g. installers made by nSuite)
 
-# Dependencies/Requirements
+
+# Dependencies/Requirements/Acknowledgements
  - C++17
  - 64-bit
  - Windows 7/8/10
  - Uses [CMake](https://cmake.org/)
+ - Documentation built using Doxygen (optional)
  - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
  - Using BSD-3-Clause license

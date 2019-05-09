@@ -67,7 +67,7 @@ $(function() {
 <div class="title">nSuite </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>This library allows users to package, compress, and diff buffers &amp; directories. The code is written in C++17, and makes heavy use of std::filesystem.</p>
+<div class="textblock"><p>This library allows users to package, compress, and diff buffers &amp; directories. The code is written in C++17, and makes heavy use of <a href="https://en.cppreference.com/w/cpp/header/filesystem">std::filesystem</a>.</p>
 <p>Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.</p>
 <h2>Library</h2>
 <p>All classes and methods provided by this library are found within the <a class="el" href="namespace_n_s_t.html">NST</a> namespace. The most important classes are:</p><ul>
@@ -85,7 +85,7 @@ $(function() {
 <h2>nSuite Wizard</h2>
 <p>The nSuite wizard is a stand-alone example program that can generate installers &amp; packagers, as well as diff directories/packages.</p>
 <h3>Packaging</h3>
-<p>The nSuite wizard can package directories in 3 ways (in increasing complexity):</p><ul>
+<p>The nSuite wizard can package directories in 3 ways (ordered by increasing complexity):</p><ul>
 <li>A .npack file<ul>
 <li>Can be unpacked using the nSuite wizard</li>
 </ul>
@@ -97,7 +97,7 @@ $(function() {
 <li>.npack file embedded within</li>
 </ul>
 </li>
-<li>A fully fledged installer with a GUI (Windows)<ul>
+<li>A fully-fledged installer with a GUI (Windows)<ul>
 <li>Customizable by writing attributes into a manifest file</li>
 <li>Generates an uninstaller (adds it to the registry)</li>
 <li>.npack file embedded within</li>
@@ -105,13 +105,15 @@ $(function() {
 </li>
 </ul>
 <h3>Diffing</h3>
-<p>The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.</p>
-<h1>Dependencies/Requirements</h1>
+<p>The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool. <br />
+All input directories are parsed into <a class="el" href="class_n_s_t_1_1_directory.html">NST::Directory</a> objects, so the "old" and/or "new" directories can be actual folders on disk, .npack files, or programs with packages embedded in them (e.g. installers made by nSuite)</p>
+<h1>Dependencies/Requirements/Acknowledgements</h1>
 <ul>
 <li>C++17</li>
 <li>64-bit</li>
 <li>Windows 7/8/10</li>
 <li>Uses <a href="https://cmake.org/">CMake</a></li>
+<li>Documentation built using Doxygen (optional)</li>
 <li>Requires the <a href="https://github.com/lz4/lz4">LZ4 - Compression Library</a> to build, but <b>does not</b> come bundled with it</li>
 <li>Using BSD-3-Clause license </li>
 </ul>

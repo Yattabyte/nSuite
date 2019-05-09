@@ -9,38 +9,6 @@ using namespace NST;
 /** Entry point. */
 int main()
 {
-	std::byte data[4] = { std::byte(1),std::byte(2),std::byte(3),std::byte(4) };
-
-	std::byte * qwe = data;
-	void * asd = qwe;
-	Buffer buffer_best(qwe, 4, false);
-	Buffer buffer_best2(asd, 4, false);
-
-	// Create a buffer, give it data
-	Buffer buffer(12);
-	std::memcpy(buffer.data(), "Example Data", 12);
-
-	// Expand the buffer (capacity = 12*2, no new allocs)
-	buffer.resize(15);
-
-	// Replace 'Data' with 'Buffer'
-	buffer.writeData("Buffer", 6, 8);
-
-	// Append '!' character, and retrieve reference too
-	buffer[14] = std::byte('!');
-	char &lastCharacter = (char&)buffer[14];
-
-	// Changed our mind, make it a '?' char
-	lastCharacter = '?';
-
-	// Retrieve second word
-	char secondWord[7];
-	buffer.readData(&secondWord, 7, 8);
-
-	// Retrieve entire buffer as a string
-	std::string entireBuffer(buffer.cArray(), buffer.size());
-	
-
 	// Tap-in to the log, have it redirect to the console
 	auto index = NST::Log::AddObserver([&](const std::string & message) {
 		std::cout << message;
