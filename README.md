@@ -47,6 +47,6 @@ All input directories are parsed into NST::Directory objects, so the "old" and/o
  - 64-bit
  - Windows 7/8/10
  - Uses [CMake](https://cmake.org/)
- - Documentation built using Doxygen (optional)
+ - Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
  - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
  - Using BSD-3-Clause license
