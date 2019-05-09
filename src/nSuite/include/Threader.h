@@ -9,7 +9,6 @@
 #include <vector>
 
 
-/** Add Resource to nSuite NST namespace. */
 namespace NST {
 	/** Utility class for executing tasks across multiple threads. */
 	class Threader {

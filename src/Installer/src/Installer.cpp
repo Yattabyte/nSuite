@@ -77,7 +77,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		NST::Directory::PackageHeader packageHeader;
 		std::byte * dataPtr(nullptr);
 		size_t dataSize(0ull);
-		NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()).readHeader(&packageHeader, &dataPtr, dataSize);
+		NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false).readHeader(&packageHeader, &dataPtr, dataSize);
 
 		// Ensure header title matches
 		if (!packageHeader.isValid())
@@ -85,7 +85,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		else {
 			m_packageName = packageHeader.m_folderName;
 			NST::Buffer::CompressionHeader header;
-			NST::Buffer(dataPtr, dataSize).readHeader(&header, &dataPtr, dataSize);
+			NST::Buffer(dataPtr, dataSize, false).readHeader(&header, &dataPtr, dataSize);
 
 			// Ensure header title matches
 			if (!header.isValid())
@@ -224,8 +224,8 @@ void Installer::beginInstallation()
 		else {
 			// Unpackage using the rest of the resource file
 			const auto directory = NST::Directory::SanitizePath(getDirectory());
-			const auto virtual_directory = NST::Directory(NST::Buffer(reinterpret_cast<std::byte*>(m_archive.getPtr()), m_archive.getSize()), directory);
-			if (!virtual_directory.make_folder())			
+			const auto virtual_directory = NST::Directory(NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false), directory);
+			if (!virtual_directory.apply_folder())			
 				invalidate();
 			else {
 				// Write uninstaller to disk

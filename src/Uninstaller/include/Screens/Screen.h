@@ -11,6 +11,7 @@
 
 using namespace Gdiplus;
 class Uninstaller;
+/** Tuple containing x and y values. */
 struct vec2 { int x = 0, y = 0; };
 
 /**Encapsulation of a windows GDI 'window' object, for a particular state of the application. */

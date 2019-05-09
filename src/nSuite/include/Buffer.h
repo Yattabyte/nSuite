@@ -5,7 +5,6 @@
 #include <optional>
 
 
-/** Add buffer-related classes to the nSuite namespace. */
 namespace NST {
 	/** An expandable container representing a contiguous memory space. 
 	Allocates 2x its creation size, expanding when its capacity is exhausted. */
@@ -28,14 +27,24 @@ namespace NST {
 		@param	pointer				pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
 		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
-		@note	resizing will force a hard copy eventually, and the old pointer will be discarded (data not deleted however). */
-		Buffer(std::byte * pointer, const size_t & range, bool hardCopy = false);
+		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
+		Buffer(std::byte * pointer, const size_t & range, bool hardCopy = true);
+		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
+		@param	pointer				pointer to a region of memory to adopt from.
+		@param	range				the number of bytes to use.
+		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
+		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
+		inline Buffer(void * pointer, const size_t & range, bool hardCopy = true)
+			: Buffer(reinterpret_cast<std::byte*>(pointer), range, hardCopy) { }
 		/** Copy Constructor. 
 		@param	other				the buffer to copy from. */
 		Buffer(const Buffer & other);
 		/** Move Constructor. 
 		@param	other				the buffer to move from and invalidate. */
 		Buffer(Buffer && other);
+
+
+		
 
 
 		// Public Operators
@@ -98,8 +107,8 @@ namespace NST {
 		size_t writeData(const void * inputPtr, const size_t & size, const size_t byteOffset = 0);
 
 
-		// Public Derivation Methods
-		/** Generates a compressed version of this buffer.
+		// Public Manipulation Methods
+		/** Compresses this buffer into an equal or smaller-sized version.
 		@return						a pointer to the compressed buffer on compression succes, empty otherwise.		
 		Buffer format:
 		------------------------------------------------------------------
@@ -233,6 +242,7 @@ namespace NST {
 
 
 		// Public Diff-Instruction Structure
+		/** Super-class for buffer diff instructions. */
 		struct Differential_Instruction {
 			// Constructor
 			inline Differential_Instruction(const char & t) : m_type(t) {}

@@ -77,7 +77,7 @@ Directory::Directory(const std::string & path, const std::vector<std::string> & 
 		if (!libSuccess || handle == NULL || !fileResource.exists())
 			Log::PushText("Error: cannot load the resource file specified!\r\n");
 		else {
-			virtualize_package(Buffer(reinterpret_cast<std::byte*>(fileResource.getPtr()), fileResource.getSize()));
+			virtualize_package(Buffer(fileResource.getPtr(), fileResource.getSize(), false));
 			FreeLibrary(handle);
 		}
 	}
@@ -170,39 +170,6 @@ Directory & Directory::operator=(Directory && other)
 
 // Public Manipulation Methods
 
-bool Directory::make_folder() const
-{
-	// Ensure the source-directory has files
-	if (!m_files.size())
-		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
-	else {				
-		Log::PushText("Dumping directory contents...\r\n");
-		const auto finalDestionation = SanitizePath(m_directoryPath + "\\" + m_directoryName);
-		Progress::SetRange(m_files.size());
-		size_t fileCount(0ull);
-		for (auto & file : m_files) {
-			// Write-out the file
-			const auto fullPath = finalDestionation + file.relativePath;
-			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
-			if (!fileWriter.is_open())
-				Log::PushText("Error: cannot write file \"" + file.relativePath + "\" to disk.\r\n");
-			else {
-				Log::PushText("Writing file: \"" + file.relativePath + "\"\r\n");
-				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
-			}
-			Progress::SetProgress(++fileCount);
-			fileWriter.close();
-		}
-
-		// Success
-		return true;
-	}
-
-	// Failure
-	return false;
-}
-
 std::optional<Buffer> Directory::make_package() const
 {
 	// Ensure the source-directory has files
@@ -266,6 +233,39 @@ std::optional<Buffer> Directory::make_package() const
 
 	// Failure
 	return {};
+}
+
+bool Directory::apply_folder() const
+{
+	// Ensure the source-directory has files
+	if (!m_files.size())
+		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
+	else {
+		Log::PushText("Dumping directory contents...\r\n");
+		const auto finalDestionation = SanitizePath(m_directoryPath + "\\" + m_directoryName);
+		Progress::SetRange(m_files.size());
+		size_t fileCount(0ull);
+		for (auto & file : m_files) {
+			// Write-out the file
+			const auto fullPath = finalDestionation + file.relativePath;
+			std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
+			std::ofstream fileWriter(fullPath, std::ios::binary | std::ios::out);
+			if (!fileWriter.is_open())
+				Log::PushText("Error: cannot write file \"" + file.relativePath + "\" to disk.\r\n");
+			else {
+				Log::PushText("Writing file: \"" + file.relativePath + "\"\r\n");
+				fileWriter.write(reinterpret_cast<char*>(file.data), (std::streamsize)file.size);
+			}
+			Progress::SetProgress(++fileCount);
+			fileWriter.close();
+		}
+
+		// Success
+		return true;
+	}
+
+	// Failure
+	return false;
 }
 
 std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) const
@@ -341,7 +341,7 @@ std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) cons
 		// These files are common, maybe some have changed
 		size_t fileCount(0ull);
 		for each (const auto & cFiles in commonFiles) {
-			Buffer oldBuffer(cFiles.first.data, cFiles.first.size), newBuffer(cFiles.second.data, cFiles.second.size);
+			Buffer oldBuffer(cFiles.first.data, cFiles.first.size, false), newBuffer(cFiles.second.data, cFiles.second.size);
 			size_t oldHash(oldBuffer.hash()), newHash(newBuffer.hash());
 			if (oldHash != newHash) {
 				// Files are different versions
@@ -358,7 +358,7 @@ std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) cons
 
 		// These files are brand new
 		for each (const auto & nFile in addedFiles) {
-			Buffer newBuffer(nFile.data, nFile.size);
+			Buffer newBuffer(nFile.data, nFile.size, false);
 			size_t newHash(newBuffer.hash());
 			auto diffBuffer = Buffer().diff(newBuffer);
 			if (diffBuffer) {
@@ -372,7 +372,7 @@ std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) cons
 
 		// These files are deprecated
 		for each (const auto & oFile in removedFiles) {
-			Buffer oldBuffer(oFile.data, oFile.size);
+			Buffer oldBuffer(oFile.data, oFile.size, false);
 			size_t oldHash(oldBuffer.hash());
 			Log::PushText("Removing file \"" + oFile.relativePath + "\"\r\n");
 			writeInstructions(oFile.relativePath, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
@@ -417,7 +417,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 			Log::PushText("Critical failure: supplied an invalid nSuite patch!\r\n");
 		else {
 			// Try to decompress the instruction buffer
-			auto instructionBuffer = Buffer(dataPtr, dataSize).decompress();
+			auto instructionBuffer = Buffer(dataPtr, dataSize, false).decompress();
 			if (!instructionBuffer)
 				Log::PushText("Error: cannot complete directory patching, as the instruction buffer cannot be decompressed!\r\n");
 			else {
@@ -481,7 +481,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 					for (auto & file : m_files)
 						if (file.relativePath == inst.path) {
 							storedFile = &file;
-							oldBuffer = Buffer(file.data, file.size);
+							oldBuffer = Buffer(file.data, file.size, false);
 							oldHash = oldBuffer.hash();
 							break;
 						}
@@ -551,7 +551,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 						for (auto & file : m_files)
 							if (file.relativePath == inst.path) {
 								storedFile = &file;
-								oldBuffer = Buffer(file.data, file.size);
+								oldBuffer = Buffer(file.data, file.size, false);
 								oldHash = oldBuffer.hash();
 								break;
 							}
@@ -612,7 +612,7 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 							size_t index(0ull);
 							for each (const auto & file in m_files) {
 								if (file.relativePath == inst.path) {
-									oldHash = Buffer(file.data, file.size).hash();
+									oldHash = Buffer(file.data, file.size, false).hash();
 									// Only remove source files if they match entirely
 									if (oldHash == inst.diff_oldHash) {
 										// Update virtualized folder
@@ -739,7 +739,7 @@ void Directory::virtualize_package(const Buffer & buffer)
 		Log::PushText("Critical failure: cannot parse package header!\r\n");
 	else {
 		// Try to decompress the buffer
-		auto decompressedBuffer = Buffer(dataPtr, dataSize).decompress();
+		auto decompressedBuffer = Buffer(dataPtr, dataSize, false).decompress();
 		if (!decompressedBuffer)
 			Log::PushText("Critical failure: cannot decompress package file!\r\n");
 		else {

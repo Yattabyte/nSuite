@@ -58,6 +58,7 @@ public:
 
 
 	// Public manifest strings
+	/** Compares wide-char strings. */
 	struct compare_string { 
 		bool operator()(const wchar_t * a, const wchar_t * b) const { 
 			return wcscmp(a, b) < 0; 

@@ -11,7 +11,7 @@
 #include "Threader.h"
 
 
-/** Namespace declaration for all nSuite methods and classes. */
+/** This namespace encompasses all nSuite classes and methods. */
 namespace NST {};
 
 #endif // NSUITE_H

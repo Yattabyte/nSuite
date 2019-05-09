@@ -7,7 +7,6 @@
 #include <vector>
 
 
-/** Add Progress to nSuite NST namespace. */
 namespace NST {
 	/** A Singleton progress tracker, used for globally manipulating and viewing the progress of a task.
 	Can accept observers to listen in on when the progress changes.

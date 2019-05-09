@@ -1,41 +1,46 @@
-# nSuite Data Tools
+# nSuite
 
-This library allows users to package and diff directories, files, and buffers. This project's focus is on the following 2 sets of 2 functions, in respect to both directories and buffers:
-- compression/decompression
-- diffing/patching
+This library allows users to package, compress, and diff buffers & directories. 
+The code is written in C++17, and makes heavy use of std::filesystem.
 
-In addition to the library, this project comes equipped with example programs that directly implement all the packing, unpacking, diffing, and patching operations supported.
+Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
 
 ## Library
-The core of this library can be found between 2 namespaces:  
-- BFT (BufferTools)
-  - Provides buffer compression, decompression, diff, patch, and hash functions
-- DRT (DirectoryTools)
-  - Provides directory compression, decompression, diff, patch, and other utility functions
+All classes and methods provided by this library are found within the NST namespace. The most important classes are:
+  - NST::Buffer
+    - A container class representing a contiguous, expandable, and manipulatable block of memory.
+	- Provides methods for compression/decompression and diffing/patching
+  - NST::Directory
+    - A virtual folder, holding data sourced from disk or from our compressed format
+	- Provides methods for packing/unpacking, delta/update
 
-## Example tools
+
+## nSuite Wizard
+The nSuite wizard is a stand-alone example program that can generate installers & packagers, as well as diff directories/packages.
+
+
 ### Packaging
-The nSuite Wizard can package directories in 3 ways:
-- A fully fledged installer with a GUI (Windows)
-  - Customizable by writing attributes into a manifest file
-  - Generates an uninstaller (adds it to the registry)
-  - .npack file embedded within
-  
+The nSuite wizard can package directories in 3 ways (in increasing complexity):
+- A .npack file
+  - Can be unpacked using the nSuite wizard
+
 - A lightweight portable package/installer
   - Extracts to a folder in the directory it runs from
   - Runs in a terminal, no user input
   - Doesn't modify registry - no uninstaller
   - .npack file embedded within
-  
-- A .npack file
-  - Can be unpacked using the nSuite wizard
 
+- A fully fledged installer with a GUI (Windows)
+  - Customizable by writing attributes into a manifest file
+  - Generates an uninstaller (adds it to the registry)
+  - .npack file embedded within
   
+
 ### Diffing
 The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.
 
 # Dependencies/Requirements
- - C++ 17
+ - C++17
  - 64-bit
  - Windows 7/8/10
  - Uses [CMake](https://cmake.org/)

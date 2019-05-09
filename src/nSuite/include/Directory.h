@@ -7,7 +7,6 @@
 #include <vector>
 
 
-/** Add directory-related classes to the nSuite namespace. */
 namespace NST {
 	/***/
 	class Directory {
@@ -49,8 +48,6 @@ namespace NST {
 				
 
 		// Public Manipulation Methods
-		/** Writes this virtual directory's contents to disk. */
-		bool make_folder() const;
 		/** Compresses all data found within this directory into an .npack - package formatted buffer.
 		@return						on success a pointer to a buffer containing the compressed directory contents, empty otherwise. 
 		Buffer format:
@@ -58,6 +55,8 @@ namespace NST {
 		| header: identifier title, package name size, package name  | compressed directory data  |
 		------------------------------------------------------------------------------------------- */
 		std::optional<Buffer> make_package() const;
+		/** Writes this virtual directory's contents to disk. */
+		bool apply_folder() const;
 		/** Compares this directory against another, generating a .ndiff - delta formatted buffer, for transforming this into the new directory.		
 		@param	newDirectory		the newer directory to compare against.
 		@return						on success a pointer to a buffer containing the patch instructions. 

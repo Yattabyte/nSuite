@@ -7,7 +7,6 @@
 #include <string>
 
 
-/** Add string methods to nSuite NST namespace. */
 namespace NST {
 	/** Changes an input string to lower case, returning it.
 	@param	string		the input string.

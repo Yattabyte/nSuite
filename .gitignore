@@ -43,6 +43,7 @@ src/Uninstaller/Uninstaller.dir/
 src/Unpacker/Unpacker.dir/
 src/Updater/Updater.dir/
 src/Wizard/Wizard.dir/
+Docs/
 app/
 
 # Other

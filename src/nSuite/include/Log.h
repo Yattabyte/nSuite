@@ -7,7 +7,6 @@
 #include <vector>
 
 
-/** Add Log to nSuite NST namespace. */
 namespace NST {
 	/** A Singleton text log which most of the library uses.
 	Accepts observers to listen in on newly logged text. 

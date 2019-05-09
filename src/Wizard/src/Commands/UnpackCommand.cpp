@@ -52,7 +52,7 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 
 		// Try to unpackage using the resource file
 		NST::Directory directory(packBuffer, dstDirectory);
-		if (!directory.make_folder())
+		if (!directory.apply_folder())
 			NST::Log::PushText("Cannot decompress package file, aborting...\r\n");
 		else {
 			// Output results

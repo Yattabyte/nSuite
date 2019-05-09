@@ -1,14 +1,25 @@
 ####################
 ### nSuite Tools ###
 ####################
-cmake_minimum_required(VERSION 3.0)
-project(nStallerTools VERSION 1.3.0 DESCRIPTION "Directory Distribution Tools")
+cmake_minimum_required(VERSION 3.10)
+project(nSuiteTools VERSION 1.3.0 DESCRIPTION "Directory and buffer compression & diffing tools.")
 
 # Get dependency directory locations from the user
-set (LZ4_DIR "" CACHE PATH "LZ4 root directory")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+set(LZ4_DIR "" CACHE PATH "LZ4 root directory")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 set_property(GLOBAL PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app")
 
+# Show option to generate docs if doxygen is found
+find_package(Doxygen QUIET)
+if(DOXYGEN_FOUND)
+	option(GENERATE_DOCS "Generate documentation using Doxygen" true)
+	if (GENERATE_DOCS)		
+		set(DOXYGEN_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/)
+		set(USE_MDFILE_AS_MAINPAGE README.md)
+		set(INPUT ${PROJECT_SOURCE_DIR}/README.md)
+		doxygen_add_docs(Documentation COMMENT "Generate docs")	
+	endif(GENERATE_DOCS)
+endif(DOXYGEN_FOUND)
 
 # add all sub-projects and plugins here
 add_subdirectory( "src/nSuite" )

@@ -158,6 +158,7 @@ void Buffer::release()
 
 	m_data = nullptr;
 	m_size = 0ull;
+	m_capacity = 0ull;
 }
 
 
