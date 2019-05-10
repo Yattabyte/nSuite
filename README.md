@@ -1,36 +1,52 @@
-# nSuite Directory Tools
+# nSuite
 
-This toolset provides users with the ability to package and diff directories and files.
+This library allows users to package, compress, and diff buffers & directories. 
+The code is written in C++17, and makes heavy use of [std::filesystem](https://en.cppreference.com/w/cpp/header/filesystem).
+
+Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
 
 
-## Packaging
-nSuite can package directories in 3 ways:
-- A fully fledged installer with a GUI (Windows)
-  - Customizable by writing attributes into a manifest file
-  - Generates an uninstaller (adds it to the registry)
-  - .npack file embedded within
-  
+## Library
+All classes and methods provided by this library are found within the NST namespace. The most important classes are:
+  - NST::Buffer
+    - A container class representing a contiguous, expandable, and manipulatable block of memory.
+	- Provides methods for compression/decompression and diffing/patching
+  - NST::Directory
+    - A virtual folder, holding data sourced from disk or from our compressed format
+	- Provides methods for packing/unpacking, delta/update
+
+
+## nSuite Wizard
+The nSuite wizard is a stand-alone example program that can generate installers & packagers, as well as diff directories/packages.
+
+
+### Packaging
+The nSuite wizard can package directories in 3 ways (ordered by increasing complexity):
+- A .npack file
+  - Can be unpacked using the nSuite wizard
+
 - A lightweight portable package/installer
   - Extracts to a folder in the directory it runs from
   - Runs in a terminal, no user input
   - Doesn't modify registry - no uninstaller
   - .npack file embedded within
+
+- A fully-fledged installer with a GUI (Windows)
+  - Customizable by writing attributes into a manifest file
+  - Generates an uninstaller (adds it to the registry)
+  - .npack file embedded within
   
-- A .npack file
-  - Can be unpacked using nSuite
 
-  
-## Diffing
-nSuite can also be used to generate patch files. These can be applied to a directory using nSuite, or by using our stand-alone updater tool (also provided).
+### Diffing
+The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.  
+All input directories are parsed into NST::Directory objects, so the "old" and/or "new" directories can be actual folders on disk, .npack files, or programs with packages embedded in them (e.g. installers made by nSuite)
 
-The updater tool automatically applies all .ndiff files it can find next to it, and if successfull, deletes them afterwards. This tool is a naiive implementation of an updater, and would ideally be expanded on by other developers for real-world use. 
 
-The tool and diff files should be kept at the root of an affected directory. It will attempt to apply all patches it can find, even if the patched version is technically 'older'.
-
-# Dependencies/Requirements
- - C++ 17
+# Dependencies/Requirements/Acknowledgements
+ - C++17
  - 64-bit
  - Windows 7/8/10
  - Uses [CMake](https://cmake.org/)
+ - Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
  - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
  - Using BSD-3-Clause license
