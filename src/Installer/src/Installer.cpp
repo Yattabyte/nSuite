@@ -1,11 +1,10 @@
 #include "Installer.h"
-#include "Common.h"
-#include "DirectoryTools.h"
-#include "TaskLogger.h"
-#include <CommCtrl.h>
+#include "StringConversions.h"
+#include "Directory.h"
+#include "Log.h"
+#include <filesystem>
 #include <fstream>
 #include <regex>
-#include <Shlobj.h>
 #include <sstream>
 #pragma warning(push)
 #pragma warning(disable:4458)
@@ -64,32 +63,47 @@ Installer::Installer()
 
 Installer::Installer(const HINSTANCE hInstance) : Installer()
 {
-	bool success = true;
 	// Get user's program files directory
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
 	setDirectory(std::string(pf));
 	
 	// Check archive integrity
-	if (!m_archive.exists()) {
-		TaskLogger::PushText("Critical failure: archive doesn't exist!\r\n");
-		success = false;
-	}
+	bool success_archive = false;
+	if (!m_archive.exists()) 
+		NST::Log::PushText("Critical failure: archive doesn't exist!\r\n");
 	else {
-		// Read directory header data
-		void * pointer = m_archive.getPtr();
-		const auto folderSize = *reinterpret_cast<size_t*>(pointer);
-		pointer = PTR_ADD(pointer, size_t(sizeof(size_t)));
-		m_packageName = std::string(reinterpret_cast<char*>(pointer), folderSize);
-		pointer = PTR_ADD(pointer, folderSize);
-		// Read compressed package header
-		m_maxSize = *reinterpret_cast<size_t*>(reinterpret_cast<char*>(pointer));
+		// Read in header
+		NST::Directory::PackageHeader packageHeader;
+		std::byte * dataPtr(nullptr);
+		size_t dataSize(0ull);
+		NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false).readHeader(&packageHeader, &dataPtr, dataSize);
 
-		// If no name is found, use the package name (if available)
-		if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
-			m_mfStrings[L"name"] = to_wideString(m_packageName);
+		// Ensure header title matches
+		if (!packageHeader.isValid())
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");		
+		else {
+			m_packageName = packageHeader.m_folderName;
+			NST::Buffer::CompressionHeader header;
+			NST::Buffer(dataPtr, dataSize, false).readHeader(&header, &dataPtr, dataSize);
+
+			// Ensure header title matches
+			if (!header.isValid())
+				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header!\r\n");			
+			else {
+				// Get header payload -> uncompressed size
+				m_maxSize = header.m_uncompressedSize;
+				
+				// If no name is found, use the package name (if available)
+				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
+					m_mfStrings[L"name"] = NST::to_wideString(m_packageName);
+
+				success_archive = true;
+			}			
+		}
 	}
 	// Create window class
+	bool success_window = false;
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -103,10 +117,8 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-	if (!RegisterClassEx(&wcex)) {
-		TaskLogger::PushText("Critical failure: could not create main window.\r\n");
-		success = false;
-	}
+	if (!RegisterClassEx(&wcex)) 
+		NST::Log::PushText("Critical failure: could not create main window!\r\n");	
 	else {
 		// Create window
 		m_hwnd = CreateWindowW(
@@ -126,17 +138,19 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_screens[WELCOME_SCREEN] = new Welcome(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[AGREEMENT_SCREEN] = new Agreement(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[DIRECTORY_SCREEN] = new Directory(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[INSTALL_SCREEN] = new Install(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FINISH_SCREEN] = new Finish(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FAIL_SCREEN] = new Fail(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[AGREEMENT_SCREEN] = new Agreement_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[DIRECTORY_SCREEN] = new Directory_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[INSTALL_SCREEN] = new Install_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
 		setScreen(WELCOME_SCREEN);
+
+		success_window = true;
 	}
 
 #ifndef DEBUG
-	if (!success)
+	if (!success_archive || !success_window)
 		invalidate();
 #endif
 }
@@ -202,15 +216,16 @@ void Installer::beginInstallation()
 {
 	m_threader.addJob([&]() {
 		// Acquire the uninstaller resource
-		Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
+		NST::Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
 		if (!uninstaller.exists()) {
-			TaskLogger::PushText("Cannot access installer resource, aborting...\r\n");
+			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
 			setScreen(Installer::FAIL_SCREEN);
 		}
 		else {
 			// Unpackage using the rest of the resource file
-			auto directory = sanitize_path(getDirectory());
-			if (!DRT::DecompressDirectory(directory, reinterpret_cast<char*>(m_archive.getPtr()), m_archive.getSize()))
+			const auto directory = NST::Directory::SanitizePath(getDirectory());
+			const auto virtual_directory = NST::Directory(NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false), directory);
+			if (!virtual_directory.apply_folder())			
 				invalidate();
 			else {
 				// Write uninstaller to disk
@@ -219,10 +234,10 @@ void Installer::beginInstallation()
 				std::filesystem::create_directories(std::filesystem::path(uninstallerPath).parent_path());
 				std::ofstream file(uninstallerPath, std::ios::binary | std::ios::out);
 				if (!file.is_open()) {
-					TaskLogger::PushText("Cannot write uninstaller to disk, aborting...\r\n");
+					NST::Log::PushText("Cannot write uninstaller to disk, aborting...\r\n");
 					invalidate();
 				}
-				TaskLogger::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
+				NST::Log::PushText("Uninstaller: \"" + uninstallerPath + "\"\r\n");
 				file.write(reinterpret_cast<char*>(uninstaller.getPtr()), (std::streamsize)uninstaller.getSize());
 				file.close();
 
@@ -234,7 +249,7 @@ void Installer::beginInstallation()
 				);
 				auto handle = BeginUpdateResource(uninstallerPath.c_str(), false);
 				if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPVOID)newManifest.c_str(), (DWORD)newManifest.size())) {
-					TaskLogger::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
+					NST::Log::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
 					invalidate();
 				}
 				EndUpdateResource(handle, FALSE);
@@ -243,10 +258,10 @@ void Installer::beginInstallation()
 				HKEY hkey;
 				if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, NULL) == ERROR_SUCCESS) {
 					auto
-						name = from_wideString(m_mfStrings[L"name"]),
-						version = from_wideString(m_mfStrings[L"version"]),
-						publisher = from_wideString(m_mfStrings[L"publisher"]),
-						icon = from_wideString(m_mfStrings[L"icon"]);
+						name = NST::from_wideString(m_mfStrings[L"name"]),
+						version = NST::from_wideString(m_mfStrings[L"version"]),
+						publisher = NST::from_wideString(m_mfStrings[L"publisher"]),
+						icon = NST::from_wideString(m_mfStrings[L"icon"]);
 					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize/1024ull);
 					if (icon.empty())
 						icon = uninstallerPath;
@@ -271,7 +286,7 @@ void Installer::beginInstallation()
 void Installer::dumpErrorLog()
 {
 	// Dump error log to disk
-	const auto dir = get_current_directory() + "\\error_log.txt";
+	const auto dir = NST::Directory::GetRunningDirectory() + "\\error_log.txt";
 	const auto t = std::time(0);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);
@@ -282,13 +297,13 @@ void Installer::dumpErrorLog()
 		logData += "Installer error log:\r\n";
 
 	// Add remaining log data
-	logData += std::string(dateData) + TaskLogger::PullText() + "\r\n";
+	logData += std::string(dateData) + NST::Log::PullText() + "\r\n";
 
 	// Try to create the file
 	std::filesystem::create_directories(std::filesystem::path(dir).parent_path());
 	std::ofstream file(dir, std::ios::binary | std::ios::out | std::ios::app);
 	if (!file.is_open())
-		TaskLogger::PushText("Cannot dump error log to disk...\r\n");
+		NST::Log::PushText("Cannot dump error log to disk...\r\n");
 	else
 		file.write(logData.c_str(), (std::streamsize)logData.size());
 	file.close();

@@ -1,15 +1,13 @@
 #include "Screens/Finish.h"
-#include "Common.h"
+#include "StringConversions.h"
+#include "Directory.h"
 #include "Installer.h"
-#include <algorithm>
 #include <filesystem>
-#include <shlobj.h>
-#include <shlwapi.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Finish::~Finish()
+Finish_Screen::~Finish_Screen()
 {
 	UnregisterClass("FINISH_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -19,7 +17,7 @@ Finish::~Finish()
 		DestroyWindow(checkboxHandle);
 }
 
-Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -104,12 +102,12 @@ Finish::Finish(Installer * installer, const HINSTANCE hInstance, const HWND pare
 	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Finish::enact()
+void Finish_Screen::enact()
 {
 	// Does nothing
 }
 
-void Finish::paint()
+void Finish_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -135,7 +133,7 @@ void Finish::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Finish::goClose()
+void Finish_Screen::goClose()
 {
 	m_showDirectory = IsDlgButtonChecked(m_hwnd, 1);
 	const auto instDir = m_installer->getDirectory() + "\\" + m_installer->getPackageName();
@@ -148,35 +146,62 @@ void Finish::goClose()
 	for each (const auto & shortcut in m_shortcuts_d) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
-			const auto nonwideShortcut = from_wideString(shortcut);
+			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = get_users_desktop() + "\\" + std::filesystem::path(srcPath).filename().string();
-			create_shortcut(srcPath, instDir, dstPath);
+			const auto dstPath = NST::Directory::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
 	}
 	for each (const auto & shortcut in m_shortcuts_s) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
-			const auto nonwideShortcut = from_wideString(shortcut);
+			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
 				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
 			srcPath += nonwideShortcut;
-			const auto dstPath = get_users_startmenu() + "\\" + std::filesystem::path(srcPath).filename().string();
-			create_shortcut(srcPath, instDir, dstPath);
+			const auto dstPath = NST::Directory::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
+			createShortcut(srcPath, instDir, dstPath);
 		}
 		x++;
 	}
 	PostQuitMessage(0);	
 }
 
+void Finish_Screen::createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
+{
+	IShellLink* psl;
+	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
+		IPersistFile* ppf;
+
+		// Set the path to the shortcut target and add the description. 
+		psl->SetPath(srcPath.c_str());
+		psl->SetWorkingDirectory(wrkPath.c_str());
+		psl->SetIconLocation(srcPath.c_str(), 0);
+
+		// Query IShellLink for the IPersistFile interface, used for saving the 
+		// shortcut in persistent storage. 
+		if (SUCCEEDED(psl->QueryInterface(IID_IPersistFile, (LPVOID*)&ppf))) {
+			WCHAR wsz[MAX_PATH];
+
+			// Ensure that the string is Unicode. 
+			MultiByteToWideChar(CP_ACP, 0, (dstPath + ".lnk").c_str(), -1, wsz, MAX_PATH);
+
+			// Save the link by calling IPersistFile::Save. 
+			ppf->Save(wsz, TRUE);
+			ppf->Release();
+		}
+		psl->Release();
+	}
+}
+
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Finish*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Finish_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

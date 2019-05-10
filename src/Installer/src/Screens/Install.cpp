@@ -1,23 +1,25 @@
 #include "Screens/Install.h"
-#include "Common.h"
+#include "Log.h"
+#include "Progress.h"
 #include "Resource.h"
 #include "Installer.h"
+#include <shlobj.h>
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Install::~Install()
+Install_Screen::~Install_Screen()
 {
 	UnregisterClass("INSTALL_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_hwndLog);
 	DestroyWindow(m_hwndPrgsBar);
 	DestroyWindow(m_btnFinish);
-	TaskLogger::RemoveCallback_TextAdded(m_logIndex);
-	TaskLogger::RemoveCallback_ProgressUpdated(m_taskIndex);
+	NST::Log::RemoveObserver(m_logIndex);
+	NST::Progress::RemoveObserver(m_taskIndex);
 }
 
-Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Install_Screen::Install_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -42,10 +44,10 @@ Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND pa
 	// Create log box and progress bar
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	m_hwndPrgsBar = CreateWindowEx(WS_EX_CLIENTEDGE, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE | WS_OVERLAPPED | WS_DLGFRAME | WS_CLIPCHILDREN | PBS_SMOOTH, 10, size.y - 40, size.x - 115, 30, m_hwnd, NULL, hInstance, NULL);
-	m_logIndex = TaskLogger::AddCallback_TextAdded([&](const std::string & message) {
+	m_logIndex = NST::Log::AddObserver([&](const std::string & message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
 	});
-	m_taskIndex = TaskLogger::AddCallback_ProgressUpdated([&](const size_t & position, const size_t & range) {
+	m_taskIndex = NST::Progress::AddObserver([&](const size_t & position, const size_t & range) {
 		SendMessage(m_hwndPrgsBar, PBM_SETRANGE32, 0, LPARAM(int_fast32_t(range)));
 		SendMessage(m_hwndPrgsBar, PBM_SETPOS, WPARAM(int_fast32_t(position)), 0);
 		RECT rc = { 580, 410, 800, 450 };
@@ -62,12 +64,12 @@ Install::Install(Installer * installer, const HINSTANCE hInstance, const HWND pa
 	EnableWindow(m_btnFinish, false);
 }
 
-void Install::enact()
+void Install_Screen::enact()
 {
 	m_installer->beginInstallation();
 }
 
-void Install::paint()
+void Install_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -93,14 +95,14 @@ void Install::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Install::goFinish()
+void Install_Screen::goFinish()
 {
 	m_installer->setScreen(Installer::ScreenEnums::FINISH_SCREEN);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Install*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Install_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	

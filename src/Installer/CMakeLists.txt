@@ -5,6 +5,16 @@ set (Module Installer)
 
 # Create Executable
 add_executable(${Module} 	
+	# Header Files
+	include/Installer.h
+	include/Screens/Agreement.h
+	include/Screens/Directory.h
+	include/Screens/Fail.h
+	include/Screens/Finish.h
+	include/Screens/Screen.h
+	include/Screens/Install.h
+	include/Screens/Welcome.h
+	
 	# Source Files
 	Installer.rc
 	src/Installer.cpp
@@ -14,20 +24,11 @@ add_executable(${Module}
 	src/Screens/Finish.cpp
 	src/Screens/Install.cpp
 	src/Screens/Welcome.cpp
-
-	# Header Files
-	include/Installer.h
-	include/Screens/Agreement.h
-	include/Screens/Directory.h
-	include/Screens/Fail.h
-	include/Screens/Finish.h
-	include/Screens/Install.h
-	include/Screens/Welcome.h
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite Uninstaller)
-target_link_libraries(${Module} PUBLIC nSuite)
+add_dependencies(${Module} nSuite-Static Uninstaller)
+target_link_libraries(${Module} PUBLIC nSuite-Static)
 target_link_libraries(${Module} PRIVATE
 	"Comctl32.lib" 
 	"propsys.lib" 

@@ -6,7 +6,6 @@
 #include "Threader.h"
 #include <map>
 #include <string>
-#include <Windows.h>
 
 
 class Screen;
@@ -59,6 +58,7 @@ public:
 
 
 	// Public manifest strings
+	/** Compares wide-char strings. */
 	struct compare_string { 
 		bool operator()(const wchar_t * a, const wchar_t * b) const { 
 			return wcscmp(a, b) < 0; 
@@ -73,8 +73,8 @@ private:
 
 
 	// Private Attributes
-	Threader m_threader;
-	Resource m_archive, m_manifest;
+	NST::Threader m_threader;
+	NST::Resource m_archive, m_manifest;
 	std::string m_directory = "", m_packageName = "";
 	bool m_valid = true;
 	size_t m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
@@ -82,6 +82,5 @@ private:
 	Screen * m_screens[SCREEN_COUNT];
 	HWND m_hwnd = nullptr;
 };
-
 
 #endif // INSTALLER_H

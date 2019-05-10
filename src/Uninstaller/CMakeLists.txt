@@ -5,25 +5,26 @@ set (Module Uninstaller)
 
 # Create Executable
 add_executable(${Module}
+	# Header Files
+	include/Uninstaller.h
+	include/Screens/Fail.h
+	include/Screens/Finish.h
+	include/Screens/Screen.h
+	include/Screens/Uninstall.h
+	include/Screens/Welcome.h
+	
 	# Source Files
 	Uninstaller.rc
 	src/Uninstaller.cpp
 	src/Screens/Fail.cpp
 	src/Screens/Finish.cpp
 	src/Screens/Uninstall.cpp
-	src/Screens/Welcome.cpp
- 
-	# Header Files
-	include/Uninstaller.h
-	include/Screens/Fail.h
-	include/Screens/Finish.h
-	include/Screens/Uninstall.h
-	include/Screens/Welcome.h
+	src/Screens/Welcome.cpp 
 )
 
 # Add library dependencies
-add_dependencies(${Module} nSuite)
-target_link_libraries(${Module} PUBLIC nSuite)
+add_dependencies(${Module} nSuite-Static)
+target_link_libraries(${Module} PUBLIC nSuite-Static)
 target_link_libraries(${Module} PRIVATE
 	"Comctl32.lib" 
 	"propsys.lib" 

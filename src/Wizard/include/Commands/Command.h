@@ -9,7 +9,7 @@ struct Command {
 	/** Virtual method for executing a command.
 	@param		argc		the number of arguments.
 	@param		argv		array of arguments. */
-	virtual void execute(const int & argc, char * argv[]) const = 0;
+	virtual int execute(const int & argc, char * argv[]) const = 0;
 };
 
 #endif // COMMAND_H

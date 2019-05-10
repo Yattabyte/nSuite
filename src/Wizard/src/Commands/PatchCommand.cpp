@@ -1,15 +1,15 @@
 #include "Commands/PatchCommand.h"
-#include "BufferTools.h"
-#include "Common.h"
-#include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Directory.h"
+#include "StringConversions.h"
+#include "Log.h"
 #include <fstream>
+#include <filesystem>
 
 
-void PatchCommand::execute(const int & argc, char * argv[]) const
+int PatchCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	NST::Log::PushText(
 		"                      ~\r\n"
 		"        Patcher      /\r\n"
 		"  ~-----------------~\r\n"
@@ -20,41 +20,47 @@ void PatchCommand::execute(const int & argc, char * argv[]) const
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
-		std::string command = string_to_lower(std::string(argv[x], 5));
+		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = sanitize_path(std::string(&argv[x][5]));
+			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = sanitize_path(std::string(&argv[x][5]));
-		else
-			exit_program(
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+		else {
+			NST::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the .ndiff file]\r\n"
 				" -dst=[path to the directory to patch]\r\n"
 				"\r\n"
 			);
+			return EXIT_FAILURE;
+		}
 	}
+
 	// Ensure a file-extension is chosen
-	if (!std::filesystem::path(dstDirectory).has_extension())
-		dstDirectory += ".ndiff";
+	if (!std::filesystem::path(srcDirectory).has_extension())
+		srcDirectory += ".ndiff";
 
-	// Open diff file
+	// Try to open diff file
 	std::ifstream diffFile(srcDirectory, std::ios::binary | std::ios::beg);
-	const size_t diffSize = std::filesystem::file_size(srcDirectory);
 	if (!diffFile.is_open())
-		exit_program("Cannot read diff file, aborting...\r\n");
+		NST::Log::PushText("Cannot read diff file, aborting...\r\n");
+	else {
+		// Try to patch the directory specified
+		NST::Buffer diffBuffer(std::filesystem::file_size(srcDirectory));
+		diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
+		diffFile.close();
 
-	// Patch the directory specified
-	char * diffBuffer = new char[diffSize];
-	diffFile.read(diffBuffer, std::streamsize(diffSize));
-	diffFile.close();
-	size_t bytesWritten(0ull), instructionsUsed(0ull);
-	if (!DRT::PatchDirectory(dstDirectory, diffBuffer, diffSize, &bytesWritten, &instructionsUsed))
-		exit_program("aborting...\r\n");
-	delete[] diffBuffer;
+		// Try to patch the destination directory
+		NST::Directory directory(dstDirectory);
+		if (directory.apply_delta(diffBuffer)) {
+			// Output results
+			/*NST::Log::PushText(
+				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
+			);*/
 
-	// Output results
-	TaskLogger::PushText(
-		"Instruction(s): " + std::to_string(instructionsUsed) + "\r\n" +
-		"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
-	);
+			return EXIT_SUCCESS;
+		}
+	}
+
+	return EXIT_FAILURE;
 }

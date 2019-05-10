@@ -1,16 +1,16 @@
 #pragma once
-#ifndef WELCOME_H
-#define WELCOME_H
+#ifndef WELCOME_SCREEN_H
+#define WELCOME_SCREEN_H
 
 #include "Screen.h"
 
 
 /** This state encapuslates the "Welcome - Screen" state. */
-class Welcome : public Screen {
+class Welcome_Screen : public Screen {
 public:
 	// Public (de)Constructors
-	~Welcome();
-	Welcome(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Welcome_Screen();
+	Welcome_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -29,4 +29,4 @@ public:
 	HWND m_btnNext = nullptr, m_btnCancel = nullptr;
 };
 
-#endif // WELCOME_H
+#endif // WELCOME_SCREEN_H

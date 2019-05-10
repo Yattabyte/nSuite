@@ -1,16 +1,16 @@
 #include "Commands/InstallerCommand.h"
-#include "BufferTools.h"
-#include "Common.h"
-#include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Directory.h"
+#include "StringConversions.h"
+#include "Log.h"
 #include "Resource.h"
+#include <filesystem>
 #include <fstream>
 
 
-void InstallerCommand::execute(const int & argc, char * argv[]) const
+int InstallerCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	NST::Log::PushText(
 		"                      ~\r\n"
 		"    Installer Maker  /\r\n"
 		"  ~-----------------~\r\n"
@@ -21,75 +21,88 @@ void InstallerCommand::execute(const int & argc, char * argv[]) const
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
-		std::string command = string_to_lower(std::string(argv[x], 5));
+		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = sanitize_path(std::string(&argv[x][5]));
+			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = sanitize_path(std::string(&argv[x][5]));
-		else
-			exit_program(
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+		else {
+			NST::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the directory to package]\r\n"
 				" -dst=[path to write the installer] (can omit filename)\r\n"
 				"\r\n"
 			);
+			return EXIT_FAILURE;
+		}
 	}
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) 
-		dstDirectory = sanitize_path(dstDirectory) + "\\installer.exe";
+		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\installer.exe";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".exe";
 
-	// Compress the directory specified
-	char * packBuffer(nullptr);
-	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
-	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount, {"\\manifest.nman"}))
-		exit_program("Cannot create installer from the directory specified, aborting...\r\n");
+	// Try to compress the directory specified
+	bool success = false;
+	HANDLE handle(nullptr);
+	NST::Directory directory(srcDirectory, { "\\manifest.nman" });
+	auto packBuffer = directory.make_package();
+	if (!packBuffer)
+		NST::Log::PushText("Cannot create installer from the directory specified, aborting...\r\n");
+	else {
+		// Ensure resource exists
+		const NST::Resource installer(IDR_INSTALLER, "INSTALLER");
+		if (!installer.exists()) 
+			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");		
+		else {
+			// Try to create installer file
+			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
+			std::ofstream instFile(dstDirectory, std::ios::binary | std::ios::out);
+			if (!instFile.is_open()) 
+				NST::Log::PushText("Cannot write installer to disk, aborting...\r\n");
+			else {
+				// Write installer to disk
+				instFile.write(reinterpret_cast<char*>(installer.getPtr()), (std::streamsize)installer.getSize());
+				instFile.close();
 
-	// Acquire installer resource
-	Resource installer(IDR_INSTALLER, "INSTALLER");
-	if (!installer.exists())
-		exit_program("Cannot access installer resource, aborting...\r\n");
+				// Try to update installer's resource
+				handle = BeginUpdateResource(dstDirectory.c_str(), false);
+				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
+					NST::Log::PushText("Cannot write archive contents to the installer, aborting...\r\n");				
+				else {
+					// Try to find manifest file
+					if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {
+						const auto manifestSize = std::filesystem::file_size(srcDirectory + "\\manifest.nman");
+						std::ifstream maniFile(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
+						if (!maniFile.is_open())
+							NST::Log::PushText("Cannot open manifest file!\r\n");
+						else {
+							// Read manifest file
+							NST::Buffer manifestBuffer(manifestSize);
+							maniFile.read(manifestBuffer.cArray(), (std::streamsize)manifestSize);
+							maniFile.close();
 
-	// Write installer to disk
-	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-	std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
-	if (!file.is_open())
-		exit_program("Cannot write installer to disk, aborting...\r\n");
-	file.write(reinterpret_cast<char*>(installer.getPtr()), (std::streamsize)installer.getSize());
-	file.close();
-
-	// Update installer's resource
-	auto handle = BeginUpdateResource(dstDirectory.c_str(), false);
-	if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer, (DWORD)packSize))
-		exit_program("Cannot write archive contents to the installer, aborting...\r\n");
-	// Try to find manifest file
-	if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {
-		const auto manifestSize = std::filesystem::file_size(srcDirectory + "\\manifest.nman");
-		std::ifstream maniFile(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
-		if (!maniFile.is_open())
-			exit_program("Cannot open manifest file from disk, aborting...\r\n");
-		
-		// Read manifest file
-		char * maniBuffer = new char[manifestSize];
-		maniFile.read(maniBuffer, (std::streamsize)manifestSize);
-		maniFile.close();
-
-		// Update installers' manifest resource
-		if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), maniBuffer, (DWORD)manifestSize))
-			exit_program("Cannot write manifest contents to the installer, aborting...\r\n");
-		delete[] maniBuffer;
+							// Update installers' manifest resource
+							if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), manifestBuffer.data(), (DWORD)manifestSize))
+								NST::Log::PushText("Cannot write manifest contents to the installer!\r\n");
+						}
+					}
+					// Output results
+					NST::Log::PushText(
+						"Files packaged:  " + std::to_string(directory.fileCount()) + "\r\n" +
+						"Bytes packaged:  " + std::to_string(directory.byteCount()) + "\r\n" +
+						"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
+					);
+					success = true;
+				}
+			}
+		}
 	}
-	EndUpdateResource(handle, FALSE);	
-	delete[] packBuffer;
 
-	// Output results
-	TaskLogger::PushText(
-		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
-		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
-		"Compressed Size: " + std::to_string(packSize) + "\r\n"
-	);
+	// Clean-up
+	EndUpdateResource(handle, !success);
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

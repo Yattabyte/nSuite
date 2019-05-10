@@ -1,17 +1,17 @@
 #pragma once
-#ifndef INSTALL_H
-#define INSTALL_H
+#ifndef INSTALL_SCREEN_H
+#define INSTALL_SCREEN_H
 
 #include "Screen.h"
 #include <string>
 
 
 /** This state encapuslates the "Installing - Screen" state. */
-class Install : public Screen {
+class Install_Screen : public Screen {
 public:
 	// Public (de)Constructors
-	~Install();
-	Install(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Install_Screen();
+	Install_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -29,4 +29,4 @@ public:
 	size_t m_logIndex = 0ull, m_taskIndex = 0ull;
 };
 
-#endif // INSTALL_H
+#endif // INSTALL_SCREEN_H

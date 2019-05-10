@@ -6,7 +6,6 @@
 #include "Threader.h"
 #include <map>
 #include <string>
-#include <Windows.h>
 
 
 class Screen;
@@ -44,6 +43,7 @@ public:
 
 
 	// Public manifest strings
+	/** Compares wide-char strings. */
 	struct compare_string { 
 		bool operator()(const wchar_t * a, const wchar_t * b) const { 
 			return wcscmp(a, b) < 0; 
@@ -58,8 +58,8 @@ private:
 
 
 	// Private Attributes	
-	Threader m_threader;
-	Resource m_manifest;
+	NST::Threader m_threader;
+	NST::Resource m_manifest;
 	std::wstring m_directory = L"";
 	bool m_valid = true;
 	ScreenEnums m_currentIndex = WELCOME_SCREEN;

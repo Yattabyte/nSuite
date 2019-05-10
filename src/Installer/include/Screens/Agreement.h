@@ -1,16 +1,16 @@
 #pragma once
-#ifndef AGREEMENT_H
-#define AGREEMENT_H
+#ifndef AGREEMENT_SCREEN_H
+#define AGREEMENT_SCREEN_H
 
 #include "Screen.h"
 
 
 /** This state encapuslates the "Accept the license agreement" - Screen" state. */
-class Agreement : public Screen {
+class Agreement_Screen : public Screen {
 public:
 	// Public (de)Constructors
-	~Agreement();
-	Agreement(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	~Agreement_Screen();
+	Agreement_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 
 	// Public Interface Implementations
@@ -34,4 +34,4 @@ public:
 	bool m_agrees = false;
 };
 
-#endif // AGREEMENT_H
+#endif // AGREEMENT_SCREEN_H

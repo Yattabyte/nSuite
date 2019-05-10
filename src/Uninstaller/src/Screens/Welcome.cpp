@@ -4,7 +4,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Welcome::~Welcome()
+Welcome_Screen::~Welcome_Screen()
 {
 	UnregisterClass("WELCOME_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -12,7 +12,7 @@ Welcome::~Welcome()
 	DestroyWindow(m_btnCancel);
 }
 
-Welcome::Welcome(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Welcome_Screen::Welcome_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -40,12 +40,12 @@ Welcome::Welcome(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWN
 	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Welcome::enact()
+void Welcome_Screen::enact()
 {
 	// Does nothing
 }
 
-void Welcome::paint()
+void Welcome_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -85,19 +85,19 @@ void Welcome::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Welcome::goNext()
+void Welcome_Screen::goNext()
 {
 	m_uninstaller->setScreen(Uninstaller::ScreenEnums::UNINSTALL_SCREEN);
 }
 
-void Welcome::goCancel()
+void Welcome_Screen::goCancel()
 {
 	PostQuitMessage(0);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Welcome*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Welcome_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_COMMAND) {

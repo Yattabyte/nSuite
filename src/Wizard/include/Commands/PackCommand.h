@@ -9,7 +9,7 @@
 class PackCommand : public Command {
 public:
 	// Public interface implementation
-	virtual void execute(const int & argc, char * argv[]) const override;
+	virtual int execute(const int & argc, char * argv[]) const override;
 };
 
 #endif // PACKCOMMAND_H

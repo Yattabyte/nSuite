@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef SCREEN_UN_H
+#define SCREEN_UN_H
 
 #include <windows.h>
 #pragma warning(push)
@@ -11,6 +11,7 @@
 
 using namespace Gdiplus;
 class Uninstaller;
+/** Tuple containing x and y values. */
 struct vec2 { int x = 0, y = 0; };
 
 /**Encapsulation of a windows GDI 'window' object, for a particular state of the application. */
@@ -48,4 +49,4 @@ protected:
 	vec2 m_pos, m_size;
 };
 
-#endif // SCREEN_H
+#endif // SCREEN_UN_H

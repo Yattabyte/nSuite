@@ -4,7 +4,7 @@
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-Agreement::~Agreement()
+Agreement_Screen::~Agreement_Screen()
 {
 	UnregisterClass("AGREEMENT_SCREEN", m_hinstance);
 	DestroyWindow(m_hwnd);
@@ -14,7 +14,7 @@ Agreement::~Agreement()
 	DestroyWindow(m_btnCancel);
 }
 
-Agreement::Agreement(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Agreement_Screen::Agreement_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -55,12 +55,12 @@ Agreement::Agreement(Installer * installer, const HINSTANCE hInstance, const HWN
 	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
 }
 
-void Agreement::enact()
+void Agreement_Screen::enact()
 {
 	EnableWindow(m_btnNext, m_agrees);
 }
 
-void Agreement::paint()
+void Agreement_Screen::paint()
 {
 	PAINTSTRUCT ps;
 	Graphics graphics(BeginPaint(m_hwnd, &ps));
@@ -89,31 +89,31 @@ void Agreement::paint()
 	EndPaint(m_hwnd, &ps);
 }
 
-void Agreement::checkYes()
+void Agreement_Screen::checkYes()
 {
 	m_agrees = IsDlgButtonChecked(m_hwnd, 1);
 	CheckDlgButton(m_hwnd, 1, m_agrees ? BST_CHECKED : BST_UNCHECKED);
 	EnableWindow(m_btnNext, m_agrees);
 }
 
-void Agreement::goPrevious()
+void Agreement_Screen::goPrevious()
 {
 	m_installer->setScreen(Installer::ScreenEnums::WELCOME_SCREEN);
 }
 
-void Agreement::goNext()
+void Agreement_Screen::goNext()
 {
 	m_installer->setScreen(Installer::ScreenEnums::DIRECTORY_SCREEN);
 }
 
-void Agreement::goCancel()
+void Agreement_Screen::goCancel()
 {
 	PostQuitMessage(0);
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Agreement*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = (Agreement_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	

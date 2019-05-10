@@ -1,15 +1,15 @@
 #include "Commands/PackCommand.h"
-#include "BufferTools.h"
-#include "Common.h"
-#include "DirectoryTools.h"
-#include "TaskLogger.h"
+#include "Directory.h"
+#include "StringConversions.h"
+#include "Log.h"
+#include <filesystem>
 #include <fstream>
 
 
-void PackCommand::execute(const int & argc, char * argv[]) const
+int PackCommand::execute(const int & argc, char * argv[]) const
 {
 	// Supply command header to console
-	TaskLogger::PushText(
+	NST::Log::PushText(
 		"                     ~\r\n"
 		"       Packager     /\r\n"
 		"  ~----------------~\r\n"
@@ -20,47 +20,56 @@ void PackCommand::execute(const int & argc, char * argv[]) const
 	// Check command line arguments
 	std::string srcDirectory(""), dstDirectory("");
 	for (int x = 2; x < argc; ++x) {
-		std::string command = string_to_lower(std::string(argv[x], 5));
+		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = sanitize_path(std::string(&argv[x][5]));
+			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = sanitize_path(std::string(&argv[x][5]));
-		else
-			exit_program(
+			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+		else {
+			NST::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the directory to package]\r\n"
 				" -dst=[path to write the package] (can omit filename)\r\n"
 				"\r\n"
 			);
+			return EXIT_FAILURE;
+		}
 	}	
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) 
-		dstDirectory = sanitize_path(dstDirectory) + "\\" + std::filesystem::path(srcDirectory).stem().string() + ".npack";
+		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::filesystem::path(srcDirectory).stem().string() + ".npack";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".npack";
-
-	// Compress the directory specified
-	char * packBuffer(nullptr);
-	size_t packSize(0ull), maxSize(0ull), fileCount(0ull);
-	if (!DRT::CompressDirectory(srcDirectory, &packBuffer, packSize, &maxSize, &fileCount))
-		exit_program("Cannot create package from the directory specified, aborting...\r\n");
 	
-	// Write package to disk
-	std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-	std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
-	if (!file.is_open())
-		exit_program("Cannot write package to disk, aborting...\r\n");
-	file.write(packBuffer, (std::streamsize)packSize);
-	file.close();
-	delete[] packBuffer;
+	// Try to compress the directory specified
+	NST::Directory directory(srcDirectory);
+	auto packBuffer = directory.make_package();
+	if (!packBuffer)
+		NST::Log::PushText("Cannot create package from the directory specified, aborting...\r\n");
+	else {
+		// Try to create package file
+		std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
+		std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
+		if (!file.is_open())
+			NST::Log::PushText("Cannot write package to disk, aborting...\r\n");
+		else {
+			// Write package to disk
+			file.write(packBuffer->cArray(), (std::streamsize)packBuffer->size());
+			file.close();
 
-	// Output results
-	TaskLogger::PushText(
-		"Files packaged:  " + std::to_string(fileCount) + "\r\n" +
-		"Bytes packaged:  " + std::to_string(maxSize) + "\r\n" +
-		"Compressed Size: " + std::to_string(packSize) + "\r\n"
-	);
+			// Output results
+			NST::Log::PushText(
+				"Files packaged:  " + std::to_string(directory.fileCount()) + "\r\n" +
+				"Bytes packaged:  " + std::to_string(directory.byteCount()) + "\r\n" +
+				"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"
+			);
+
+			return EXIT_SUCCESS;
+		}
+	}
+
+	return EXIT_FAILURE;
 }
