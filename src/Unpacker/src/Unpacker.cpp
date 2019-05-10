@@ -5,7 +5,6 @@
 #include <iostream>
 
 
-using namespace NST;
 /** Entry point. */
 int main()
 {
