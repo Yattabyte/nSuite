@@ -26,7 +26,6 @@
 #include "Windows.h"
 
 
-/** Add Resource to nSuite NST namespace. */
 namespace NST {
 	/** Utility class encapsulating resource files embedded in a application. */
 	class Resource {
