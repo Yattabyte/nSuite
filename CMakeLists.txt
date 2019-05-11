@@ -4,14 +4,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(nSuiteTools VERSION 1.3.0 DESCRIPTION "Directory and buffer compression & diffing tools.")
 
-# Get dependency directory locations from the user
+# Get LZ4 library location
 set(LZ4_DIR "" CACHE PATH "LZ4 root directory")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-set_property(GLOBAL PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app")
 
 # Show option to generate docs if doxygen is found
 find_package(Doxygen QUIET)
-if(DOXYGEN_FOUND)
+if (DOXYGEN_FOUND)
 	option(GENERATE_DOCS "Generate documentation using Doxygen" true)
 	if (GENERATE_DOCS)		
 		set(DOXYGEN_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/)
@@ -19,19 +17,24 @@ if(DOXYGEN_FOUND)
 		set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
 		set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
 		doxygen_add_docs(Documentation ${PROJECT_SOURCE_DIR} COMMENT "Generate docs")
-	endif(GENERATE_DOCS)
-endif(DOXYGEN_FOUND)
+	endif (GENERATE_DOCS)
+endif (DOXYGEN_FOUND)
 
 # add all sub-projects and plugins here
 add_subdirectory( "src/Library" )
-add_subdirectory( "src/Installer" )
-add_subdirectory( "src/Uninstaller" )
-add_subdirectory( "src/Unpacker" )
-add_subdirectory( "src/Updater" )
-add_subdirectory( "src/Wizard" )
+option(BUILD_TOOLS "Build Wizard Tools" true)
+if (BUILD_TOOLS)
+	add_subdirectory( "src/Installer" )
+	add_subdirectory( "src/Uninstaller" )
+	add_subdirectory( "src/Unpacker" )
+	add_subdirectory( "src/Updater" )
+	add_subdirectory( "src/Wizard" )
+endif (BUILD_TOOLS)
 
 # Visual studio specific setting: make nSuite the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT nSuite-Static)
 # Set Global Properties
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+set_property(GLOBAL PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)app")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
