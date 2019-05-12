@@ -9,7 +9,9 @@
 class Fail_Screen: public Screen {
 public:
 	// Public (de)Constructors
+	/** Destroy this screen. */
 	~Fail_Screen();
+	/** Construct this screen. */
 	Fail_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 

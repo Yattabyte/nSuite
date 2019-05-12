@@ -2,8 +2,8 @@ var searchData=
 [
   ['incrementprogress',['IncrementProgress',['../class_n_s_t_1_1_progress.html#afe4bd6a7f3ed8c784eb5435d79395df5',1,'NST::Progress']]],
   ['insert_5finstruction',['Insert_Instruction',['../struct_insert___instruction.html',1,'']]],
-  ['install_5fscreen',['Install_Screen',['../class_install___screen.html',1,'']]],
-  ['installer',['Installer',['../class_installer.html',1,'']]],
+  ['install_5fscreen',['Install_Screen',['../class_install___screen.html',1,'Install_Screen'],['../class_install___screen.html#ab3b1368dbf303e4a27bb9aaaadcae5c7',1,'Install_Screen::Install_Screen()']]],
+  ['installer',['Installer',['../class_installer.html',1,'Installer'],['../class_installer.html#a1a5ab42ccb644e0d896d10c61b0c440d',1,'Installer::Installer()']]],
   ['installercommand',['InstallerCommand',['../class_installer_command.html',1,'']]],
   ['invalidate',['invalidate',['../class_installer.html#aa4ad2954f3c1a01e60a88ddc5a353a10',1,'Installer::invalidate()'],['../class_uninstaller.html#a036fd8ff33dc9111a7243348c000a59a',1,'Uninstaller::invalidate()']]],
   ['isfinished',['isFinished',['../class_n_s_t_1_1_threader.html#a5fc7e7596b748b465f40dddd4fb1dfe8',1,'NST::Threader']]],

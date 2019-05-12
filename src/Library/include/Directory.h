@@ -8,7 +8,8 @@
 
 
 namespace NST {
-	/***/
+	/** A directory represents a collection of files underneath a top-level root/folder.
+	It holds all the files and their data within. Can be virtualized from a path on disk, a package file, or some other resource such as an nSuite installer. */
 	class Directory {
 	public:
 		// Public (de)Constructors
@@ -94,6 +95,7 @@ namespace NST {
 
 
 		// Public Header Structs
+		/** Holds and performs package I/O operations on buffers. */
 		struct PackageHeader : NST::Buffer::Header {
 			// Attributes
 			size_t m_charCount = 0ull;
@@ -101,7 +103,11 @@ namespace NST {
 
 
 			// (de)Constructors
+			/** Constructs an empty package header. */
 			PackageHeader() = default;
+			/** Constructs a package header containing the root folder name.
+			@param	folderNameSize	the number of characters in the folder name.
+			@param	folderName		char array pointer to the root folder name. */
 			inline PackageHeader(const size_t & folderNameSize, const char * folderName) : Header("nSuite package"), m_charCount(folderNameSize) {
 				m_folderName = std::string(folderName, folderNameSize);
 			}
@@ -139,6 +145,7 @@ namespace NST {
 
 
 			// (de)Constructors
+			/** Constructs a patch header containing the total count of files involved in the patch. */
 			inline PatchHeader(const size_t size = 0ull) : Header("nSuite patch"), m_fileCount(size) {}
 
 

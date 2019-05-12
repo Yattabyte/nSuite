@@ -190,6 +190,8 @@ namespace NST {
 
 
 			// (de)Constructors
+			/** Constructs a buffer header, storing the size of the uncompressed buffer. 
+			@param	size	the uncompressed size. */
 			inline CompressionHeader(const size_t size = 0ull) : Header("nSuite cmpress"), m_uncompressedSize(size) {}
 
 
@@ -218,6 +220,8 @@ namespace NST {
 
 
 			// (de)Constructors
+			/** Constructs a buffer header, storing the size of the final buffer as it should be after patching.
+			@param	size	the final buffer size. */
 			inline DiffHeader(const size_t size = 0ull) : Header("nSuite differ"), m_targetSize(size) {}
 
 
@@ -245,6 +249,8 @@ namespace NST {
 		/** Super-class for buffer diff instructions. */
 		struct Differential_Instruction {
 			// Constructor
+			/** Constructs a diff instruction, identified by the type supplied.
+			@param	t	the type of instruction this is. */
 			inline Differential_Instruction(const char & t) : m_type(t) {}
 
 

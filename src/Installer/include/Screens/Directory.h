@@ -9,7 +9,9 @@
 class Directory_Screen : public Screen {
 public:
 	// Public (de)Constructors
+	/** Destroy this screen. */
 	~Directory_Screen();
+	/** Construct this screen. */
 	Directory_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 

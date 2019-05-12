@@ -89,8 +89,7 @@ Inheritance diagram for NST::Buffer::DiffHeader:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1f57526008e88fce79ca92ea9892de80"><td class="memItemLeft" align="right" valign="top"><a id="a1f57526008e88fce79ca92ea9892de80"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>DiffHeader</b> (const size_t <a class="el" href="struct_n_s_t_1_1_buffer_1_1_diff_header.html#a2d16ab08899f6dd06c864240578ce14f">size</a>=0ull)</td></tr>
+<tr class="memitem:a1f57526008e88fce79ca92ea9892de80"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_n_s_t_1_1_buffer_1_1_diff_header.html#a1f57526008e88fce79ca92ea9892de80">DiffHeader</a> (const size_t <a class="el" href="struct_n_s_t_1_1_buffer_1_1_diff_header.html#a2d16ab08899f6dd06c864240578ce14f">size</a>=0ull)</td></tr>
 <tr class="separator:a1f57526008e88fce79ca92ea9892de80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca143e24888249ad6fe5d481bcc7ac2e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_n_s_t_1_1_buffer_1_1_diff_header.html#aca143e24888249ad6fe5d481bcc7ac2e">isValid</a> () const override</td></tr>
 <tr class="separator:aca143e24888249ad6fe5d481bcc7ac2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,7 +122,40 @@ static constexpr const size_t&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Holds and performs Diff I/O operations on buffers. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a1f57526008e88fce79ca92ea9892de80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f57526008e88fce79ca92ea9892de80">&#9670;&nbsp;</a></span>DiffHeader()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">NST::Buffer::DiffHeader::DiffHeader </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>size</em> = <code>0ull</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Constructs a buffer header, storing the size of the final buffer as it should be after patching. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">size</td><td>the final buffer size. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="aca143e24888249ad6fe5d481bcc7ac2e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aca143e24888249ad6fe5d481bcc7ac2e">&#9670;&nbsp;</a></span>isValid()</h2>
 

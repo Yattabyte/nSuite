@@ -11,7 +11,9 @@
 class Finish_Screen: public Screen {
 public:
 	// Public (de)Constructors
+	/** Destroy this screen. */
 	~Finish_Screen();
+	/** Construct this screen. */
 	Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 

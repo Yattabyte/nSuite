@@ -95,8 +95,9 @@ Inheritance diagram for Screen:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa6f605f88fc14fd0a3b7026d5f00153c"><td class="memItemLeft" align="right" valign="top"><a id="aa6f605f88fc14fd0a3b7026d5f00153c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Screen</b> (<a class="el" href="class_installer.html">Installer</a> *installer, const <a class="el" href="structvec2.html">vec2</a> &amp;pos, const <a class="el" href="structvec2.html">vec2</a> &amp;size)</td></tr>
+<tr class="memitem:ad6ca18b49abee688949a672f51baf772"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#ad6ca18b49abee688949a672f51baf772">~Screen</a> ()=default</td></tr>
+<tr class="separator:ad6ca18b49abee688949a672f51baf772"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6f605f88fc14fd0a3b7026d5f00153c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#aa6f605f88fc14fd0a3b7026d5f00153c">Screen</a> (<a class="el" href="class_installer.html">Installer</a> *installer, const <a class="el" href="structvec2.html">vec2</a> &amp;pos, const <a class="el" href="structvec2.html">vec2</a> &amp;size)</td></tr>
 <tr class="separator:aa6f605f88fc14fd0a3b7026d5f00153c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31d2d329f0807da2f6024f1203058c6a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#a31d2d329f0807da2f6024f1203058c6a">setVisible</a> (const bool &amp;state)</td></tr>
 <tr class="separator:a31d2d329f0807da2f6024f1203058c6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -104,8 +105,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8d66d474a889a21e9ae16bcfd8f8b0ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f01510fb9cf68e696be20328c9326cc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#a0f01510fb9cf68e696be20328c9326cc">paint</a> ()=0</td></tr>
 <tr class="separator:a0f01510fb9cf68e696be20328c9326cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ff56cf6ab95e54bdbeeb780a2660fe2"><td class="memItemLeft" align="right" valign="top"><a id="a4ff56cf6ab95e54bdbeeb780a2660fe2"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Screen</b> (<a class="el" href="class_uninstaller.html">Uninstaller</a> *uninstaller, const <a class="el" href="structvec2.html">vec2</a> &amp;pos, const <a class="el" href="structvec2.html">vec2</a> &amp;size)</td></tr>
+<tr class="memitem:ad6ca18b49abee688949a672f51baf772"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#ad6ca18b49abee688949a672f51baf772">~Screen</a> ()=default</td></tr>
+<tr class="separator:ad6ca18b49abee688949a672f51baf772"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ff56cf6ab95e54bdbeeb780a2660fe2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#a4ff56cf6ab95e54bdbeeb780a2660fe2">Screen</a> (<a class="el" href="class_uninstaller.html">Uninstaller</a> *uninstaller, const <a class="el" href="structvec2.html">vec2</a> &amp;pos, const <a class="el" href="structvec2.html">vec2</a> &amp;size)</td></tr>
 <tr class="separator:a4ff56cf6ab95e54bdbeeb780a2660fe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31d2d329f0807da2f6024f1203058c6a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_screen.html#a31d2d329f0807da2f6024f1203058c6a">setVisible</a> (const bool &amp;state)</td></tr>
 <tr class="separator:a31d2d329f0807da2f6024f1203058c6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -144,7 +146,146 @@ HINSTANCE&#160;</td><td class="memItemRight" valign="bottom"><b>m_hinstance</b><
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Encapsulation of a windows GDI 'window' object, for a particular screen of the application.</p>
 <p>Encapsulation of a windows GDI 'window' object, for a particular state of the application. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ad6ca18b49abee688949a672f51baf772"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6ca18b49abee688949a672f51baf772">&#9670;&nbsp;</a></span>~Screen() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Screen::~Screen </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Destroy this screen. </p>
+
+</div>
+</div>
+<a id="aa6f605f88fc14fd0a3b7026d5f00153c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6f605f88fc14fd0a3b7026d5f00153c">&#9670;&nbsp;</a></span>Screen() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Screen::Screen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_installer.html">Installer</a> *&#160;</td>
+          <td class="paramname"><em>installer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structvec2.html">vec2</a> &amp;&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structvec2.html">vec2</a> &amp;&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Construct this screen. </p>
+
+</div>
+</div>
+<a id="ad6ca18b49abee688949a672f51baf772"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6ca18b49abee688949a672f51baf772">&#9670;&nbsp;</a></span>~Screen() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Screen::~Screen </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Destroy this screen. </p>
+
+</div>
+</div>
+<a id="a4ff56cf6ab95e54bdbeeb780a2660fe2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ff56cf6ab95e54bdbeeb780a2660fe2">&#9670;&nbsp;</a></span>Screen() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Screen::Screen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_uninstaller.html">Uninstaller</a> *&#160;</td>
+          <td class="paramname"><em>uninstaller</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structvec2.html">vec2</a> &amp;&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structvec2.html">vec2</a> &amp;&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Construct this screen. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="a8d66d474a889a21e9ae16bcfd8f8b0ad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8d66d474a889a21e9ae16bcfd8f8b0ad">&#9670;&nbsp;</a></span>enact() <span class="overload">[1/2]</span></h2>
 

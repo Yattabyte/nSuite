@@ -14,11 +14,14 @@ class Screen;
 class Installer {
 public:	
 	// Public (de)Constructors
+	/** Destroy the installer. */
 	~Installer() = default;
+	/** Construct the installer. */
 	Installer(const HINSTANCE hInstance);
 
 
 	// Public Enumerations
+	/** ID's for all the screens involved in this GUI. */
 	const enum ScreenEnums {
 		WELCOME_SCREEN, AGREEMENT_SCREEN, DIRECTORY_SCREEN, INSTALL_SCREEN, FINISH_SCREEN, FAIL_SCREEN,
 		SCREEN_COUNT
@@ -60,8 +63,9 @@ public:
 	// Public manifest strings
 	/** Compares wide-char strings. */
 	struct compare_string { 
+		/** Compares 2 input strings. */
 		bool operator()(const wchar_t * a, const wchar_t * b) const { 
-			return wcscmp(a, b) < 0; 
+			return std::wcscmp(a, b) < 0; 
 		} 
 	};
 	std::map<const wchar_t*, std::wstring, compare_string> m_mfStrings;

@@ -10,7 +10,9 @@
 class Install_Screen : public Screen {
 public:
 	// Public (de)Constructors
+	/** Destroy this screen. */
 	~Install_Screen();
+	/** Construct this screen. */
 	Install_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
 
 

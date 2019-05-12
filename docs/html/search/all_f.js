@@ -1,7 +1,8 @@
 var searchData=
 [
   ['sanitizepath',['SanitizePath',['../class_n_s_t_1_1_directory.html#a925ef5f5676a020cc39856cec93ebf92',1,'NST::Directory']]],
-  ['screen',['Screen',['../class_screen.html',1,'']]],
+  ['screen',['Screen',['../class_screen.html',1,'Screen'],['../class_screen.html#aa6f605f88fc14fd0a3b7026d5f00153c',1,'Screen::Screen(Installer *installer, const vec2 &amp;pos, const vec2 &amp;size)'],['../class_screen.html#a4ff56cf6ab95e54bdbeeb780a2660fe2',1,'Screen::Screen(Uninstaller *uninstaller, const vec2 &amp;pos, const vec2 &amp;size)']]],
+  ['screenenums',['ScreenEnums',['../class_installer.html#afd0b9894e0f010f72b5f90c1daa98073',1,'Installer::ScreenEnums()'],['../class_uninstaller.html#ae77a01af2c7a36e73d1106724a300ba7',1,'Uninstaller::ScreenEnums()']]],
   ['setdirectory',['setDirectory',['../class_installer.html#a5c3a8c532fef90a0333955bb6f716e7a',1,'Installer']]],
   ['setprogress',['SetProgress',['../class_n_s_t_1_1_progress.html#a926b20dc6c967c0ae2e9a5a097513526',1,'NST::Progress']]],
   ['setrange',['SetRange',['../class_n_s_t_1_1_progress.html#a18eb85c55c2a4305f3fee7e3bd480dfa',1,'NST::Progress']]],

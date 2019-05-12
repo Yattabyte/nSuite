@@ -75,6 +75,8 @@ $(function() {
 <div class="title">NST::Directory::PackageHeader Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_library_2include_2_directory_8h_source.html">Directory.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for NST::Directory::PackageHeader:</div>
 <div class="dyncontent">
@@ -87,8 +89,9 @@ Inheritance diagram for NST::Directory::PackageHeader:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a24f47b1aa33eed5eac3462c1c1b439f8"><td class="memItemLeft" align="right" valign="top"><a id="a24f47b1aa33eed5eac3462c1c1b439f8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PackageHeader</b> (const size_t &amp;folderNameSize, const char *folderName)</td></tr>
+<tr class="memitem:a2839e6ba8651aa2b1f4fd5b7c981bf67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_n_s_t_1_1_directory_1_1_package_header.html#a2839e6ba8651aa2b1f4fd5b7c981bf67">PackageHeader</a> ()=default</td></tr>
+<tr class="separator:a2839e6ba8651aa2b1f4fd5b7c981bf67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24f47b1aa33eed5eac3462c1c1b439f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_n_s_t_1_1_directory_1_1_package_header.html#a24f47b1aa33eed5eac3462c1c1b439f8">PackageHeader</a> (const size_t &amp;folderNameSize, const char *folderName)</td></tr>
 <tr class="separator:a24f47b1aa33eed5eac3462c1c1b439f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a733a97675db8ca5eab534dd5c7b3003d"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_n_s_t_1_1_directory_1_1_package_header.html#a733a97675db8ca5eab534dd5c7b3003d">isValid</a> () const override</td></tr>
 <tr class="separator:a733a97675db8ca5eab534dd5c7b3003d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -122,6 +125,78 @@ Additional Inherited Members</h2></td></tr>
 static constexpr const size_t&#160;</td><td class="memItemRight" valign="bottom"><b>TITLE_SIZE</b> = 16ull</td></tr>
 <tr class="separator:a17ab50e186263dbae0637269d3c54c20 inherit pub_static_attribs_struct_n_s_t_1_1_buffer_1_1_header"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Holds and performs package I/O operations on buffers. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a2839e6ba8651aa2b1f4fd5b7c981bf67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2839e6ba8651aa2b1f4fd5b7c981bf67">&#9670;&nbsp;</a></span>PackageHeader() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">NST::Directory::PackageHeader::PackageHeader </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Constructs an empty package header. </p>
+
+</div>
+</div>
+<a id="a24f47b1aa33eed5eac3462c1c1b439f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24f47b1aa33eed5eac3462c1c1b439f8">&#9670;&nbsp;</a></span>PackageHeader() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">NST::Directory::PackageHeader::PackageHeader </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>folderNameSize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>folderName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Constructs a package header containing the root folder name. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">folderNameSize</td><td>the number of characters in the folder name. </td></tr>
+    <tr><td class="paramname">folderName</td><td>char array pointer to the root folder name. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a733a97675db8ca5eab534dd5c7b3003d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a733a97675db8ca5eab534dd5c7b3003d">&#9670;&nbsp;</a></span>isValid()</h2>

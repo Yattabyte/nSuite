@@ -18,6 +18,9 @@ struct vec2 { int x = 0, y = 0; };
 class Screen {
 public:
 	// Public (de)Constructors
+	/** Destroy this screen. */
+	~Screen() = default;
+	/** Construct this screen. */
 	Screen(Uninstaller * uninstaller, const vec2 & pos, const vec2 & size) : m_uninstaller(uninstaller), m_pos(pos), m_size(size) {}
 	
 	

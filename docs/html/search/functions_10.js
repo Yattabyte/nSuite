@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['_7ebuffer',['~Buffer',['../class_n_s_t_1_1_buffer.html#a59b8743e4a5f731bdd0c4185c9ef263b',1,'NST::Buffer']]],
-  ['_7edirectory',['~Directory',['../class_n_s_t_1_1_directory.html#affbde8714685c61601421097d621341d',1,'NST::Directory']]],
-  ['_7eresource',['~Resource',['../class_n_s_t_1_1_resource.html#a312d74ba7c25c86f05bfa7cd4b9ff408',1,'NST::Resource']]],
-  ['_7ethreader',['~Threader',['../class_n_s_t_1_1_threader.html#acd3c0c82f22843de8354513653f91d60',1,'NST::Threader']]]
+  ['welcome_5fscreen',['Welcome_Screen',['../class_welcome___screen.html#ab5c0c6bb95604982f674266cf82d726b',1,'Welcome_Screen::Welcome_Screen(Installer *installer, const HINSTANCE hInstance, const HWND parent, const vec2 &amp;pos, const vec2 &amp;size)'],['../class_welcome___screen.html#ae8ec348e2cdfacc5b62f6e72b8d804a1',1,'Welcome_Screen::Welcome_Screen(Uninstaller *uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 &amp;pos, const vec2 &amp;size)']]],
+  ['write',['write',['../struct_n_s_t_1_1_buffer_1_1_differential___instruction.html#a4e9c6460556c8940cf6616502df0bdf4',1,'NST::Buffer::Differential_Instruction::write()'],['../struct_copy___instruction.html#afa37046a885cfe500236d53e3360e69e',1,'Copy_Instruction::write()'],['../struct_insert___instruction.html#a1050da7455f701c466ce16c5616d295d',1,'Insert_Instruction::write()'],['../struct_repeat___instruction.html#a84211a66de54e44e228a1b0c4f6bdc64',1,'Repeat_Instruction::write()']]],
+  ['writedata',['writeData',['../class_n_s_t_1_1_buffer.html#a24c6ee8f3a22592c0764bcce835125ff',1,'NST::Buffer']]],
+  ['writeheader',['writeHeader',['../class_n_s_t_1_1_buffer.html#ae5f329b3bfd8fd64f8f484e8db034d2f',1,'NST::Buffer']]]
 ];

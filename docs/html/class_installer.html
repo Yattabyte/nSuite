@@ -84,7 +84,7 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:afd0b9894e0f010f72b5f90c1daa98073"><td class="memItemLeft" align="right" valign="top"><a id="afd0b9894e0f010f72b5f90c1daa98073"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>ScreenEnums</b> { <br />
+<tr class="memitem:afd0b9894e0f010f72b5f90c1daa98073"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#afd0b9894e0f010f72b5f90c1daa98073">ScreenEnums</a> { <br />
 &#160;&#160;<b>WELCOME_SCREEN</b>, 
 <b>AGREEMENT_SCREEN</b>, 
 <b>DIRECTORY_SCREEN</b>, 
@@ -99,12 +99,13 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1a5ab42ccb644e0d896d10c61b0c440d"><td class="memItemLeft" align="right" valign="top"><a id="a1a5ab42ccb644e0d896d10c61b0c440d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Installer</b> (const HINSTANCE hInstance)</td></tr>
+<tr class="memitem:a303949d831f40ecbafcc29a9cb972220"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#a303949d831f40ecbafcc29a9cb972220">~Installer</a> ()=default</td></tr>
+<tr class="separator:a303949d831f40ecbafcc29a9cb972220"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a5ab42ccb644e0d896d10c61b0c440d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#a1a5ab42ccb644e0d896d10c61b0c440d">Installer</a> (const HINSTANCE hInstance)</td></tr>
 <tr class="separator:a1a5ab42ccb644e0d896d10c61b0c440d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4ad2954f3c1a01e60a88ddc5a353a10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#aa4ad2954f3c1a01e60a88ddc5a353a10">invalidate</a> ()</td></tr>
 <tr class="separator:aa4ad2954f3c1a01e60a88ddc5a353a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad5ffb0e8af4c12c1209f42dd5cbd543"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#aad5ffb0e8af4c12c1209f42dd5cbd543">setScreen</a> (const ScreenEnums &amp;screenIndex)</td></tr>
+<tr class="memitem:aad5ffb0e8af4c12c1209f42dd5cbd543"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#aad5ffb0e8af4c12c1209f42dd5cbd543">setScreen</a> (const <a class="el" href="class_installer.html#afd0b9894e0f010f72b5f90c1daa98073">ScreenEnums</a> &amp;screenIndex)</td></tr>
 <tr class="separator:aad5ffb0e8af4c12c1209f42dd5cbd543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aefefa742fa07a2e78f384848543f0aac"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_installer.html#aefefa742fa07a2e78f384848543f0aac">getDirectory</a> () const</td></tr>
 <tr class="separator:aefefa742fa07a2e78f384848543f0aac"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -136,7 +137,69 @@ std::map&lt; const wchar_t *, std::wstring, <a class="el" href="struct_installer
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Encapsulates the logical features of the installer. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="afd0b9894e0f010f72b5f90c1daa98073"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd0b9894e0f010f72b5f90c1daa98073">&#9670;&nbsp;</a></span>ScreenEnums</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="class_installer.html#afd0b9894e0f010f72b5f90c1daa98073">Installer::ScreenEnums</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>ID's for all the screens involved in this GUI. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a303949d831f40ecbafcc29a9cb972220"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a303949d831f40ecbafcc29a9cb972220">&#9670;&nbsp;</a></span>~Installer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Installer::~Installer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Destroy the installer. </p>
+
+</div>
+</div>
+<a id="a1a5ab42ccb644e0d896d10c61b0c440d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a5ab42ccb644e0d896d10c61b0c440d">&#9670;&nbsp;</a></span>Installer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Installer::Installer </td>
+          <td>(</td>
+          <td class="paramtype">const HINSTANCE&#160;</td>
+          <td class="paramname"><em>hInstance</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Construct the installer. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="a313197d1a2b5a35a25ebf7b48d2b46d0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a313197d1a2b5a35a25ebf7b48d2b46d0">&#9670;&nbsp;</a></span>beginInstallation()</h2>
 
@@ -340,7 +403,7 @@ std::map&lt; const wchar_t *, std::wstring, <a class="el" href="struct_installer
         <tr>
           <td class="memname">void Installer::setScreen </td>
           <td>(</td>
-          <td class="paramtype">const ScreenEnums &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="class_installer.html#afd0b9894e0f010f72b5f90c1daa98073">ScreenEnums</a> &amp;&#160;</td>
           <td class="paramname"><em>screenIndex</em></td><td>)</td>
           <td></td>
         </tr>
