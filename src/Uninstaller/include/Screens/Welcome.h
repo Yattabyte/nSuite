@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Welcome - Screen" state. */
+/** This state encapsulates the "Welcome - Screen" state. */
 class Welcome_Screen : public Screen {
 public:
 	// Public (de)Constructors

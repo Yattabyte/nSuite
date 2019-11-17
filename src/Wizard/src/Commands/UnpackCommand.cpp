@@ -50,7 +50,7 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 		packFile.read(packBuffer.cArray(), std::streamsize(packBuffer.size()));
 		packFile.close();
 
-		// Try to unpackage using the resource file
+		// Try to un-package using the resource file
 		NST::Directory directory(packBuffer, dstDirectory);
 		if (!directory.apply_folder())
 			NST::Log::PushText("Cannot decompress package file, aborting...\r\n");

@@ -5,7 +5,7 @@
 #include "Command.h"
 
 
-/** Command to diff an entire directory, creating a patchfile. */
+/** Command to diff an entire directory, creating a patch-file. */
 class DiffCommand : public Command {
 public:
 	// Public interface implementation

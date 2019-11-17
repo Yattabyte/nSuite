@@ -172,7 +172,7 @@ void Uninstaller::beginUninstallation()
 				if (nextComma == std::wstring::npos)
 					nextComma = desktopStrings.size();
 
-				// Find demarkation point where left half is the shortcut path, right half is the shortcut name
+				// Find demarcation point where left half is the shortcut path, right half is the shortcut name
 				shortcuts_d.push_back(desktopStrings.substr(last, nextComma - last));
 
 				// Skip whitespace, find next element
@@ -188,7 +188,7 @@ void Uninstaller::beginUninstallation()
 				if (nextComma == std::wstring::npos)
 					nextComma = startmenuStrings.size();
 
-				// Find demarkation point where left half is the shortcut path, right half is the shortcut name
+				// Find demarcation point where left half is the shortcut path, right half is the shortcut name
 				shortcuts_s.push_back(startmenuStrings.substr(last, nextComma - last));
 
 				// Skip whitespace, find next element

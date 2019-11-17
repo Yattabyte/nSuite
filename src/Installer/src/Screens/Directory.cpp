@@ -93,7 +93,7 @@ void Directory_Screen::paint()
 
 	constexpr static auto readableFileSize = [](const size_t & size) -> std::wstring {
 		auto remainingSize = (double)size;
-		constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB", L"EB" };
+		constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB", L" EB" };
 		int i = 0;
 		while (remainingSize > 1024.00) {
 			remainingSize /= 1024.00;

@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Choose a directory - Screen" state. */
+/** This state encapsulates the "Choose a directory - Screen" state. */
 class Directory_Screen : public Screen {
 public:
 	// Public (de)Constructors

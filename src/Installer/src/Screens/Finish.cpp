@@ -39,7 +39,7 @@ Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, c
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
-	// Create checkboxes
+	// Create check-boxes
 	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, size.x, 15, m_hwnd, (HMENU)1, hInstance, NULL);
 	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 
@@ -57,7 +57,7 @@ Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, c
 			if (nextComma == std::wstring::npos)
 				nextComma = desktopStrings.size();
 
-			// Find demarkation point where left half is the shortcut path, right half is the shortcut name
+			// Find demarcation point where left half is the shortcut path, right half is the shortcut name
 			m_shortcuts_d.push_back(desktopStrings.substr(last, nextComma - last));
 
 			// Skip whitespace, find next element
@@ -73,7 +73,7 @@ Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, c
 			if (nextComma == std::wstring::npos)
 				nextComma = startmenuStrings.size();
 
-			// Find demarkation point where left half is the shortcut path, right half is the shortcut name
+			// Find demarcation point where left half is the shortcut path, right half is the shortcut name
 			m_shortcuts_s.push_back(startmenuStrings.substr(last, nextComma - last));
 
 			// Skip whitespace, find next element
@@ -206,7 +206,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_CTLCOLORSTATIC) {
-		// Make checkbox text background color transparent
+		// Make check-box text background color transparent
 		bool isCheckbox = controlHandle == ptr->m_checkbox;
 		for each (auto chkHandle in ptr->m_shortcutCheckboxes)
 			if (controlHandle == chkHandle) {

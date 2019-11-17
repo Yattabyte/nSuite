@@ -174,7 +174,7 @@ std::optional<Buffer> Directory::make_package() const
 {
 	// Ensure the source-directory has files
 	if (!m_files.size())
-		Log::PushText("Error: this directory with no (useable) files to package!\r\n");
+		Log::PushText("Error: this directory with no (usable) files to package!\r\n");
 	else {
 		// Get a folder name, to name the package after
 		auto srcPath = std::filesystem::path(m_directoryPath);
@@ -239,7 +239,7 @@ bool Directory::apply_folder() const
 {
 	// Ensure the source-directory has files
 	if (!m_files.size())
-		Log::PushText("Error: this virtual-directory has no (useable) files to unpackage!\r\n");
+		Log::PushText("Error: this virtual-directory has no (usable) files to un-package!\r\n");
 	else {
 		Log::PushText("Dumping directory contents...\r\n");
 		const auto finalDestionation = SanitizePath(m_directoryPath + "\\" + m_directoryName);

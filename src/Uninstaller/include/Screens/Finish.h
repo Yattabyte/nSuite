@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Finished - Screen" state. */
+/** This state encapsulates the "Finished - Screen" state. */
 class Finish_Screen: public Screen {
 public:
 	// Public (de)Constructors

@@ -6,7 +6,7 @@
 #include <string>
 
 
-/** This state encapuslates the "Installing - Screen" state. */
+/** This state encapsulates the "Installing - Screen" state. */
 class Install_Screen : public Screen {
 public:
 	// Public (de)Constructors

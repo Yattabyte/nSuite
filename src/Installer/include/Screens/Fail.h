@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Failure - Screen" state. */
+/** This state encapsulates the "Failure - Screen" state. */
 class Fail_Screen: public Screen {
 public:
 	// Public (de)Constructors

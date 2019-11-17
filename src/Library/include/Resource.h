@@ -2,8 +2,8 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#define NSUITE_VERSION_CSTR				"1.3.0"
-#define NSUITE_VERSION_VS				1,3,0					
+#define NSUITE_VERSION_CSTR				"1.3.1"
+#define NSUITE_VERSION_VS				1,3,1					
 
 // Used for icons
 #define IDI_ICON1						101

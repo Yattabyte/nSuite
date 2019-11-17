@@ -15,7 +15,7 @@ int main()
 
 	NST::Log::PushText(
 		"                       ~\r\n"
-		"       Unpackager     /\r\n"
+		"       Un-packager     /\r\n"
 		"  ~------------------~\r\n"
 		" /\r\n"
 		"~\r\n\r\n"
@@ -37,7 +37,7 @@ int main()
 			"\r\n"
 		);
 
-		// Unpackage using the resource file
+		// Un-package using the resource file
 		NST::Directory directory(NST::Buffer(archive.getPtr(), archive.getSize(), false), dstDirectory);
 		if (!directory.apply_folder())
 			NST::Log::PushText("Cannot decompress embedded package resource, aborting...\r\n");

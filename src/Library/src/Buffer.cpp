@@ -409,7 +409,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 							instructions.push_back(inst);
 						}
 
-						// NEW COPY_INSTRUCTION: Use data from begining of match until end of match
+						// NEW COPY_INSTRUCTION: Use data from beginning of match until end of match
 						Copy_Instruction * inst = new Copy_Instruction();
 						inst->m_index = match.start2;
 						inst->m_beginRead = match.start1;
@@ -498,7 +498,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 								writeGuard.unlock();
 								writeGuard.release();
 
-								x = ULLONG_MAX; // require overflow, because we want next itteration for x == 0
+								x = ULLONG_MAX; // require overflow, because we want next iteration for x == 0
 								max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
 								break;
 							}

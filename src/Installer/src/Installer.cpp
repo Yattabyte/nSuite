@@ -222,7 +222,7 @@ void Installer::beginInstallation()
 			setScreen(Installer::FAIL_SCREEN);
 		}
 		else {
-			// Unpackage using the rest of the resource file
+			// Un-package using the rest of the resource file
 			const auto directory = NST::Directory::SanitizePath(getDirectory());
 			const auto virtual_directory = NST::Directory(NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false), directory);
 			if (!virtual_directory.apply_folder())			

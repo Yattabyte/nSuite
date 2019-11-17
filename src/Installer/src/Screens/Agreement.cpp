@@ -36,15 +36,15 @@ Agreement_Screen::Agreement_Screen(Installer * installer, const HINSTANCE hInsta
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
-	// Create eula
-	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"eula"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
-	if (m_installer->m_mfStrings[L"eula"].empty())
+	// Create EULA
+	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"EULA"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
+	if (m_installer->m_mfStrings[L"EULA"].empty())
 		SetWindowTextW(m_log, 
 			L"nSuite installers can be created freely by anyone, as such those who generate them are responsible for its contents, not the developers.\r\n"
 			L"This software is provided as - is, use it at your own risk."
 		);
 
-	// Create checkboxes
+	// Create check-boxes
 	m_checkYes = CreateWindow("Button", "I accept the terms of this license agreement", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, size.y - 35, 310, 15, m_hwnd, (HMENU)1, hInstance, NULL);
 	CheckDlgButton(m_hwnd, 1, BST_UNCHECKED);
 
@@ -118,7 +118,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	if (message == WM_PAINT)
 		ptr->paint();	
 	else if (message == WM_CTLCOLORSTATIC) {
-		// Make checkbox text background color transparent
+		// Make check-box text background color transparent
 		if (controlHandle == ptr->m_checkYes) {
 			SetBkMode(HDC(wParam), TRANSPARENT);
 			return (LRESULT)GetStockObject(NULL_BRUSH);

@@ -5,7 +5,7 @@
 #include "Command.h"
 
 
-/** Command to patch an entire directory, reading a patchfile. */
+/** Command to patch an entire directory, reading a patch-file. */
 class PatchCommand : public Command {
 public:
 	// Public interface implementation

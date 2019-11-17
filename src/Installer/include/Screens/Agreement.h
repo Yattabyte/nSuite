@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Accept the license agreement" - Screen" state. */
+/** This state encapsulates the "Accept the license agreement" - Screen" state. */
 class Agreement_Screen : public Screen {
 public:
 	// Public (de)Constructors

@@ -72,7 +72,7 @@ void Welcome_Screen::paint()
 
 	// Draw Text
 	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-	graphics.DrawString(L"Welcome to the Uninstallation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+	graphics.DrawString(L"Welcome to the Un-installation Wizard", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 	auto nameVer = m_uninstaller->m_mfStrings[L"name"] + L" " + m_uninstaller->m_mfStrings[L"version"];
 	if (m_uninstaller->m_mfStrings[L"name"].empty()) nameVer = L"it's contents";
 	graphics.DrawString((L"The Wizard will remove " + nameVer + L" from your computer.").c_str(), -1, &regFont, PointF{ 10, 75 }, &format, &blackBrush);

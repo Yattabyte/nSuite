@@ -77,7 +77,7 @@ void Fail_Screen::paint()
 
 	// Draw Text
 	graphics.SetSmoothingMode(SmoothingMode::SmoothingModeAntiAlias);
-	graphics.DrawString(L"Uninstallation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
+	graphics.DrawString(L"Un-installation Incomplete", -1, &bigFont, PointF{ 10, 10 }, &blueBrush);
 
 	EndPaint(m_hwnd, &ps);
 }

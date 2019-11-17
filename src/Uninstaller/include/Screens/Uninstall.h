@@ -5,7 +5,7 @@
 #include "Screen.h"
 
 
-/** This state encapuslates the "Uninstalling - Screen" state. */
+/** This state encapsulates the "Uninstalling - Screen" state. */
 class Uninstall_Screen : public Screen {
 public:
 	// Public (de)Constructors

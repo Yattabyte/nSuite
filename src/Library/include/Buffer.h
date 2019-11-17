@@ -24,13 +24,13 @@ namespace NST {
 		@param	size				the number of bytes to have available. */
 		Buffer(const size_t & size);
 		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
-		@param	pointer				pointer to a region of memory to adopt from.
+		@param	pointer				a pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
 		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
 		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
 		Buffer(std::byte * pointer, const size_t & range, bool hardCopy = true);
 		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
-		@param	pointer				pointer to a region of memory to adopt from.
+		@param	pointer				a pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
 		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
 		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
@@ -72,7 +72,7 @@ namespace NST {
 		@note	Will expand if the size requested is greater than the buffer's internal capacity.
 		@note	Expansion will copy over all data that will fit.
 		@note	Current memory model doesn't shrink, so no data should be lost.
-		@note	When capacity is expdended, invalidates previous pointers retrieved by cArray(), data(), [], etc.
+		@note	When capacity is expended, invalidates previous pointers retrieved by cArray(), data(), [], etc.
 		@param	size				the new size to use. */
 		void resize(const size_t & size);
 		/** Erases all buffer content and frees the memory this buffer allocated.
@@ -89,7 +89,7 @@ namespace NST {
 		Does not copy underlying data.
 		@return						pointer to this buffer's data. */
 		std::byte * data() const;
-		/** Retrieves the data found in this bufffer at the byte offset specified.
+		/** Retrieves the data found in this buffer at the byte offset specified.
 		@param	byteOffset			how many bytes into this buffer to index at.
 		@return						reference to data found at the byte offset. */
 		std::byte & operator[](const size_t & byteOffset) const;
@@ -109,18 +109,18 @@ namespace NST {
 
 		// Public Manipulation Methods
 		/** Compresses this buffer into an equal or smaller-sized version.
-		@return						a pointer to the compressed buffer on compression succes, empty otherwise.		
+		@return						a pointer to the compressed buffer on compression success, empty otherwise.		
 		Buffer format:
 		------------------------------------------------------------------
 		| header: identifier title, uncompressed size | compressed data  |
 		------------------------------------------------------------------ */
 		std::optional<Buffer> compress() const;
 		/** Generates a decompressed version of this buffer.
-		@return						a pointer to the decompressed buffer on decompression succes, empty otherwise. */
+		@return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
 		std::optional<Buffer> decompress() const;
 		/** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
 		@param	target				the newer of the 2 buffers.
-		@return						a pointer to the diff buffer on diff succes, empty otherwise. 		
+		@return						a pointer to the diff buffer on diff success, empty otherwise. 		
 		Buffer format:
 		-----------------------------------------------------------------------------------
 		| header: identifier title, final target file size | compressed instruction data  |
@@ -128,7 +128,7 @@ namespace NST {
 		std::optional<Buffer> diff(const Buffer & target) const;
 		/** Generates a patched version of this buffer, using data found in the supplied diff buffer.
 		@param	diffBuffer			the diff buffer to patch with.
-		@return						a pointer to the patched buffer on patch succes, empty otherwise. */
+		@return						a pointer to the patched buffer on patch success, empty otherwise. */
 		std::optional<Buffer> patch(const Buffer & diffBuffer) const;
 
 
@@ -140,7 +140,7 @@ namespace NST {
 		void readHeader(Header * header, std::byte ** dataPtr, size_t & dataSize) const;
 		/** Writes-in data from an input header to the beginning of this buffer. Shifts old data down by the header size.
 		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc.
-		@param	header				header to copy the data from. */
+		@param	header				the header to copy the data from. */
 		void writeHeader(const Header * header);
 
 
@@ -249,9 +249,9 @@ namespace NST {
 
 
 			// Interface Declaration
-			/** Retrieve the bytesize of this instruction. */
+			/** Retrieve the byte-size of this instruction. */
 			virtual size_t size() const = 0;
-			/** Exectute this instruction. */
+			/** Execute this instruction. */
 			virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const = 0;
 			/** Write-out this instruction to a buffer. */
 			virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const = 0;

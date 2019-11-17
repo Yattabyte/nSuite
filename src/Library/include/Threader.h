@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <deque>
+#include <functional>
 #include <thread>
 #include <shared_mutex>
 #include <vector>
@@ -66,7 +67,7 @@ namespace NST {
 		inline void prepareForShutdown() {
 			m_keepOpen = false;
 		}
-		/** Shutsdown the threader, forcing threads to close. */
+		/** Shuts down the threader, forcing threads to close. */
 		inline void shutdown() {
 			m_alive = false;
 			m_keepOpen = false;
