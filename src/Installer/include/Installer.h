@@ -15,11 +15,11 @@ class Installer {
 public:	
 	// Public (de)Constructors
 	~Installer() = default;
-	Installer(const HINSTANCE hInstance);
+	explicit Installer(const HINSTANCE hInstance);
 
 
 	// Public Enumerations
-	const enum ScreenEnums {
+	const enum class ScreenEnums {
 		WELCOME_SCREEN, AGREEMENT_SCREEN, DIRECTORY_SCREEN, INSTALL_SCREEN, FINISH_SCREEN, FAIL_SCREEN,
 		SCREEN_COUNT
 	};
@@ -78,8 +78,8 @@ private:
 	std::string m_directory = "", m_packageName = "";
 	bool m_valid = true;
 	size_t m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;
-	ScreenEnums m_currentIndex = WELCOME_SCREEN;
-	Screen * m_screens[SCREEN_COUNT];
+	ScreenEnums m_currentIndex = ScreenEnums::WELCOME_SCREEN;
+	Screen* m_screens[(int)ScreenEnums::SCREEN_COUNT]{};
 	HWND m_hwnd = nullptr;
 };
 

@@ -101,7 +101,7 @@ void Uninstall_Screen::goFinish()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Uninstall_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Uninstall_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

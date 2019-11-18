@@ -15,11 +15,11 @@ class Uninstaller {
 public:	
 	// Public (de)Constructors
 	~Uninstaller() = default;
-	Uninstaller(const HINSTANCE hInstance);
+	explicit Uninstaller(const HINSTANCE hInstance);
 
 
 	// Public Enumerations
-	const enum ScreenEnums {
+	const enum class ScreenEnums {
 		WELCOME_SCREEN, UNINSTALL_SCREEN, FINISH_SCREEN, FAIL_SCREEN,
 		SCREEN_COUNT
 	};
@@ -62,8 +62,8 @@ private:
 	NST::Resource m_manifest;
 	std::wstring m_directory = L"";
 	bool m_valid = true;
-	ScreenEnums m_currentIndex = WELCOME_SCREEN;
-	Screen * m_screens[SCREEN_COUNT];
+	ScreenEnums m_currentIndex = ScreenEnums::WELCOME_SCREEN;
+	Screen* m_screens[(int)ScreenEnums::SCREEN_COUNT]{};
 	HWND m_hwnd = nullptr;
 };
 

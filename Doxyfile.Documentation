@@ -4,7 +4,7 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = nSuiteTools
-PROJECT_NUMBER         = 1.3.0
+PROJECT_NUMBER         = 1.3.2
 PROJECT_BRIEF          = "Directory and buffer compression & diffing tools."
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = E:/Programming/Installer/docs/

@@ -22,7 +22,7 @@ namespace NST {
 		Buffer() = default;
 		/** Constructs a buffer of the specified size in bytes.
 		@param	size				the number of bytes to have available. */
-		Buffer(const size_t & size);
+		explicit Buffer(const size_t & size);
 		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
 		@param	pointer				a pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
@@ -41,7 +41,7 @@ namespace NST {
 		Buffer(const Buffer & other);
 		/** Move Constructor. 
 		@param	other				the buffer to move from and invalidate. */
-		Buffer(Buffer && other);
+		Buffer(Buffer && other) noexcept;
 
 
 		

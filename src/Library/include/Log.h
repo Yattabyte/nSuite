@@ -26,7 +26,7 @@ namespace NST {
 				func(instance.PullText());
 
 			auto index = instance.m_observers.size();
-			instance.m_observers.emplace_back(std::move(func));
+			instance.m_observers.emplace_back(func);
 			return index;
 		}
 		/** Remove an observer method used for when text is added to the log.

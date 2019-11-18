@@ -2,8 +2,8 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#define NSUITE_VERSION_CSTR				"1.3.1"
-#define NSUITE_VERSION_VS				1,3,1					
+#define NSUITE_VERSION_CSTR				"1.3.2"
+#define NSUITE_VERSION_VS				1,3,2					
 
 // Used for icons
 #define IDI_ICON1						101
@@ -40,9 +40,12 @@ namespace NST {
 		/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
 		inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
 			m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
-			m_hMemory = LoadResource(moduleHandle, m_hResource);
-			m_ptr = LockResource(m_hMemory);
-			m_size = SizeofResource(moduleHandle, m_hResource);
+			if (m_hResource != 0)
+				m_hMemory = LoadResource(moduleHandle, m_hResource);
+			if (m_hMemory != 0)
+				m_ptr = LockResource(m_hMemory);
+			if (m_hResource != 0)
+				m_size = SizeofResource(moduleHandle, m_hResource);
 		}
 
 

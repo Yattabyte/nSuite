@@ -138,13 +138,13 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_screens[WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[AGREEMENT_SCREEN] = new Agreement_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[DIRECTORY_SCREEN] = new Directory_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[INSTALL_SCREEN] = new Install_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		setScreen(WELCOME_SCREEN);
+		m_screens[(int)ScreenEnums::WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::AGREEMENT_SCREEN] = new Agreement_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::DIRECTORY_SCREEN] = new Directory_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::INSTALL_SCREEN] = new Install_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		setScreen(ScreenEnums::WELCOME_SCREEN);
 
 		success_window = true;
 	}
@@ -157,16 +157,16 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 void Installer::invalidate()
 {
-	setScreen(FAIL_SCREEN);
+	setScreen(ScreenEnums::FAIL_SCREEN);
 	m_valid = false;
 }
 
 void Installer::setScreen(const ScreenEnums & screenIndex)
 {	
 	if (m_valid) {
-		m_screens[m_currentIndex]->setVisible(false);
-		m_screens[screenIndex]->enact();
-		m_screens[screenIndex]->setVisible(true);
+		m_screens[(int)m_currentIndex]->setVisible(false);
+		m_screens[(int)screenIndex]->enact();
+		m_screens[(int)screenIndex]->setVisible(true);
 		m_currentIndex = screenIndex;
 		RECT rc = { 0, 0, 160, 500 };
 		RedrawWindow(m_hwnd, &rc, NULL, RDW_INVALIDATE);
@@ -219,7 +219,7 @@ void Installer::beginInstallation()
 		NST::Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
 		if (!uninstaller.exists()) {
 			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
-			setScreen(Installer::FAIL_SCREEN);
+			setScreen(Installer::ScreenEnums::FAIL_SCREEN);
 		}
 		else {
 			// Un-package using the rest of the resource file
@@ -356,7 +356,7 @@ void Installer::paint()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Installer*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Installer*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_DESTROY)

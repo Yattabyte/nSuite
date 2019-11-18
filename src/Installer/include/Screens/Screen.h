@@ -44,8 +44,8 @@ public:
 
 protected:
 	// Private Attributes
-	WNDCLASSEX m_wcex;
-	HINSTANCE m_hinstance;
+	WNDCLASSEX m_wcex{};
+	HINSTANCE m_hinstance = nullptr;
 	vec2 m_pos, m_size;
 };
 

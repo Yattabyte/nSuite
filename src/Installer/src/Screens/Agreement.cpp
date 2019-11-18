@@ -113,7 +113,7 @@ void Agreement_Screen::goCancel()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Agreement_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Agreement_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	

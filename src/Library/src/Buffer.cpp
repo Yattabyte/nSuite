@@ -33,20 +33,21 @@ Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
 	}
 }
 
-Buffer::Buffer(const Buffer & other)
-	: m_size(other.m_size), m_capacity(other.m_capacity), m_ownsData(true)
+Buffer::Buffer(const Buffer & other) : 
+	m_size(other.m_size),
+	m_capacity(other.m_capacity), 
+	m_ownsData(true)
 {
 	alloc(other.m_capacity);
 	std::copy(other.m_data, other.m_data + other.m_size, m_data);
 }
 
-Buffer::Buffer(Buffer && other)
+Buffer::Buffer(Buffer && other) noexcept :
+	m_data(other.m_data),
+	m_size(other.m_size), 
+	m_capacity(other.m_capacity), 
+	m_ownsData(other.m_ownsData)
 {
-	m_data = other.m_data;
-	m_size = other.m_size;
-	m_capacity = other.m_capacity;
-	m_ownsData = other.m_ownsData;
-
 	other.m_data = nullptr;
 	other.m_size = 0ull;
 	other.m_capacity = 0ull;
@@ -312,7 +313,7 @@ struct Repeat_Instruction : public Buffer::Differential_Instruction {
 
 	// Attributes
 	size_t m_amount = 0ull;
-	std::byte m_value;
+	std::byte m_value = std::byte(0);
 };
 
 std::optional<Buffer> Buffer::diff(const Buffer & target) const

@@ -23,22 +23,24 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
-	CoInitialize(NULL);
-	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-	ULONG_PTR gdiplusToken;
-	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-	Uninstaller uninstaller(hInstance);
+	if (CoInitialize(NULL)) {
+		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR gdiplusToken;
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+		Uninstaller uninstaller(hInstance);
 
-	// Main message loop:
-	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		// Main message loop:
+		MSG msg;
+		while (GetMessage(&msg, NULL, 0, 0)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		// Close
+		CoUninitialize();
+		return (int)msg.wParam;
 	}
-
-	// Close
-	CoUninitialize();
-	return (int)msg.wParam;
+	return 0;
 }
 
 Uninstaller::Uninstaller() 
@@ -111,11 +113,11 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
-		m_screens[WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[UNINSTALL_SCREEN] = new Uninstall_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		m_screens[FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
-		setScreen(WELCOME_SCREEN);
+		m_screens[(int)ScreenEnums::WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::UNINSTALL_SCREEN] = new Uninstall_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::FINISH_SCREEN] = new Finish_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		m_screens[(int)ScreenEnums::FAIL_SCREEN] = new Fail_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
+		setScreen(ScreenEnums::WELCOME_SCREEN);
 	}
 
 #ifndef DEBUG
@@ -126,16 +128,16 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 
 void Uninstaller::invalidate()
 {
-	setScreen(FAIL_SCREEN);
+	setScreen(ScreenEnums::FAIL_SCREEN);
 	m_valid = false;
 }
 
 void Uninstaller::setScreen(const ScreenEnums & screenIndex)
 {	
 	if (m_valid) {
-		m_screens[m_currentIndex]->setVisible(false);
-		m_screens[screenIndex]->enact();
-		m_screens[screenIndex]->setVisible(true);
+		m_screens[(int)m_currentIndex]->setVisible(false);
+		m_screens[(int)screenIndex]->enact();
+		m_screens[(int)screenIndex]->setVisible(true);
 		m_currentIndex = screenIndex;
 		RECT rc = { 0, 0, 160, 500 };
 		RedrawWindow(m_hwnd, &rc, NULL, RDW_INVALIDATE);
@@ -310,7 +312,7 @@ void Uninstaller::paint()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Uninstaller*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Uninstaller*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_DESTROY)

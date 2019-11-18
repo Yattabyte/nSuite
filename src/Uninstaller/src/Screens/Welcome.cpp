@@ -97,7 +97,7 @@ void Welcome_Screen::goCancel()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Welcome_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Welcome_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_COMMAND) {

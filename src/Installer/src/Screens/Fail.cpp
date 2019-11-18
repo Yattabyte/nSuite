@@ -89,7 +89,7 @@ void Fail_Screen::goClose()
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Fail_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Fail_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();

@@ -21,7 +21,7 @@ namespace NST {
 		@param	path				the absolute path to a desired folder or a package file.
 		@param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
 		@return						directory generated from the parameters chosen. */
-		Directory(const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
+		explicit Directory(const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
 		/** Constructs a virtual directory directly from a package buffer.
 		@param	package				the package buffer to unpack and virtualize.
 		@param	path				the absolute path to a desired folder or a package file.
@@ -33,18 +33,18 @@ namespace NST {
 		Directory(const Directory & other);
 		/** Move Constructor.
 		@param	other				the directory to move from and invalidate. */
-		Directory(Directory && other);
+		Directory(Directory && other) noexcept;
 
 
 		// Public Operators
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
-		Directory & operator=(const Directory & other);
+		Directory & operator=(const Directory & other) noexcept;
 		/** Move-assignment operator.
 		@param	other				the buffer to move from.
 		@return						reference to this. */
-		Directory & operator=(Directory && other);
+		Directory & operator=(Directory && other) noexcept;
 				
 
 		// Public Manipulation Methods
@@ -102,8 +102,11 @@ namespace NST {
 
 			// (de)Constructors
 			PackageHeader() = default;
-			inline PackageHeader(const size_t & folderNameSize, const char * folderName) : Header("nSuite package"), m_charCount(folderNameSize) {
-				m_folderName = std::string(folderName, folderNameSize);
+			inline PackageHeader(const size_t & folderNameSize, const char * folderName) : 
+				Header("nSuite package"), 
+				m_charCount(folderNameSize),
+				m_folderName(std::string(folderName, folderNameSize))
+			{
 			}
 
 

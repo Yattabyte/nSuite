@@ -60,11 +60,10 @@ Directory::~Directory()
 	devirtualize();
 }
 
-Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions)
+Directory::Directory(const std::string & path, const std::vector<std::string> & exclusions) :
+	m_directoryPath(path),
+	m_exclusions(exclusions)
 {
-	m_directoryPath = path;
-	m_exclusions = exclusions;
-
 	// Treat path as a folder
 	if (std::filesystem::is_directory(path))
 		virtualize_folder(path);
@@ -97,10 +96,10 @@ Directory::Directory(const std::string & path, const std::vector<std::string> & 
 	}
 }
 
-Directory::Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions)
+Directory::Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions) :
+	m_directoryPath(path),
+	m_exclusions(exclusions)
 {
-	m_directoryPath = path;
-	m_exclusions = exclusions;
 	virtualize_package(package);
 }
 
@@ -113,16 +112,15 @@ Directory::Directory(const Directory & other)
 	}
 }
 
-Directory::Directory(Directory && other)
+Directory::Directory(Directory && other) noexcept :
+	m_files(other.m_files),
+	m_directoryPath ( other.m_directoryPath),
+	m_directoryName (other.m_directoryName),
+	m_exclusions (other.m_exclusions)
 {
-	m_files = other.m_files;
-	m_directoryPath = other.m_directoryPath;
-	m_directoryName = other.m_directoryName;
-	m_exclusions = other.m_exclusions;
-
 	other.m_files.clear();
 	other.m_files.shrink_to_fit();
-	other.m_directoryName = "";
+	other.m_directoryPath = "";
 	other.m_directoryName = "";
 	other.m_exclusions.clear();
 	other.m_exclusions.shrink_to_fit();
@@ -131,7 +129,7 @@ Directory::Directory(Directory && other)
 
 // Public Operators
 
-Directory & Directory::operator=(const Directory & other)
+Directory & Directory::operator=(const Directory & other) noexcept
 {
 	if (this != &other) {
 		devirtualize();
@@ -148,7 +146,7 @@ Directory & Directory::operator=(const Directory & other)
 	return *this;
 }
 
-Directory & Directory::operator=(Directory && other)
+Directory & Directory::operator=(Directory && other) noexcept
 {
 	if (this != &other) {
 		devirtualize();
@@ -159,7 +157,7 @@ Directory & Directory::operator=(Directory && other)
 
 		other.m_files.clear();
 		other.m_files.shrink_to_fit();
-		other.m_directoryName = "";
+		other.m_directoryPath = "";
 		other.m_directoryName = "";
 		other.m_exclusions.clear();
 		other.m_exclusions.shrink_to_fit();
@@ -186,7 +184,7 @@ std::optional<Buffer> Directory::make_package() const
 
 		// Ensure we have a non-zero sized archive
 		size_t archiveSize(byteCount());
-		if (archiveSize <= 0ull)
+		if (archiveSize == 0ull)
 			Log::PushText("Error: the archive has no data in it!\r\n");
 		else {
 			// Create file buffer to contain all the file data
@@ -328,7 +326,7 @@ std::optional<Buffer> Directory::make_delta(const Directory & newDirectory) cons
 		// Write buffer
 		byteIndex = instructionBuffer.writeData(buffer.data(), (size_t(sizeof(std::byte)) * bufferSize), byteIndex);
 	};
-	if (fileCount() <= 0 && newDirectory.fileCount() <= 0)
+	if (fileCount() == 0 && newDirectory.fileCount() == 0)
 		Log::PushText("Error: input directories are empty!\r\n");
 	else {
 		// Retrieve all common, added, and removed files
@@ -478,13 +476,15 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 					Buffer oldBuffer;
 					size_t oldHash(0ull);
 					DirFile * storedFile = nullptr;
-					for (auto & file : m_files)
+					std::find_if(m_files.begin(), m_files.end(), [&](auto& file) -> bool {
 						if (file.relativePath == inst.path) {
 							storedFile = &file;
 							oldBuffer = Buffer(file.data, file.size, false);
 							oldHash = oldBuffer.hash();
-							break;
+							return true;
 						}
+						return false;
+						});						
 					// Fail on missing Files
 					if (!storedFile)
 						Log::PushText("Critical failure: Cannot update \"" + inst.path + "\", the file is missing!\r\n");
@@ -548,13 +548,15 @@ bool Directory::apply_delta(const Buffer & diffBuffer)
 						Buffer oldBuffer;
 						size_t oldHash(0ull);
 						DirFile * storedFile = nullptr;
-						for (auto & file : m_files)
+						std::find_if(m_files.begin(), m_files.end(), [&](auto& file) -> bool {
 							if (file.relativePath == inst.path) {
 								storedFile = &file;
 								oldBuffer = Buffer(file.data, file.size, false);
 								oldHash = oldBuffer.hash();
-								break;
+								return true;
 							}
+							return false;
+							});
 						if (storedFile) {
 							// Skip updated files
 							if (oldHash == inst.diff_newHash) {
@@ -753,7 +755,6 @@ void Directory::virtualize_package(const Buffer & buffer)
 				char * pathArray = new char[pathSize];
 				byteIndex = decompressedBuffer->readData(pathArray, pathSize, byteIndex);
 				const std::string path(pathArray, pathSize);
-				const auto extension = std::filesystem::path(path).extension();
 				delete[] pathArray;
 				size_t fileSize(0ull);
 				byteIndex = decompressedBuffer->readData(&fileSize, size_t(sizeof(size_t)), byteIndex);

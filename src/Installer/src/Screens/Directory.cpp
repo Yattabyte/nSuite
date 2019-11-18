@@ -141,7 +141,7 @@ void Directory_Screen::goInstall()
 			MB_OK | MB_ICONERROR | MB_TASKMODAL
 		);
 	else
-		m_installer->setScreen(Installer::INSTALL_SCREEN);
+		m_installer->setScreen(Installer::ScreenEnums::INSTALL_SCREEN);
 }
 
 void Directory_Screen::goCancel()
@@ -260,7 +260,7 @@ static HRESULT OpenFileDialog(std::string & directory)
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	const auto ptr = (Directory_Screen*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	const auto ptr = reinterpret_cast<Directory_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
 		ptr->paint();	
