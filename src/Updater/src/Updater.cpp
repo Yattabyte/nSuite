@@ -49,7 +49,7 @@ int main()
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();
 		size_t bytesWritten(0ull), patchesApplied(0ull);
-		for each (const auto & patch in patches) {
+		for (const auto& patch : patches) {
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
 			if (!diffFile.is_open()) {

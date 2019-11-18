@@ -15,7 +15,7 @@ using namespace NST;
 static auto check_exclusion(const std::string& path, const std::vector<std::string>& exclusions)
 {
 	const auto extension = std::filesystem::path(path).extension();
-	for each (const auto & excl in exclusions) {
+	for (const auto& excl : exclusions) {
 		if (excl.empty())
 			continue;
 		// Compare Paths && Extensions
@@ -275,10 +275,10 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 		// Find all common and new files first
 		auto srcOld_Files = oldDirectory.m_files;
 		auto srcNew_Files = newDirectory.m_files;
-		for each (const auto & nFile in srcNew_Files) {
+		for (const auto& nFile : srcNew_Files) {
 			bool found = false;
 			size_t oIndex(0ull);
-			for each (const auto & oFile in srcOld_Files) {
+			for (const auto& oFile : srcOld_Files) {
 				if (nFile.relativePath == oFile.relativePath) {
 					// Common file found
 					commonFiles.push_back(std::make_pair(oFile, nFile));
@@ -338,7 +338,7 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 
 		// These files are common, maybe some have changed
 		size_t fileCount(0ull);
-		for each (const auto & cFiles in commonFiles) {
+		for (const auto& cFiles : commonFiles) {
 			Buffer oldBuffer(cFiles.first.data, cFiles.first.size, false), newBuffer(cFiles.second.data, cFiles.second.size);
 			size_t oldHash(oldBuffer.hash()), newHash(newBuffer.hash());
 			if (oldHash != newHash) {
@@ -355,7 +355,7 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 		commonFiles.shrink_to_fit();
 
 		// These files are brand new
-		for each (const auto & nFile in addedFiles) {
+		for (const auto& nFile : addedFiles) {
 			Buffer newBuffer(nFile.data, nFile.size, false);
 			size_t newHash(newBuffer.hash());
 			auto diffBuffer = Buffer().diff(newBuffer);
@@ -369,7 +369,7 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 		addedFiles.shrink_to_fit();
 
 		// These files are deprecated
-		for each (const auto & oFile in removedFiles) {
+		for (const auto& oFile : removedFiles) {
 			Buffer oldBuffer(oFile.data, oFile.size, false);
 			size_t oldHash(oldBuffer.hash());
 			Log::PushText("Removing file \"" + oFile.relativePath + "\"\r\n");
@@ -612,7 +612,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 
 							// Try to find the source file (may not exist)
 							size_t index(0ull);
-							for each (const auto & file in m_files) {
+							for (const auto& file : m_files) {
 								if (file.relativePath == inst.path) {
 									oldHash = Buffer(file.data, file.size, false).hash();
 									// Only remove source files if they match entirely
@@ -657,7 +657,7 @@ size_t Directory::fileCount() const
 size_t Directory::byteCount() const
 {
 	size_t spaceUsed(0ull);
-	for each (const auto & file in m_files) {
+	for (const auto& file : m_files) {
 		const auto pathSize = file.relativePath.size();
 		const size_t unitSize =
 			size_t(sizeof(size_t)) +	// size of path size variable in bytes

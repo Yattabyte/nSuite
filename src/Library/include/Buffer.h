@@ -51,11 +51,11 @@ namespace NST {
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
-		Buffer& operator=(const Buffer& other);
+		Buffer& operator=(const Buffer& other) noexcept;
 		/** Move-assignment operator.
 		@param	other				the buffer to move from.
 		@return						reference to this. */
-		Buffer& operator=(Buffer&& other);
+		Buffer& operator=(Buffer&& other) noexcept;
 
 
 		// Public Methods

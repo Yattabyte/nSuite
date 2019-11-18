@@ -13,7 +13,7 @@ Finish_Screen::~Finish_Screen()
 	DestroyWindow(m_hwnd);
 	DestroyWindow(m_checkbox);
 	DestroyWindow(m_btnClose);
-	for each (auto checkboxHandle in m_shortcutCheckboxes)
+	for (auto checkboxHandle : m_shortcutCheckboxes)
 		DestroyWindow(checkboxHandle);
 }
 
@@ -82,14 +82,14 @@ Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, co
 				last++;
 		}
 	int vertical = 170, checkIndex = 2;
-	for each (const auto & shortcut in m_shortcuts_d) {
+	for (const auto& shortcut : m_shortcuts_d) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
 		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
 	}
-	for each (const auto & shortcut in m_shortcuts_s) {
+	for (const auto& shortcut : m_shortcuts_s) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
 		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
@@ -143,7 +143,7 @@ void Finish_Screen::goClose()
 
 	// Create Shortcuts
 	int x = 2;
-	for each (const auto & shortcut in m_shortcuts_d) {
+	for (const auto& shortcut : m_shortcuts_d) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
 			const auto nonwideShortcut = NST::from_wideString(shortcut);
@@ -156,7 +156,7 @@ void Finish_Screen::goClose()
 		}
 		x++;
 	}
-	for each (const auto & shortcut in m_shortcuts_s) {
+	for (const auto& shortcut : m_shortcuts_s) {
 		if (IsDlgButtonChecked(m_hwnd, x)) {
 			std::error_code ec;
 			const auto nonwideShortcut = NST::from_wideString(shortcut);
@@ -208,7 +208,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	else if (message == WM_CTLCOLORSTATIC) {
 		// Make check-box text background color transparent
 		bool isCheckbox = controlHandle == ptr->m_checkbox;
-		for each (auto chkHandle in ptr->m_shortcutCheckboxes)
+		for (auto chkHandle : ptr->m_shortcutCheckboxes)
 			if (controlHandle == chkHandle) {
 				isCheckbox = true;
 				break;

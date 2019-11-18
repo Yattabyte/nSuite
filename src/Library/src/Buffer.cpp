@@ -57,7 +57,7 @@ Buffer::Buffer(Buffer&& other) noexcept :
 
 // Public Operators
 
-Buffer& Buffer::operator=(const Buffer& other)
+Buffer& Buffer::operator=(const Buffer& other) noexcept
 {
 	if (this != &other) {
 		release();
@@ -69,7 +69,7 @@ Buffer& Buffer::operator=(const Buffer& other)
 	return *this;
 }
 
-Buffer& Buffer::operator=(Buffer&& other)
+Buffer& Buffer::operator=(Buffer&& other) noexcept
 {
 	if (this != &other) {
 		release();
@@ -519,13 +519,13 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 
 		// Create a buffer to contain all the diff instructions
 		size_t size_patch(0ull);
-		for each (const auto & instruction in instructions)
+		for (const auto& instruction : instructions)
 			size_patch += instruction->size();
 		Buffer patchBuffer(size_patch);
 
 		// Write instruction data to the buffer
 		size_t m_index(0ull);
-		for each (const auto & instruction in instructions)
+		for (const auto& instruction : instructions)
 			instruction->write(patchBuffer, m_index);
 
 		// Free up memory

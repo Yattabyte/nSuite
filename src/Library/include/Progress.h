@@ -46,7 +46,7 @@ namespace NST {
 			instance.m_pos = amount > instance.m_range ? instance.m_range : amount;
 
 			// Notify all observers that the task has updated
-			for each (const auto & callback in instance.m_observers)
+			for (const auto& callback : instance.m_observers)
 				callback(instance.m_pos, instance.m_range);
 		}
 		/** Increment the progress by 1. */

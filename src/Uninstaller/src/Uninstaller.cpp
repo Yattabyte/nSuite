@@ -23,24 +23,22 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
-	if (CoInitialize(NULL)) {
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		ULONG_PTR gdiplusToken;
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-		Uninstaller uninstaller(hInstance);
+	CoInitialize(NULL);
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	Uninstaller uninstaller(hInstance);
 
-		// Main message loop:
-		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		// Close
-		CoUninitialize();
-		return (int)msg.wParam;
+	// Main message loop:
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
-	return 0;
+
+	// Close
+	CoUninitialize();
+	return (int)msg.wParam;
 }
 
 Uninstaller::Uninstaller()
@@ -208,7 +206,7 @@ void Uninstaller::beginUninstallation()
 		if (!entries.size())
 			NST::Log::PushText("Already uninstalled / no files found.\r\n");
 		else {
-			for each (const auto & entry in entries) {
+			for (const auto& entry : entries) {
 				NST::Log::PushText("Deleting file: \"" + entry.path().string() + "\"\r\n");
 				std::filesystem::remove(entry, er);
 				NST::Progress::SetProgress(++progress);
@@ -216,13 +214,13 @@ void Uninstaller::beginUninstallation()
 		}
 
 		// Remove all shortcuts
-		for each (const auto & shortcut in shortcuts_d) {
+		for (const auto& shortcut : shortcuts_d) {
 			const auto path = NST::Directory::GetDesktopPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			NST::Log::PushText("Deleting desktop shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);
 			progress++;
 		}
-		for each (const auto & shortcut in shortcuts_s) {
+		for (const auto& shortcut : shortcuts_s) {
 			const auto path = NST::Directory::GetStartMenuPath() + "\\" + std::filesystem::path(shortcut).filename().string() + ".lnk";
 			NST::Log::PushText("Deleting start-menu shortcut: \"" + path + "\"\r\n");
 			std::filesystem::remove(path, er);

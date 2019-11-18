@@ -44,7 +44,7 @@ namespace NST {
 			instance.m_log += text;
 
 			// Notify all observers that the log has been updated
-			for each (const auto & callback in instance.m_observers)
+			for (const auto& callback : instance.m_observers)
 				callback(text);
 		}
 		/** Retrieve all text from the log.
