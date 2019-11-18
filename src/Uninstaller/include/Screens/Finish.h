@@ -6,11 +6,11 @@
 
 
 /** This state encapsulates the "Finished - Screen" state. */
-class Finish_Screen: public Screen {
+class Finish_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Finish_Screen();
-	Finish_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Finish_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

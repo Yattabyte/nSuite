@@ -18,7 +18,7 @@ Uninstall_Screen::~Uninstall_Screen()
 	NST::Progress::RemoveObserver(m_taskIndex);
 }
 
-Uninstall_Screen::Uninstall_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Uninstall_Screen::Uninstall_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -43,10 +43,10 @@ Uninstall_Screen::Uninstall_Screen(Uninstaller * uninstaller, const HINSTANCE hI
 	// Create log box and progress bar
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	m_hwndPrgsBar = CreateWindowEx(WS_EX_CLIENTEDGE, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE | WS_OVERLAPPED | WS_DLGFRAME | WS_CLIPCHILDREN | PBS_SMOOTH, 10, size.y - 40, size.x - 115, 30, m_hwnd, NULL, hInstance, NULL);
-	m_logIndex = NST::Log::AddObserver([&](const std::string & message) {
+	m_logIndex = NST::Log::AddObserver([&](const std::string& message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
-	});
-	m_taskIndex = NST::Progress::AddObserver([&](const size_t & position, const size_t & range) {
+		});
+	m_taskIndex = NST::Progress::AddObserver([&](const size_t& position, const size_t& range) {
 		SendMessage(m_hwndPrgsBar, PBM_SETRANGE32, 0, LPARAM(int_fast32_t(range)));
 		SendMessage(m_hwndPrgsBar, PBM_SETPOS, WPARAM(int_fast32_t(position)), 0);
 		RECT rc = { 580, 410, 800, 450 };
@@ -55,8 +55,8 @@ Uninstall_Screen::Uninstall_Screen(Uninstaller * uninstaller, const HINSTANCE hI
 		std::string progress = std::to_string(position == range ? 100 : int(std::floorf((float(position) / float(range)) * 100.0f))) + "%";
 		EnableWindow(m_btnFinish, position == range);
 		SetWindowTextA(m_btnFinish, position == range ? "Finish >" : progress.c_str());
-	});
-	
+		});
+
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
 	m_btnFinish = CreateWindow("BUTTON", "Finish", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);

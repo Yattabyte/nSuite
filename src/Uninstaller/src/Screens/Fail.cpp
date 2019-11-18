@@ -16,7 +16,7 @@ Fail_Screen::~Fail_Screen()
 	NST::Log::RemoveObserver(m_logIndex);
 }
 
-Fail_Screen::Fail_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Fail_Screen::Fail_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -41,9 +41,9 @@ Fail_Screen::Fail_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, c
 	// Create error log
 	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)"Error Log:\r\n");
-	m_logIndex = NST::Log::AddObserver([&](const std::string & message) {
+	m_logIndex = NST::Log::AddObserver([&](const std::string& message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
-	});
+		});
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
@@ -52,7 +52,7 @@ Fail_Screen::Fail_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, c
 
 void Fail_Screen::enact()
 {
-	Uninstaller::dumpErrorLog();	
+	Uninstaller::dumpErrorLog();
 }
 
 void Fail_Screen::paint()

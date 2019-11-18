@@ -6,11 +6,11 @@
 
 
 /** This state encapsulates the "Failure - Screen" state. */
-class Fail_Screen: public Screen {
+class Fail_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Fail_Screen();
-	Fail_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Fail_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

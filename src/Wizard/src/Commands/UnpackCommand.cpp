@@ -6,7 +6,7 @@
 #include <fstream>
 
 
-int UnpackCommand::execute(const int & argc, char * argv[]) const
+int UnpackCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
 	NST::Log::PushText(
@@ -60,7 +60,7 @@ int UnpackCommand::execute(const int & argc, char * argv[]) const
 				"Files processed: " + std::to_string(directory.fileCount()) + "\r\n" +
 				"Bytes processed: " + std::to_string(directory.byteCount()) + "\r\n"
 			);
-			
+
 			return EXIT_SUCCESS;
 		}
 	}

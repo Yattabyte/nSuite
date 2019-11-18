@@ -7,7 +7,7 @@
 #include <fstream>
 
 
-int InstallerCommand::execute(const int & argc, char * argv[]) const
+int InstallerCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
 	NST::Log::PushText(
@@ -38,7 +38,7 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 	}
 
 	// If user provides a directory only, append a filename
-	if (std::filesystem::is_directory(dstDirectory)) 
+	if (std::filesystem::is_directory(dstDirectory))
 		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\installer.exe";
 
 	// Ensure a file-extension is chosen
@@ -55,13 +55,13 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 	else {
 		// Ensure resource exists
 		const NST::Resource installer(IDR_INSTALLER, "INSTALLER");
-		if (!installer.exists()) 
-			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");		
+		if (!installer.exists())
+			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
 		else {
 			// Try to create installer file
 			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
 			std::ofstream instFile(dstDirectory, std::ios::binary | std::ios::out);
-			if (!instFile.is_open()) 
+			if (!instFile.is_open())
 				NST::Log::PushText("Cannot write installer to disk, aborting...\r\n");
 			else {
 				// Write installer to disk
@@ -71,7 +71,7 @@ int InstallerCommand::execute(const int & argc, char * argv[]) const
 				// Try to update installer's resource
 				handle = BeginUpdateResource(dstDirectory.c_str(), false);
 				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
-					NST::Log::PushText("Cannot write archive contents to the installer, aborting...\r\n");				
+					NST::Log::PushText("Cannot write archive contents to the installer, aborting...\r\n");
 				else {
 					// Try to find manifest file
 					if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {

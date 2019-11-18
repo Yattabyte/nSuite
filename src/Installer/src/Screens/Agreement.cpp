@@ -14,7 +14,7 @@ Agreement_Screen::~Agreement_Screen()
 	DestroyWindow(m_btnCancel);
 }
 
-Agreement_Screen::Agreement_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Agreement_Screen::Agreement_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -39,7 +39,7 @@ Agreement_Screen::Agreement_Screen(Installer * installer, const HINSTANCE hInsta
 	// Create EULA
 	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"EULA"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
 	if (m_installer->m_mfStrings[L"EULA"].empty())
-		SetWindowTextW(m_log, 
+		SetWindowTextW(m_log,
 			L"nSuite installers can be created freely by anyone, as such those who generate them are responsible for its contents, not the developers.\r\n"
 			L"This software is provided as - is, use it at your own risk."
 		);
@@ -116,7 +116,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	const auto ptr = reinterpret_cast<Agreement_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
-		ptr->paint();	
+		ptr->paint();
 	else if (message == WM_CTLCOLORSTATIC) {
 		// Make check-box text background color transparent
 		if (controlHandle == ptr->m_checkYes) {
@@ -129,7 +129,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {
-			if (controlHandle == ptr->m_checkYes) 
+			if (controlHandle == ptr->m_checkYes)
 				ptr->checkYes();
 			else if (controlHandle == ptr->m_btnPrev)
 				ptr->goPrevious();

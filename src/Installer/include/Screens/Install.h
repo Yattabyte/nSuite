@@ -11,7 +11,7 @@ class Install_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Install_Screen();
-	Install_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Install_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

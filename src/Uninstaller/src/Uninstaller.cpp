@@ -43,7 +43,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 	return 0;
 }
 
-Uninstaller::Uninstaller() 
+Uninstaller::Uninstaller()
 	: m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ull)
 {
 	// Process manifest
@@ -55,7 +55,7 @@ Uninstaller::Uninstaller()
 		// Cycle through every line, inserting attributes into the manifest map
 		std::wstring attrib, value;
 		while (ss >> attrib && ss >> std::quoted(value)) {
-			wchar_t * k = new wchar_t[attrib.length() + 1];
+			wchar_t* k = new wchar_t[attrib.length() + 1];
 			wcscpy_s(k, attrib.length() + 1, attrib.data());
 			m_mfStrings[k] = value;
 		}
@@ -96,7 +96,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	}
 	else {
 		m_hwnd = CreateWindowW(
-			L"Uninstaller",(m_mfStrings[L"name"] + L" Uninstaller").c_str(),
+			L"Uninstaller", (m_mfStrings[L"name"] + L" Uninstaller").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
@@ -104,7 +104,7 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 		);
 
 		// Create
-		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);auto dwStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_STYLE);
+		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this); auto dwStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_STYLE);
 		auto dwExStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
 		RECT rc = { 0, 0, 800, 500 };
 		ShowWindow(m_hwnd, true);
@@ -132,8 +132,8 @@ void Uninstaller::invalidate()
 	m_valid = false;
 }
 
-void Uninstaller::setScreen(const ScreenEnums & screenIndex)
-{	
+void Uninstaller::setScreen(const ScreenEnums& screenIndex)
+{
 	if (m_valid) {
 		m_screens[(int)m_currentIndex]->setVisible(false);
 		m_screens[(int)screenIndex]->enact();
@@ -156,7 +156,7 @@ void Uninstaller::beginUninstallation()
 		const auto directory = NST::Directory::SanitizePath(NST::from_wideString(m_directory));
 		std::vector<std::filesystem::directory_entry> entries;
 		if (std::filesystem::is_directory(directory))
-			for (const auto & entry : std::filesystem::recursive_directory_iterator(directory))
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
 				if (entry.is_regular_file())
 					entries.emplace_back(entry);
 
@@ -233,10 +233,10 @@ void Uninstaller::beginUninstallation()
 		std::filesystem::remove_all(directory, er);
 		NST::Progress::SetProgress(++progress);
 
-		// Remove registry entry for this uninstaller		
-		RegDeleteKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), KEY_ALL_ACCESS, NULL);		
+		// Remove registry entry for this uninstaller
+		RegDeleteKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), KEY_ALL_ACCESS, NULL);
 		NST::Progress::SetProgress(++progress);
-	});
+		});
 }
 
 void Uninstaller::dumpErrorLog()
@@ -316,6 +316,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	if (message == WM_PAINT)
 		ptr->paint();
 	else if (message == WM_DESTROY)
-		PostQuitMessage(0);	
+		PostQuitMessage(0);
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }

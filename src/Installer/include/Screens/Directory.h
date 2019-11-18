@@ -10,7 +10,7 @@ class Directory_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Directory_Screen();
-	Directory_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Directory_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

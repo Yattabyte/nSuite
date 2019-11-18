@@ -6,7 +6,7 @@
 #include <fstream>
 
 
-int PackCommand::execute(const int & argc, char * argv[]) const
+int PackCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
 	NST::Log::PushText(
@@ -34,16 +34,16 @@ int PackCommand::execute(const int & argc, char * argv[]) const
 			);
 			return EXIT_FAILURE;
 		}
-	}	
+	}
 
 	// If user provides a directory only, append a filename
-	if (std::filesystem::is_directory(dstDirectory)) 
+	if (std::filesystem::is_directory(dstDirectory))
 		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::filesystem::path(srcDirectory).stem().string() + ".npack";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".npack";
-	
+
 	// Try to compress the directory specified
 	NST::Directory directory(srcDirectory);
 	auto packBuffer = directory.make_package();

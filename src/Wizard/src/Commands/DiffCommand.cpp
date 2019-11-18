@@ -6,7 +6,7 @@
 #include <fstream>
 
 
-int DiffCommand::execute(const int & argc, char * argv[]) const 
+int DiffCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to log
 	NST::Log::PushText(
@@ -37,7 +37,7 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 			);
 			return EXIT_FAILURE;
 		}
-	}	
+	}
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) {
@@ -50,8 +50,8 @@ int DiffCommand::execute(const int & argc, char * argv[]) const
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".ndiff";
-	
-	// Try to diff the 2 directories specified	
+
+	// Try to diff the 2 directories specified
 	const auto diffBuffer = NST::Directory(oldDirectory).make_delta(NST::Directory(newDirectory));
 	if (!diffBuffer)
 		NST::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");

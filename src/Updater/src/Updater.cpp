@@ -9,10 +9,10 @@
 /** Fetch all patch files from the directory supplied.
 @param	srcDirectory	the directory to find patch files.
 @return					list of all patch files within the directory supplied. */
-static auto get_patches(const std::string & srcDirectory)
+static auto get_patches(const std::string& srcDirectory)
 {
 	std::vector<std::filesystem::directory_entry> patches;
-	for (const auto & entry : std::filesystem::recursive_directory_iterator(srcDirectory))
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(srcDirectory))
 		if (entry.is_regular_file() && entry.path().has_extension() && (entry.path().extension().string().find("ndiff") != std::string::npos))
 			patches.emplace_back(entry);
 	return patches;
@@ -22,9 +22,9 @@ static auto get_patches(const std::string & srcDirectory)
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	auto index = NST::Log::AddObserver([&](const std::string & message) {
+	auto index = NST::Log::AddObserver([&](const std::string& message) {
 		std::cout << message;
-	});
+		});
 
 	// Find all patch files?
 	const auto dstDirectory = NST::Directory::SanitizePath(NST::Directory::GetRunningDirectory());
@@ -61,7 +61,7 @@ int main()
 				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
 				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 				diffFile.close();
-				
+
 				// If patching success, write changes to disk
 				if (NST::Directory(dstDirectory).apply_delta(diffBuffer)) {
 					patchesApplied++;
@@ -90,5 +90,5 @@ int main()
 	// Pause and exit
 	NST::Log::RemoveObserver(index);
 	system("pause");
-	exit(EXIT_SUCCESS);	
+	exit(EXIT_SUCCESS);
 }

@@ -13,7 +13,7 @@ Finish_Screen::~Finish_Screen()
 	DestroyWindow(m_btnClose);
 }
 
-Finish_Screen::Finish_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Finish_Screen::Finish_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -33,7 +33,7 @@ Finish_Screen::Finish_Screen(Uninstaller * uninstaller, const HINSTANCE hInstanc
 	RegisterClassEx(&m_wcex);
 	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	setVisible(false);	
+	setVisible(false);
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;

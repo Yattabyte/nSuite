@@ -6,7 +6,7 @@
 #include <filesystem>
 
 
-int PatchCommand::execute(const int & argc, char * argv[]) const
+int PatchCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
 	NST::Log::PushText(

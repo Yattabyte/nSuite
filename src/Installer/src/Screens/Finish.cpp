@@ -17,7 +17,7 @@ Finish_Screen::~Finish_Screen()
 		DestroyWindow(checkboxHandle);
 }
 
-Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -96,7 +96,7 @@ Finish_Screen::Finish_Screen(Installer * installer, const HINSTANCE hInstance, c
 		vertical += 20;
 		checkIndex++;
 	}
-	
+
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
 	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
@@ -169,29 +169,29 @@ void Finish_Screen::goClose()
 		}
 		x++;
 	}
-	PostQuitMessage(0);	
+	PostQuitMessage(0);
 }
 
-void Finish_Screen::createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath)
+void Finish_Screen::createShortcut(const std::string& srcPath, const std::string& wrkPath, const std::string& dstPath)
 {
 	IShellLink* psl;
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
 		IPersistFile* ppf;
 
-		// Set the path to the shortcut target and add the description. 
+		// Set the path to the shortcut target and add the description.
 		psl->SetPath(srcPath.c_str());
 		psl->SetWorkingDirectory(wrkPath.c_str());
 		psl->SetIconLocation(srcPath.c_str(), 0);
 
-		// Query IShellLink for the IPersistFile interface, used for saving the 
-		// shortcut in persistent storage. 
+		// Query IShellLink for the IPersistFile interface, used for saving the
+		// shortcut in persistent storage.
 		if (SUCCEEDED(psl->QueryInterface(IID_IPersistFile, (LPVOID*)&ppf))) {
 			WCHAR wsz[MAX_PATH];
 
-			// Ensure that the string is Unicode. 
+			// Ensure that the string is Unicode.
 			MultiByteToWideChar(CP_ACP, 0, (dstPath + ".lnk").c_str(), -1, wsz, MAX_PATH);
 
-			// Save the link by calling IPersistFile::Save. 
+			// Save the link by calling IPersistFile::Save.
 			ppf->Save(wsz, TRUE);
 			ppf->Release();
 		}
@@ -221,8 +221,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {
-			if (controlHandle == ptr->m_btnClose) 
-				ptr->goClose();			
+			if (controlHandle == ptr->m_btnClose)
+				ptr->goClose();
 		}
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);

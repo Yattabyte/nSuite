@@ -9,9 +9,9 @@
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	auto index = NST::Log::AddObserver([&](const std::string & message) {
+	auto index = NST::Log::AddObserver([&](const std::string& message) {
 		std::cout << message;
-	});
+		});
 
 	NST::Log::PushText(
 		"                       ~\r\n"
@@ -25,11 +25,11 @@ int main()
 	const auto start = std::chrono::system_clock::now();
 	const auto dstDirectory = NST::Directory::SanitizePath(NST::Directory::GetRunningDirectory());
 	NST::Resource archive(IDR_ARCHIVE, "ARCHIVE");
-	if (!archive.exists()) 
+	if (!archive.exists())
 		NST::Log::PushText("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");
 	else {
 		// Parse the header
-		std::string packageName("");	
+		std::string packageName("");
 		// Report where we're unpacking to
 		NST::Log::PushText(
 			"Unpacking to the following directory:\r\n"
@@ -55,7 +55,7 @@ int main()
 			NST::Log::RemoveObserver(index);
 			system("pause");
 			return EXIT_SUCCESS;
-		}		
+		}
 	}
 	// Pause and exit
 	NST::Log::RemoveObserver(index);

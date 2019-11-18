@@ -18,13 +18,13 @@ struct vec2 { int x = 0, y = 0; };
 class Screen {
 public:
 	// Public (de)Constructors
-	Screen(Installer * installer, const vec2 & pos, const vec2 & size) : m_installer(installer), m_pos(pos), m_size(size) {}
-	
-	
+	Screen(Installer* installer, const vec2& pos, const vec2& size) : m_installer(installer), m_pos(pos), m_size(size) {}
+
+
 	// Public Methods
 	/** Sets the visibility & enable state of this window.
 	@param	state	whether or not to show and activate this window. */
-	void setVisible(const bool & state) {
+	void setVisible(const bool& state) {
 		ShowWindow(m_hwnd, state);
 		EnableWindow(m_hwnd, state);
 	}
@@ -38,7 +38,7 @@ public:
 
 
 	// Public Attributes
-	Installer * m_installer = nullptr;
+	Installer* m_installer = nullptr;
 	HWND m_hwnd = nullptr;
 
 

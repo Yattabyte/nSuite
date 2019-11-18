@@ -12,7 +12,7 @@ Welcome_Screen::~Welcome_Screen()
 	DestroyWindow(m_btnCancel);
 }
 
-Welcome_Screen::Welcome_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Welcome_Screen::Welcome_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(uninstaller, pos, size)
 {
 	// Create window class
@@ -33,7 +33,7 @@ Welcome_Screen::Welcome_Screen(Uninstaller * uninstaller, const HINSTANCE hInsta
 	m_hwnd = CreateWindow("WELCOME_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
-	
+
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
 	m_btnNext = CreateWindow("BUTTON", "Uninstall >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
@@ -56,7 +56,7 @@ void Welcome_Screen::paint()
 		Point(0, m_size.y),
 		Color(50, 25, 125, 225),
 		Color(255, 255, 255, 255)
-	); 
+	);
 	graphics.FillRectangle(&backgroundGradient, 0, 0, m_size.x, m_size.y);
 
 	// Preparing Fonts

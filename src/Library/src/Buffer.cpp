@@ -13,13 +13,13 @@ Buffer::~Buffer()
 	release();
 }
 
-Buffer::Buffer(const size_t & size) 
+Buffer::Buffer(const size_t& size)
 	: m_ownsData(true)
 {
 	resize(size);
 }
 
-Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
+Buffer::Buffer(std::byte* pointer, const size_t& range, bool hardCopy)
 	: m_ownsData(hardCopy)
 {
 	if (hardCopy) {
@@ -33,19 +33,19 @@ Buffer::Buffer(std::byte * pointer, const size_t & range, bool hardCopy)
 	}
 }
 
-Buffer::Buffer(const Buffer & other) : 
+Buffer::Buffer(const Buffer& other) :
 	m_size(other.m_size),
-	m_capacity(other.m_capacity), 
+	m_capacity(other.m_capacity),
 	m_ownsData(true)
 {
 	alloc(other.m_capacity);
 	std::copy(other.m_data, other.m_data + other.m_size, m_data);
 }
 
-Buffer::Buffer(Buffer && other) noexcept :
+Buffer::Buffer(Buffer&& other) noexcept :
 	m_data(other.m_data),
-	m_size(other.m_size), 
-	m_capacity(other.m_capacity), 
+	m_size(other.m_size),
+	m_capacity(other.m_capacity),
 	m_ownsData(other.m_ownsData)
 {
 	other.m_data = nullptr;
@@ -57,7 +57,7 @@ Buffer::Buffer(Buffer && other) noexcept :
 
 // Public Operators
 
-Buffer & Buffer::operator=(const Buffer & other)
+Buffer& Buffer::operator=(const Buffer& other)
 {
 	if (this != &other) {
 		release();
@@ -69,7 +69,7 @@ Buffer & Buffer::operator=(const Buffer & other)
 	return *this;
 }
 
-Buffer & Buffer::operator=(Buffer && other)
+Buffer& Buffer::operator=(Buffer&& other)
 {
 	if (this != &other) {
 		release();
@@ -89,7 +89,7 @@ Buffer & Buffer::operator=(Buffer && other)
 
 // Private Methods
 
-void Buffer::alloc(const size_t & capacity)
+void Buffer::alloc(const size_t& capacity)
 {
 	m_capacity = capacity;
 	m_data = new std::byte[m_capacity];
@@ -103,7 +103,7 @@ const bool Buffer::hasData() const
 	return m_size > 0ull;
 }
 
-const size_t &Buffer::size() const
+const size_t& Buffer::size() const
 {
 	return m_size;
 }
@@ -127,7 +127,7 @@ const size_t Buffer::hash() const
 }
 
 
-void Buffer::resize(const size_t & size)
+void Buffer::resize(const size_t& size)
 {
 	// Ensure this is a valid buffer
 	if (m_data != nullptr && m_size > 0ull && m_capacity > 0ull) {
@@ -165,31 +165,31 @@ void Buffer::release()
 
 // Public Mutable Data Accessors
 
-char * Buffer::cArray() const
+char* Buffer::cArray() const
 {
 	return reinterpret_cast<char*>(&m_data[0]);
 }
 
-std::byte * Buffer::data() const
+std::byte* Buffer::data() const
 {
 	return m_data;
 }
 
-std::byte & Buffer::operator[](const size_t & byteOffset) const
+std::byte& Buffer::operator[](const size_t& byteOffset) const
 {
 	return m_data[byteOffset];
 }
 
-size_t Buffer::readData(void * outputPtr, const size_t & size, const size_t byteOffset) const
+size_t Buffer::readData(void* outputPtr, const size_t& size, const size_t byteOffset) const
 {
 	if (outputPtr != nullptr && size > 0ull)
 		std::copy(&m_data[byteOffset], &m_data[byteOffset + size], reinterpret_cast<std::byte*>(outputPtr));
 	return byteOffset + size;
 }
 
-size_t Buffer::writeData(const void * inputPtr, const size_t & size, const size_t byteOffset)
+size_t Buffer::writeData(const void* inputPtr, const size_t& size, const size_t byteOffset)
 {
-	auto * ptrCast = reinterpret_cast<std::byte*>(const_cast<void*>(inputPtr));
+	auto* ptrCast = reinterpret_cast<std::byte*>(const_cast<void*>(inputPtr));
 	if (inputPtr != nullptr && size > 0ull)
 		std::copy(ptrCast, ptrCast + size, &m_data[byteOffset]);
 	return byteOffset + size;
@@ -238,8 +238,8 @@ std::optional<Buffer> Buffer::decompress() const
 	// Ensure buffer at least *exists*
 	if (hasData()) {
 		// Read in header
-		CompressionHeader header;		
-		std::byte * dataPtr(nullptr);
+		CompressionHeader header;
+		std::byte* dataPtr(nullptr);
 		size_t dataSize(0ull);
 		readHeader(&header, &dataPtr, dataSize);
 
@@ -268,15 +268,15 @@ std::optional<Buffer> Buffer::decompress() const
 
 /** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */
 struct Copy_Instruction : public Buffer::Differential_Instruction {
-	// Constructor 
+	// Constructor
 	Copy_Instruction() : Differential_Instruction('C') {}
 
 
 	// Interface Implementation
 	virtual size_t size() const override;
-	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
-	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
-	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Public Attributes
@@ -284,15 +284,15 @@ struct Copy_Instruction : public Buffer::Differential_Instruction {
 };
 /** Contains a block of data to insert into the 'new' file, at a given point. */
 struct Insert_Instruction : public Buffer::Differential_Instruction {
-	// Constructor 
+	// Constructor
 	Insert_Instruction() : Differential_Instruction('I') {}
 
 
 	// Interface Implementation
 	virtual size_t size() const override;
-	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
-	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
-	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Attributes
@@ -300,15 +300,15 @@ struct Insert_Instruction : public Buffer::Differential_Instruction {
 };
 /** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
 struct Repeat_Instruction : public Buffer::Differential_Instruction {
-	// Constructor 
+	// Constructor
 	Repeat_Instruction() : Differential_Instruction('R') {}
 
 
 	// Interface Implementation
 	virtual size_t size() const override;
-	virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const override;
-	virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const override;
-	virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) override;
+	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Attributes
@@ -316,7 +316,7 @@ struct Repeat_Instruction : public Buffer::Differential_Instruction {
 	std::byte m_value = std::byte(0);
 };
 
-std::optional<Buffer> Buffer::diff(const Buffer & target) const
+std::optional<Buffer> Buffer::diff(const Buffer& target) const
 {
 	// Ensure that at least ONE of the two source buffers exists
 	if (hasData() || target.hasData()) {
@@ -346,7 +346,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 					size_t largestContinuous(0ull);
 					for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2 += 8ull) {
 						const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_new[index2]);
-						// Check if values match						
+						// Check if values match
 						if (OLD_FIRST8 == NEW_FIRST8) {
 							size_t offset = 8ull;
 							// Restrict matches to be at least 32 bytes (minimum byte size of 1 instruction)
@@ -368,7 +368,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						}
 					}
 					// Check if the recently completed series saved the most continuous data
-					if (largestContinuous > bestContinuous && matches.size() <= bestMatchCount) {
+					if (largestContinuous > bestContinuous&& matches.size() <= bestMatchCount) {
 						// Save the series for later
 						bestContinuous = largestContinuous;
 						bestMatchCount = matches.size();
@@ -381,13 +381,13 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 				}
 
 				// Step 2: Generate instructions based on the matching-regions found
-				// Note: 
+				// Note:
 				//			data from [start1 -> +length] equals [start2 -> + length]
 				//			data before and after these ranges isn't equal
 				if (!bestSeries.size()) {
 					// NO MATCHES
 					// NEW INSERT_INSTRUCTION: use entire window
-					Insert_Instruction * inst = new Insert_Instruction();
+					Insert_Instruction* inst = new Insert_Instruction();
 					inst->m_index = bytesUsed_new;
 					inst->m_newData.resize(windowSize);
 					std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst->m_newData.data());
@@ -397,12 +397,12 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 				else {
 					size_t lastMatchEnd(bytesUsed_new);
 					for (size_t mx = 0, ms = bestSeries.size(); mx < ms; ++mx) {
-						const auto & match = bestSeries[mx];
+						const auto& match = bestSeries[mx];
 
 						const auto newDataLength = match.start2 - lastMatchEnd;
 						if (newDataLength > 0ull) {
 							// NEW INSERT_INSTRUCTION: Use data from end of last match until beginning of current match
-							Insert_Instruction * inst = new Insert_Instruction();
+							Insert_Instruction* inst = new Insert_Instruction();
 							inst->m_index = lastMatchEnd;
 							inst->m_newData.resize(newDataLength);
 							std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
@@ -411,7 +411,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						}
 
 						// NEW COPY_INSTRUCTION: Use data from beginning of match until end of match
-						Copy_Instruction * inst = new Copy_Instruction();
+						Copy_Instruction* inst = new Copy_Instruction();
 						inst->m_index = match.start2;
 						inst->m_beginRead = match.start1;
 						inst->m_endRead = match.start1 + match.length;
@@ -423,7 +423,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 					const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
 					if (newDataLength > 0ull) {
 						// NEW INSERT_INSTRUCTION: Use data from end of last match until end of window
-						Insert_Instruction * inst = new Insert_Instruction();
+						Insert_Instruction* inst = new Insert_Instruction();
 						inst->m_index = lastMatchEnd;
 						inst->m_newData.resize(newDataLength);
 						std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
@@ -431,7 +431,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						instructions.push_back(inst);
 					}
 				}
-			});
+				});
 			// increment
 			bytesUsed_old += windowSize;
 			bytesUsed_new += windowSize;
@@ -439,7 +439,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 
 		if (bytesUsed_new < size_new) {
 			// NEW INSERT_INSTRUCTION: Use data from end of last block until end-of-file
-			Insert_Instruction * inst = new Insert_Instruction();
+			Insert_Instruction* inst = new Insert_Instruction();
 			inst->m_index = bytesUsed_new;
 			inst->m_newData.resize(size_new - bytesUsed_new);
 			std::copy(&target[bytesUsed_new], &target[bytesUsed_new + (size_new - bytesUsed_new)], inst->m_newData.data());
@@ -461,7 +461,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						// Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
 						size_t max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
 						for (size_t x = 0ull; x < max; ++x) {
-							const auto & value_at_x = inst->m_newData[x];
+							const auto& value_at_x = inst->m_newData[x];
 							if (inst->m_newData[x + 36ull] != value_at_x)
 								continue; // quit early if the value 36 units away isn't the same as this index
 
@@ -477,13 +477,13 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 							if (length > 36ull) {
 								// Worthwhile to insert a new instruction
 								// Keep data up-until region where repeats occur
-								Insert_Instruction * instBefore = new Insert_Instruction();
+								Insert_Instruction* instBefore = new Insert_Instruction();
 								instBefore->m_index = inst->m_index;
 								instBefore->m_newData.resize(x);
 								std::copy(inst->m_newData.data(), inst->m_newData.data() + x, instBefore->m_newData.data());
 
 								// Generate new Repeat Instruction
-								Repeat_Instruction * instRepeat = new Repeat_Instruction();
+								Repeat_Instruction* instRepeat = new Repeat_Instruction();
 								instRepeat->m_index = inst->m_index + x;
 								instRepeat->m_value = value_at_x;
 								instRepeat->m_amount = length;
@@ -508,7 +508,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 						}
 					}
 				}
-			});
+				});
 		}
 
 		// Wait for jobs to finish
@@ -529,7 +529,7 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 			instruction->write(patchBuffer, m_index);
 
 		// Free up memory
-		for (auto * inst : instructions)
+		for (auto* inst : instructions)
 			delete inst;
 		instructions.clear();
 		instructions.shrink_to_fit();
@@ -551,13 +551,13 @@ std::optional<Buffer> Buffer::diff(const Buffer & target) const
 	return {};
 }
 
-std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
+std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 {
 	// Ensure diff buffer at least *exists* (ignore old buffer, when empty we treat instruction as a brand new file)
 	if (diffBuffer.hasData()) {
 		// Read in header
 		DiffHeader header;
-		std::byte * dataPtr(nullptr);
+		std::byte* dataPtr(nullptr);
 		size_t dataSize(0ull);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
@@ -575,7 +575,7 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 					byteIndex = diffInstructionBuffer->readData(&type, size_t(sizeof(char)), byteIndex);
 
 					// Make the instruction, reading it in from memory
-					Differential_Instruction * instruction(nullptr);
+					Differential_Instruction* instruction(nullptr);
 					switch (type) {
 					case 'R':
 						instruction = new Repeat_Instruction();
@@ -612,7 +612,7 @@ std::optional<Buffer> Buffer::patch(const Buffer & diffBuffer) const
 
 // Public Header Methods
 
-void Buffer::readHeader(Buffer::Header * header, std::byte ** dataPtr, size_t & dataSize) const
+void Buffer::readHeader(Buffer::Header* header, std::byte** dataPtr, size_t& dataSize) const
 {
 	(*header) << (const_cast<std::byte*>(&m_data[0]));
 
@@ -621,7 +621,7 @@ void Buffer::readHeader(Buffer::Header * header, std::byte ** dataPtr, size_t & 
 	dataSize = size() - full_header_size;
 }
 
-void Buffer::writeHeader(const Header * header)
+void Buffer::writeHeader(const Header* header)
 {
 	// Make container large enough to fit the old data + header
 	const size_t full_header_size = Header::TITLE_SIZE + header->size();
@@ -641,13 +641,13 @@ size_t Copy_Instruction::size() const
 	return sizeof(char) + (sizeof(size_t) * 3ull);
 }
 
-void Copy_Instruction::execute(Buffer & bufferNew, const Buffer & bufferOld) const
+void Copy_Instruction::execute(Buffer& bufferNew, const Buffer& bufferOld) const
 {
 	for (auto i = m_index, x = m_beginRead; i < bufferNew.size() && x < m_endRead && x < bufferOld.size(); ++i, ++x)
 		bufferNew[i] = bufferOld[x];
 }
 
-void Copy_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+void Copy_Instruction::write(Buffer& outputBuffer, size_t& byteIndex) const
 {
 	// Write Type
 	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
@@ -659,7 +659,7 @@ void Copy_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
 	byteIndex = outputBuffer.writeData(&m_endRead, size_t(sizeof(size_t)), byteIndex);
 }
 
-void Copy_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+void Copy_Instruction::read(const Buffer& inputBuffer, size_t& byteIndex)
 {
 	// Type already read
 	// Read Index
@@ -675,13 +675,13 @@ size_t Insert_Instruction::size() const
 	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * m_newData.size());
 }
 
-void Insert_Instruction::execute(Buffer & bufferNew, const Buffer &) const
+void Insert_Instruction::execute(Buffer& bufferNew, const Buffer&) const
 {
 	for (auto i = m_index, x = size_t(0ull), length = m_newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
 		bufferNew[i] = m_newData[x];
 }
 
-void Insert_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+void Insert_Instruction::write(Buffer& outputBuffer, size_t& byteIndex) const
 {
 	// Write Type
 	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
@@ -696,7 +696,7 @@ void Insert_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
 	}
 }
 
-void Insert_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+void Insert_Instruction::read(const Buffer& inputBuffer, size_t& byteIndex)
 {
 	// Type already read
 	// Read Index
@@ -716,13 +716,13 @@ size_t Repeat_Instruction::size() const
 	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
 }
 
-void Repeat_Instruction::execute(Buffer & bufferNew, const Buffer &) const
+void Repeat_Instruction::execute(Buffer& bufferNew, const Buffer&) const
 {
 	for (auto i = m_index, x = size_t(0ull); i < bufferNew.size() && x < m_amount; ++i, ++x)
 		bufferNew[i] = m_value;
 }
 
-void Repeat_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
+void Repeat_Instruction::write(Buffer& outputBuffer, size_t& byteIndex) const
 {
 	// Write Type
 	byteIndex = outputBuffer.writeData(&m_type, size_t(sizeof(char)), byteIndex);
@@ -734,7 +734,7 @@ void Repeat_Instruction::write(Buffer & outputBuffer, size_t & byteIndex) const
 	byteIndex = outputBuffer.writeData(&m_value, size_t(sizeof(char)), byteIndex);
 }
 
-void Repeat_Instruction::read(const Buffer & inputBuffer, size_t & byteIndex)
+void Repeat_Instruction::read(const Buffer& inputBuffer, size_t& byteIndex)
 {
 	// Type already read
 	// Read Index

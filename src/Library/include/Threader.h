@@ -20,7 +20,7 @@ namespace NST {
 			shutdown();
 		}
 		/** Creates a threader object and generates as many worker threads as the system allows. */
-		inline Threader(const size_t & maxThreads = std::thread::hardware_concurrency()) {
+		inline Threader(const size_t& maxThreads = std::thread::hardware_concurrency()) {
 			m_maxThreads = maxThreads;
 			for (size_t x = 0; x < m_maxThreads; ++x) {
 				std::thread thread([&]() {
@@ -42,7 +42,7 @@ namespace NST {
 							break;
 					}
 					m_threadsActive--;
-				});
+					});
 				thread.detach();
 				m_threads.emplace_back(std::move(thread));
 				m_threadsActive++;
@@ -53,7 +53,7 @@ namespace NST {
 		// Public Methods
 		/** Adds a job/task/function to the queue.
 		@param	func	the task to be executed on a separate thread. A function with void return type and no arguments. */
-		inline void addJob(const std::function<void()> && func) {
+		inline void addJob(const std::function<void()>&& func) {
 			std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
 			m_jobs.emplace_back(func);
 			m_jobsStarted++;

@@ -10,7 +10,7 @@ class Uninstall_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Uninstall_Screen();
-	Uninstall_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Uninstall_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

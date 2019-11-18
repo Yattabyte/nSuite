@@ -8,8 +8,8 @@
 
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-static HRESULT CreateDialogEventHandler(REFIID, void **);
-static HRESULT OpenFileDialog(std::string &);
+static HRESULT CreateDialogEventHandler(REFIID, void**);
+static HRESULT OpenFileDialog(std::string&);
 
 Directory_Screen::~Directory_Screen()
 {
@@ -23,7 +23,7 @@ Directory_Screen::~Directory_Screen()
 	DestroyWindow(m_btnCancel);
 }
 
-Directory_Screen::Directory_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Directory_Screen::Directory_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -49,7 +49,7 @@ Directory_Screen::Directory_Screen(Installer * installer, const HINSTANCE hInsta
 	m_directoryField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", m_installer->getDirectory().c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 10, 150, 400, 25, m_hwnd, NULL, hInstance, NULL);
 	m_packageField = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", ("\\" + m_installer->getPackageName()).c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_READONLY, 410, 150, 100, 25, m_hwnd, NULL, hInstance, NULL);
 	m_browseButton = CreateWindow("BUTTON", "Browse", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON, 520, 149, 100, 25, m_hwnd, NULL, hInstance, NULL);
-	
+
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
 	m_btnPrev = CreateWindow("BUTTON", "< Back", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 290, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
@@ -91,9 +91,9 @@ void Directory_Screen::paint()
 	graphics.DrawString(L"Choose a folder by pressing the 'Browse' button.", -1, &regFont, PointF{ 10, 100 }, &blackBrush);
 	graphics.DrawString(L"Alternatively, type a specific directory into the box below.", -1, &regFont, PointF{ 10, 115 }, &blackBrush);
 
-	constexpr static auto readableFileSize = [](const size_t & size) -> std::wstring {
+	constexpr static auto readableFileSize = [](const size_t& size) -> std::wstring {
 		auto remainingSize = (double)size;
-		constexpr static wchar_t * units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB", L" EB" };
+		constexpr static wchar_t* units[] = { L" B", L" KB", L" MB", L" GB", L" TB", L" PB", L" EB" };
 		int i = 0;
 		while (remainingSize > 1024.00) {
 			remainingSize /= 1024.00;
@@ -149,7 +149,7 @@ void Directory_Screen::goCancel()
 	PostQuitMessage(0);
 }
 
-static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
+static HRESULT CreateDialogEventHandler(REFIID riid, void** ppv)
 {
 	/** File Dialog Event Handler */
 	class DialogEventHandler : public IFileDialogEvents, public IFileDialogControlEvents {
@@ -184,25 +184,25 @@ static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
 
 
 		// IFileDialogEvents methods
-		IFACEMETHODIMP OnFileOk(IFileDialog *) { return S_OK; };
-		IFACEMETHODIMP OnFolderChange(IFileDialog *) { return S_OK; };
-		IFACEMETHODIMP OnFolderChanging(IFileDialog *, IShellItem *) { return S_OK; };
-		IFACEMETHODIMP OnHelp(IFileDialog *) { return S_OK; };
-		IFACEMETHODIMP OnSelectionChange(IFileDialog *) { return S_OK; };
-		IFACEMETHODIMP OnShareViolation(IFileDialog *, IShellItem *, FDE_SHAREVIOLATION_RESPONSE *) { return S_OK; };
-		IFACEMETHODIMP OnTypeChange(IFileDialog *) { return S_OK; };
-		IFACEMETHODIMP OnOverwrite(IFileDialog *, IShellItem *, FDE_OVERWRITE_RESPONSE *) { return S_OK; };
+		IFACEMETHODIMP OnFileOk(IFileDialog*) { return S_OK; };
+		IFACEMETHODIMP OnFolderChange(IFileDialog*) { return S_OK; };
+		IFACEMETHODIMP OnFolderChanging(IFileDialog*, IShellItem*) { return S_OK; };
+		IFACEMETHODIMP OnHelp(IFileDialog*) { return S_OK; };
+		IFACEMETHODIMP OnSelectionChange(IFileDialog*) { return S_OK; };
+		IFACEMETHODIMP OnShareViolation(IFileDialog*, IShellItem*, FDE_SHAREVIOLATION_RESPONSE*) { return S_OK; };
+		IFACEMETHODIMP OnTypeChange(IFileDialog*) { return S_OK; };
+		IFACEMETHODIMP OnOverwrite(IFileDialog*, IShellItem*, FDE_OVERWRITE_RESPONSE*) { return S_OK; };
 
 
 		// IFileDialogControlEvents methods
-		IFACEMETHODIMP OnItemSelected(IFileDialogCustomize *, DWORD, DWORD) { return S_OK; };
-		IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize *, DWORD) { return S_OK; };
-		IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize *, DWORD, BOOL) { return S_OK; };
-		IFACEMETHODIMP OnControlActivating(IFileDialogCustomize *, DWORD) { return S_OK; };
+		IFACEMETHODIMP OnItemSelected(IFileDialogCustomize*, DWORD, DWORD) { return S_OK; };
+		IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize*, DWORD) { return S_OK; };
+		IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize*, DWORD, BOOL) { return S_OK; };
+		IFACEMETHODIMP OnControlActivating(IFileDialogCustomize*, DWORD) { return S_OK; };
 	};
 
 	*ppv = NULL;
-	DialogEventHandler *pDialogEventHandler = new (std::nothrow) DialogEventHandler();
+	DialogEventHandler* pDialogEventHandler = new (std::nothrow) DialogEventHandler();
 	HRESULT hr = pDialogEventHandler ? S_OK : E_OUTOFMEMORY;
 	if (SUCCEEDED(hr)) {
 		hr = pDialogEventHandler->QueryInterface(riid, ppv);
@@ -211,11 +211,11 @@ static HRESULT CreateDialogEventHandler(REFIID riid, void **ppv)
 	return hr;
 }
 
-static HRESULT OpenFileDialog(std::string & directory)
+static HRESULT OpenFileDialog(std::string& directory)
 {
 	// CoCreate the File Open Dialog object.
-	IFileDialog *pfd = NULL;
-	IFileDialogEvents *pfde = NULL;
+	IFileDialog* pfd = NULL;
+	IFileDialogEvents* pfde = NULL;
 	DWORD dwCookie, dwFlags;
 	HRESULT hr = S_FALSE;
 	if (
@@ -228,7 +228,7 @@ static HRESULT OpenFileDialog(std::string & directory)
 		)
 	{
 		// The result is an IShellItem object.
-		IShellItem *psiResult;
+		IShellItem* psiResult;
 		PWSTR pszFilePath = NULL;
 		if (SUCCEEDED(pfd->GetResult(&psiResult)) && SUCCEEDED(psiResult->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath))) {
 			std::wstringstream ss;
@@ -263,7 +263,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	const auto ptr = reinterpret_cast<Directory_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	const auto controlHandle = HWND(lParam);
 	if (message == WM_PAINT)
-		ptr->paint();	
+		ptr->paint();
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {

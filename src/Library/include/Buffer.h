@@ -6,7 +6,7 @@
 
 
 namespace NST {
-	/** An expandable container representing a contiguous memory space. 
+	/** An expandable container representing a contiguous memory space.
 	Allocates 2x its creation size, expanding when its capacity is exhausted. */
 	class Buffer {
 	public:
@@ -22,40 +22,40 @@ namespace NST {
 		Buffer() = default;
 		/** Constructs a buffer of the specified size in bytes.
 		@param	size				the number of bytes to have available. */
-		explicit Buffer(const size_t & size);
+		explicit Buffer(const size_t& size);
 		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
 		@param	pointer				a pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
 		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
 		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
-		Buffer(std::byte * pointer, const size_t & range, bool hardCopy = true);
+		Buffer(std::byte* pointer, const size_t& range, bool hardCopy = true);
 		/** Constructs a buffer from another region of memory, pointing to it or copying from it.
 		@param	pointer				a pointer to a region of memory to adopt from.
 		@param	range				the number of bytes to use.
 		@param	hardCopy			if true: hard-copies the region's data, if false: adopts the pointer and NEVER calls delete[] on it.
 		@note	resizing may eventually force a hard copy, and the old pointer will be discarded (preserving data). */
-		inline Buffer(void * pointer, const size_t & range, bool hardCopy = true)
+		inline Buffer(void* pointer, const size_t& range, bool hardCopy = true)
 			: Buffer(reinterpret_cast<std::byte*>(pointer), range, hardCopy) { }
-		/** Copy Constructor. 
+		/** Copy Constructor.
 		@param	other				the buffer to copy from. */
-		Buffer(const Buffer & other);
-		/** Move Constructor. 
+		Buffer(const Buffer& other);
+		/** Move Constructor.
 		@param	other				the buffer to move from and invalidate. */
-		Buffer(Buffer && other) noexcept;
+		Buffer(Buffer&& other) noexcept;
 
 
-		
+
 
 
 		// Public Operators
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
-		Buffer & operator=(const Buffer & other);
+		Buffer& operator=(const Buffer& other);
 		/** Move-assignment operator.
 		@param	other				the buffer to move from.
 		@return						reference to this. */
-		Buffer & operator=(Buffer && other);
+		Buffer& operator=(Buffer&& other);
 
 
 		// Public Methods
@@ -64,7 +64,7 @@ namespace NST {
 		const bool hasData() const;
 		/** Returns the size of memory allocated by this buffer.
 		@return						number of bytes allocated. */
-		const size_t & size() const;
+		const size_t& size() const;
 		/** Generates a hash value derived from this buffer's contents.
 		@return						hash value for this buffer. */
 		const size_t hash() const;
@@ -74,7 +74,7 @@ namespace NST {
 		@note	Current memory model doesn't shrink, so no data should be lost.
 		@note	When capacity is expended, invalidates previous pointers retrieved by cArray(), data(), [], etc.
 		@param	size				the new size to use. */
-		void resize(const size_t & size);
+		void resize(const size_t& size);
 		/** Erases all buffer content and frees the memory this buffer allocated.
 		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc. */
 		void release();
@@ -84,32 +84,32 @@ namespace NST {
 		/** Retrieves a char array pointer to this buffer's data.
 		Does not copy underlying data.
 		@return						data pointer cast to char *. */
-		char * cArray() const;
+		char* cArray() const;
 		/** Retrieves a raw pointer to this buffer's data.
 		Does not copy underlying data.
 		@return						pointer to this buffer's data. */
-		std::byte * data() const;
+		std::byte* data() const;
 		/** Retrieves the data found in this buffer at the byte offset specified.
 		@param	byteOffset			how many bytes into this buffer to index at.
 		@return						reference to data found at the byte offset. */
-		std::byte & operator[](const size_t & byteOffset) const;
+		std::byte& operator[](const size_t& byteOffset) const;
 		/** Reads-out data found in this buffer, from a specific byte offset and size, to a given output pointer.
 		@param	outputPtr			pointer to copy the data to.
 		@param	size				the number of bytes to copy.
 		@param	byteOffset			how many bytes into this buffer to begin copying from.
 		@return						new byte offset = byteOffset + size. */
-		size_t readData(void * outputPtr, const size_t & size, const size_t byteOffset = 0) const;
+		size_t readData(void* outputPtr, const size_t& size, const size_t byteOffset = 0) const;
 		/** Writes-in data from an input pointer, from a specific byte offset and size, to this buffer.
 		@param	inputPtr			pointer to copy the data from.
 		@param	size				the number of bytes to copy.
 		@param	byteOffset			how many bytes into this buffer to begin copying to.
 		@return						new byte offset = byteOffset + size. */
-		size_t writeData(const void * inputPtr, const size_t & size, const size_t byteOffset = 0);
+		size_t writeData(const void* inputPtr, const size_t& size, const size_t byteOffset = 0);
 
 
 		// Public Manipulation Methods
 		/** Compresses this buffer into an equal or smaller-sized version.
-		@return						a pointer to the compressed buffer on compression success, empty otherwise.		
+		@return						a pointer to the compressed buffer on compression success, empty otherwise.
 		Buffer format:
 		------------------------------------------------------------------
 		| header: identifier title, uncompressed size | compressed data  |
@@ -120,16 +120,16 @@ namespace NST {
 		std::optional<Buffer> decompress() const;
 		/** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
 		@param	target				the newer of the 2 buffers.
-		@return						a pointer to the diff buffer on diff success, empty otherwise. 		
+		@return						a pointer to the diff buffer on diff success, empty otherwise.
 		Buffer format:
 		-----------------------------------------------------------------------------------
 		| header: identifier title, final target file size | compressed instruction data  |
 		----------------------------------------------------------------------------------- */
-		std::optional<Buffer> diff(const Buffer & target) const;
+		std::optional<Buffer> diff(const Buffer& target) const;
 		/** Generates a patched version of this buffer, using data found in the supplied diff buffer.
 		@param	diffBuffer			the diff buffer to patch with.
 		@return						a pointer to the patched buffer on patch success, empty otherwise. */
-		std::optional<Buffer> patch(const Buffer & diffBuffer) const;
+		std::optional<Buffer> patch(const Buffer& diffBuffer) const;
 
 
 		// Public Header Methods
@@ -137,11 +137,11 @@ namespace NST {
 		@param	header				specific subclass of header to hold the header contents.
 		@param	dataPtr				pointer updated with a pointer to the remaining data in the buffer, found after the header.
 		@param	dataSize			reference updated with the size of the remaining data ( = buffer size - header size ). */
-		void readHeader(Header * header, std::byte ** dataPtr, size_t & dataSize) const;
+		void readHeader(Header* header, std::byte** dataPtr, size_t& dataSize) const;
 		/** Writes-in data from an input header to the beginning of this buffer. Shifts old data down by the header size.
 		@note	Invalidates previous pointers retrieved by cArray(), data(), [], etc.
 		@param	header				the header to copy the data from. */
-		void writeHeader(const Header * header);
+		void writeHeader(const Header* header);
 
 
 		// Public Header Structs
@@ -156,7 +156,7 @@ namespace NST {
 			~Header() = default;
 			Header() = default;
 			/** Constructs a header with the title specified. */
-			inline Header(const char * title) {
+			inline Header(const char* title) {
 				strcpy_s(&m_title[0], TITLE_SIZE, title);
 			}
 
@@ -171,14 +171,14 @@ namespace NST {
 			/** Updates THIS with the data found in the input pointer.
 			@param	ptr				the pointer to source data from.
 			@return	offset version of the input ptr by the number of bytes read from it. */
-			inline virtual std::byte * operator << (std::byte * ptr) {
+			inline virtual std::byte* operator << (std::byte* ptr) {
 				std::copy(ptr, ptr + TITLE_SIZE, reinterpret_cast<std::byte*>(&m_title[0]));
 				return &ptr[TITLE_SIZE];
 			}
 			/** Updates the data in the input pointer with the data found in THIS.
 			@param	ptr				the pointer to write data to.
 			@return	offset version of the input ptr by the number of bytes written to it. */
-			inline virtual std::byte * operator >> (std::byte * ptr) const {
+			inline virtual std::byte* operator >> (std::byte* ptr) const {
 				std::copy(m_title, m_title + TITLE_SIZE, reinterpret_cast<char*>(ptr));
 				return &ptr[TITLE_SIZE];
 			}
@@ -200,12 +200,12 @@ namespace NST {
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
-			inline virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte* operator << (std::byte* ptr) override {
 				ptr = Header::operator<<(ptr);
 				std::copy(ptr, &ptr[size()], reinterpret_cast<std::byte*>(&m_uncompressedSize));
 				return &ptr[size()];
 			}
-			inline virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte* operator >> (std::byte* ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_uncompressedSize;
 				return &ptr[size()];
@@ -228,12 +228,12 @@ namespace NST {
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
-			inline virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte* operator << (std::byte* ptr) override {
 				ptr = Header::operator>>(ptr);
 				std::copy(ptr, &ptr[size()], reinterpret_cast<std::byte*>(&m_targetSize));
 				return &ptr[size()];
 			}
-			inline virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte* operator >> (std::byte* ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_targetSize;
 				return &ptr[size()];
@@ -245,18 +245,18 @@ namespace NST {
 		/** Super-class for buffer diff instructions. */
 		struct Differential_Instruction {
 			// Constructor
-			inline Differential_Instruction(const char & t) : m_type(t) {}
+			inline Differential_Instruction(const char& t) : m_type(t) {}
 
 
 			// Interface Declaration
 			/** Retrieve the byte-size of this instruction. */
 			virtual size_t size() const = 0;
 			/** Execute this instruction. */
-			virtual void execute(NST::Buffer & bufferNew, const NST::Buffer & bufferOld) const = 0;
+			virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const = 0;
 			/** Write-out this instruction to a buffer. */
-			virtual void write(NST::Buffer & outputBuffer, size_t & byteIndex) const = 0;
+			virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const = 0;
 			/** Read-in this instruction from a buffer. */
-			virtual void read(const NST::Buffer & inputBuffer, size_t & byteIndex) = 0;
+			virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) = 0;
 
 
 			// Attributes
@@ -264,16 +264,16 @@ namespace NST {
 			size_t m_index = 0ull;
 		};
 
-		
+
 	private:
 		// Private Methods
 		/** Allocate @capacity amount of memory for this buffer.
 		@param	capacity			the amount of bytes to allocate. */
-		void alloc(const size_t & capacity);
+		void alloc(const size_t& capacity);
 
-		
+
 		// Private Attributes
-		std::byte * m_data = nullptr;
+		std::byte* m_data = nullptr;
 		size_t m_size = 0ull, m_capacity = 0ull;
 		bool m_ownsData = false;
 	};

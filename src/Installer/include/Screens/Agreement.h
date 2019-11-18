@@ -10,7 +10,7 @@ class Agreement_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Agreement_Screen();
-	Agreement_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Agreement_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

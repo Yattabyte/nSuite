@@ -21,35 +21,35 @@ namespace NST {
 		@param	path				the absolute path to a desired folder or a package file.
 		@param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
 		@return						directory generated from the parameters chosen. */
-		explicit Directory(const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
+		explicit Directory(const std::string& path, const std::vector<std::string>& exclusions = std::vector<std::string>());
 		/** Constructs a virtual directory directly from a package buffer.
 		@param	package				the package buffer to unpack and virtualize.
 		@param	path				the absolute path to a desired folder or a package file.
 		@param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
 		@return						directory generated from the parameters chosen. */
-		Directory(const Buffer & package, const std::string & path, const std::vector<std::string> & exclusions = std::vector<std::string>());
+		Directory(const Buffer& package, const std::string& path, const std::vector<std::string>& exclusions = std::vector<std::string>());
 		/** Copy Constructor.
 		@param	other				the directory to copy from. */
-		Directory(const Directory & other);
+		Directory(const Directory& other);
 		/** Move Constructor.
 		@param	other				the directory to move from and invalidate. */
-		Directory(Directory && other) noexcept;
+		Directory(Directory&& other) noexcept;
 
 
 		// Public Operators
 		/** Copy-assignment operator.
 		@param	other				the buffer to copy from.
 		@return						reference to this. */
-		Directory & operator=(const Directory & other) noexcept;
+		Directory& operator=(const Directory& other) noexcept;
 		/** Move-assignment operator.
 		@param	other				the buffer to move from.
 		@return						reference to this. */
-		Directory & operator=(Directory && other) noexcept;
-				
+		Directory& operator=(Directory&& other) noexcept;
+
 
 		// Public Manipulation Methods
 		/** Compresses all data found within this directory into an .npack - package formatted buffer.
-		@return						on success a pointer to a buffer containing the compressed directory contents, empty otherwise. 
+		@return						on success a pointer to a buffer containing the compressed directory contents, empty otherwise.
 		Buffer format:
 		-------------------------------------------------------------------------------------------
 		| header: identifier title, package name size, package name  | compressed directory data  |
@@ -57,22 +57,22 @@ namespace NST {
 		std::optional<Buffer> make_package() const;
 		/** Writes this virtual directory's contents to disk. */
 		bool apply_folder() const;
-		/** Compares this directory against another, generating a .ndiff - delta formatted buffer, for transforming this into the new directory.		
+		/** Compares this directory against another, generating a .ndiff - delta formatted buffer, for transforming this into the new directory.
 		@param	newDirectory		the newer directory to compare against.
-		@return						on success a pointer to a buffer containing the patch instructions. 
+		@return						on success a pointer to a buffer containing the patch instructions.
 		Buffer format:
 		-------------------------------------------------------------------------------
 		| header: identifier title, modified file count  | compressed directory data  |
 		------------------------------------------------------------------------------- */
-		std::optional<Buffer> make_delta(const Directory & newDirectory) const;
+		std::optional<Buffer> make_delta(const Directory& newDirectory) const;
 		/** Executes the instructions contained within a .ndiff - delta formatted buffer upon this directory.
 		@param	diffBuffer			the buffer containing the compressed diff instructions.
 		@return						true on update success, false otherwise. */
-		bool apply_delta(const Buffer & diffBuffer);
+		bool apply_delta(const Buffer& diffBuffer);
 
 
 		// Public Accessor/Information Methods
-		/** Retrieve the number of files in this directory. 
+		/** Retrieve the number of files in this directory.
 		@return						the file-count for this directory. */
 		size_t fileCount() const;
 		/** Calculates the number of bytes this directory uses.
@@ -90,7 +90,7 @@ namespace NST {
 		/** Cleans up the target string representing a file path, specifically targeting the number of slashes.
 		@param	path				the path to be sanitized.
 		@return						the sanitized version of path. */
-		static std::string SanitizePath(const std::string & path);
+		static std::string SanitizePath(const std::string& path);
 
 
 		// Public Header Structs
@@ -102,8 +102,8 @@ namespace NST {
 
 			// (de)Constructors
 			PackageHeader() = default;
-			inline PackageHeader(const size_t & folderNameSize, const char * folderName) : 
-				Header("nSuite package"), 
+			inline PackageHeader(const size_t& folderNameSize, const char* folderName) :
+				Header("nSuite package"),
 				m_charCount(folderNameSize),
 				m_folderName(std::string(folderName, folderNameSize))
 			{
@@ -117,17 +117,17 @@ namespace NST {
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t) + (sizeof(char) * m_charCount));
 			}
-			inline virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte* operator << (std::byte* ptr) override {
 				ptr = Header::operator<<(ptr);
 				std::copy(ptr, &ptr[size_t(sizeof(size_t))], reinterpret_cast<std::byte*>(&m_charCount));
 				ptr = &ptr[size_t(sizeof(size_t))];
-				char * folderArray = new char[m_charCount];
+				char* folderArray = new char[m_charCount];
 				std::copy(ptr, &ptr[size_t(sizeof(char) * m_charCount)], reinterpret_cast<std::byte*>(&folderArray[0]));
 				m_folderName = std::string(folderArray, m_charCount);
 				delete[] folderArray;
 				return &ptr[size_t(sizeof(char) * m_charCount)];
 			}
-			inline virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte* operator >> (std::byte* ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_charCount;
 				ptr = &ptr[size_t(sizeof(size_t))];
@@ -152,12 +152,12 @@ namespace NST {
 			inline virtual size_t size() const override {
 				return size_t(sizeof(size_t));
 			}
-			inline virtual std::byte * operator << (std::byte * ptr) override {
+			inline virtual std::byte* operator << (std::byte* ptr) override {
 				ptr = Header::operator<<(ptr);
 				std::copy(ptr, &ptr[size()], reinterpret_cast<std::byte*>(&m_fileCount));
 				return &ptr[size()];
 			}
-			inline virtual std::byte *operator >> (std::byte * ptr) const override {
+			inline virtual std::byte* operator >> (std::byte* ptr) const override {
 				ptr = Header::operator>>(ptr);
 				*reinterpret_cast<size_t*>(ptr) = m_fileCount;
 				return &ptr[size()];
@@ -177,17 +177,17 @@ namespace NST {
 		// Private Methods
 		/** Populates this virtual directory with the contents found in the specified path.
 		@param	path				the path to pull data from, on disk. */
-		void virtualize_folder(const std::string & path);
+		void virtualize_folder(const std::string& path);
 		/** Populates this virtual directory with the contents found in the specified package.
 		@param	buffer				the package buffer to pull data from. */
-		void virtualize_package(const Buffer & buffer);
+		void virtualize_package(const Buffer& buffer);
 
 
 		// Private Attributes
 		struct DirFile {
 			std::string relativePath = "";
 			size_t size = 0ull;
-			std::byte * data = nullptr;
+			std::byte* data = nullptr;
 		};
 		std::vector<DirFile> m_files;
 		std::string m_directoryPath = "", m_directoryName = "";

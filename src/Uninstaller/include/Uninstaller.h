@@ -12,7 +12,7 @@ class Screen;
 
 /** Encapsulates the logical features of the uninstaller. */
 class Uninstaller {
-public:	
+public:
 	// Public (de)Constructors
 	~Uninstaller() = default;
 	explicit Uninstaller(const HINSTANCE hInstance);
@@ -30,10 +30,10 @@ public:
 	void invalidate();
 	/** Make the screen identified by the supplied enum as active, deactivating the previous screen.
 	@param	screenIndex		the new screen to use. */
-	void setScreen(const ScreenEnums & screenIndex);
+	void setScreen(const ScreenEnums& screenIndex);
 	/** Retrieves the installation directory.
 	@return					active installation directory. */
-	std::wstring getDirectory() const;	
+	std::wstring getDirectory() const;
 	/** Uninstall the application. */
 	void beginUninstallation();
 	/** Dumps error log to disk. */
@@ -44,10 +44,10 @@ public:
 
 	// Public manifest strings
 	/** Compares wide-char strings. */
-	struct compare_string { 
-		bool operator()(const wchar_t * a, const wchar_t * b) const { 
-			return wcscmp(a, b) < 0; 
-		} 
+	struct compare_string {
+		bool operator()(const wchar_t* a, const wchar_t* b) const {
+			return wcscmp(a, b) < 0;
+		}
 	};
 	std::map<const wchar_t*, std::wstring, compare_string> m_mfStrings;
 
@@ -57,7 +57,7 @@ private:
 	Uninstaller();
 
 
-	// Private Attributes	
+	// Private Attributes
 	NST::Threader m_threader;
 	NST::Resource m_manifest;
 	std::wstring m_directory = L"";

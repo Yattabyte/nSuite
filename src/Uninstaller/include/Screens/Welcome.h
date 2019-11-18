@@ -10,7 +10,7 @@ class Welcome_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Welcome_Screen();
-	Welcome_Screen(Uninstaller * uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Welcome_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations

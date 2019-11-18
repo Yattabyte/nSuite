@@ -12,7 +12,7 @@ class Screen;
 
 /** Encapsulates the logical features of the installer. */
 class Installer {
-public:	
+public:
 	// Public (de)Constructors
 	~Installer() = default;
 	explicit Installer(const HINSTANCE hInstance);
@@ -30,13 +30,13 @@ public:
 	void invalidate();
 	/** Make the screen identified by the supplied enum as active, deactivating the previous screen.
 	@param	screenIndex		the new screen to use. */
-	void setScreen(const ScreenEnums & screenIndex);
+	void setScreen(const ScreenEnums& screenIndex);
 	/** Retrieves the current directory chosen for installation.
 	@return					active installation directory. */
 	std::string getDirectory() const;
 	/** Sets a new installation directory.
 	@param	directory		new installation directory. */
-	void setDirectory(const std::string & directory);
+	void setDirectory(const std::string& directory);
 	/** Retrieves the size of the drive used in the current directory.
 	@return					the drive capacity. */
 	size_t getDirectorySizeCapacity() const;
@@ -59,10 +59,10 @@ public:
 
 	// Public manifest strings
 	/** Compares wide-char strings. */
-	struct compare_string { 
-		bool operator()(const wchar_t * a, const wchar_t * b) const { 
-			return wcscmp(a, b) < 0; 
-		} 
+	struct compare_string {
+		bool operator()(const wchar_t* a, const wchar_t* b) const {
+			return wcscmp(a, b) < 0;
+		}
 	};
 	std::map<const wchar_t*, std::wstring, compare_string> m_mfStrings;
 

@@ -7,7 +7,7 @@
 #include <fstream>
 
 
-int PackagerCommand::execute(const int & argc, char * argv[]) const
+int PackagerCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
 	NST::Log::PushText(
@@ -44,7 +44,7 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
 		dstDirectory += ".exe";
-	
+
 	// Try to compress the directory specified
 	bool success = false;
 	HANDLE handle(nullptr);
@@ -71,7 +71,7 @@ int PackagerCommand::execute(const int & argc, char * argv[]) const
 				// Try to update packager's resource
 				handle = BeginUpdateResource(dstDirectory.c_str(), false);
 				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
-					NST::Log::PushText("Cannot write archive contents to the package, aborting...\r\n");				
+					NST::Log::PushText("Cannot write archive contents to the package, aborting...\r\n");
 				else {
 					// Output results
 					NST::Log::PushText(

@@ -8,11 +8,11 @@
 
 
 /** This state encapsulates the "Finished - Screen" state. */
-class Finish_Screen: public Screen {
+class Finish_Screen : public Screen {
 public:
 	// Public (de)Constructors
 	~Finish_Screen();
-	Finish_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size);
+	Finish_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size);
 
 
 	// Public Interface Implementations
@@ -27,7 +27,7 @@ public:
 	@param	srcPath		path to the target file that the shortcut will link to.
 	@param	wrkPath		path to the working directory for the shortcut.
 	@param	dstPath		path to where the shortcut should be placed. */
-	void createShortcut(const std::string & srcPath, const std::string & wrkPath, const std::string & dstPath);
+	void createShortcut(const std::string& srcPath, const std::string& wrkPath, const std::string& dstPath);
 
 
 	// Public Attributes

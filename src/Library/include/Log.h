@@ -9,17 +9,17 @@
 
 namespace NST {
 	/** A Singleton text log which most of the library uses.
-	Accepts observers to listen in on newly logged text. 
+	Accepts observers to listen in on newly logged text.
 	Hides singleton pattern from user, exposes functionality through static methods. */
 	class Log {
 	public:
-		// Public Static Methods	
+		// Public Static Methods
 		/** Add an observer method to be called when new text is pushed into the log.
 		@param	func		the observer function. (only parameter is a string)
 		@param	pullOld		(optional) if true, will immediately call the function with the entire log's contents to this point
 		@return				handle for this observer, used to remove it. */
-		inline static size_t AddObserver(const std::function<void(const std::string &)> && func, const bool & pullOld = true) {
-			auto & instance = GetInstance();
+		inline static size_t AddObserver(const std::function<void(const std::string&)>&& func, const bool& pullOld = true) {
+			auto& instance = GetInstance();
 
 			// Dump old text if this is true
 			if (pullOld)
@@ -31,14 +31,14 @@ namespace NST {
 		}
 		/** Remove an observer method used for when text is added to the log.
 		@param	index		the handle given for the observer, when added. */
-		inline static void RemoveObserver(const size_t & index) {
-			auto & instance = GetInstance();
+		inline static void RemoveObserver(const size_t& index) {
+			auto& instance = GetInstance();
 			instance.m_observers.erase(instance.m_observers.begin() + index);
 		}
 		/** Push new text into the log.
 		@param	text		the new text to add. */
-		inline static void PushText(const std::string & text) {
-			auto & instance = GetInstance();
+		inline static void PushText(const std::string& text) {
+			auto& instance = GetInstance();
 
 			// Add the message to the log
 			instance.m_log += text;
@@ -60,7 +60,7 @@ namespace NST {
 		inline Log() = default;
 		inline Log(Log const&) = delete;
 		inline void operator=(Log const&) = delete;
-		inline static Log & GetInstance() {
+		inline static Log& GetInstance() {
 			static Log instance;
 			return instance;
 		}
@@ -68,7 +68,7 @@ namespace NST {
 
 		// Private Attributes
 		std::string m_log;
-		std::vector<std::function<void(const std::string &)>> m_observers;
+		std::vector<std::function<void(const std::string&)>> m_observers;
 	};
 };
 

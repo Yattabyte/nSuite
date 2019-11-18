@@ -42,7 +42,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 	return (int)msg.wParam;
 }
 
-Installer::Installer() 
+Installer::Installer()
 	: m_archive(IDR_ARCHIVE, "ARCHIVE"), m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ull)
 {
 	// Process manifest
@@ -54,7 +54,7 @@ Installer::Installer()
 		// Cycle through every line, inserting attributes into the manifest map
 		std::wstring attrib, value;
 		while (ss >> attrib && ss >> std::quoted(value)) {
-			wchar_t * k = new wchar_t[attrib.length() + 1];
+			wchar_t* k = new wchar_t[attrib.length() + 1];
 			wcscpy_s(k, attrib.length() + 1, attrib.data());
 			m_mfStrings[k] = value;
 		}
@@ -67,21 +67,21 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	TCHAR pf[MAX_PATH];
 	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
 	setDirectory(std::string(pf));
-	
+
 	// Check archive integrity
 	bool success_archive = false;
-	if (!m_archive.exists()) 
+	if (!m_archive.exists())
 		NST::Log::PushText("Critical failure: archive doesn't exist!\r\n");
 	else {
 		// Read in header
 		NST::Directory::PackageHeader packageHeader;
-		std::byte * dataPtr(nullptr);
+		std::byte* dataPtr(nullptr);
 		size_t dataSize(0ull);
 		NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false).readHeader(&packageHeader, &dataPtr, dataSize);
 
 		// Ensure header title matches
 		if (!packageHeader.isValid())
-			NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");		
+			NST::Log::PushText("Critical failure: cannot parse packaged content's header!\r\n");
 		else {
 			m_packageName = packageHeader.m_folderName;
 			NST::Buffer::CompressionHeader header;
@@ -89,17 +89,17 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 
 			// Ensure header title matches
 			if (!header.isValid())
-				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header!\r\n");			
+				NST::Log::PushText("Critical failure: cannot parse archive's packaged content's header!\r\n");
 			else {
 				// Get header payload -> uncompressed size
 				m_maxSize = header.m_uncompressedSize;
-				
+
 				// If no name is found, use the package name (if available)
 				if (m_mfStrings[L"name"].empty() && !m_packageName.empty())
 					m_mfStrings[L"name"] = NST::to_wideString(m_packageName);
 
 				success_archive = true;
-			}			
+			}
 		}
 	}
 	// Create window class
@@ -117,18 +117,18 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
-	if (!RegisterClassEx(&wcex)) 
-		NST::Log::PushText("Critical failure: could not create main window!\r\n");	
+	if (!RegisterClassEx(&wcex))
+		NST::Log::PushText("Critical failure: could not create main window!\r\n");
 	else {
 		// Create window
 		m_hwnd = CreateWindowW(
-			L"Installer",(m_mfStrings[L"name"] + L" Installer").c_str(),
+			L"Installer", (m_mfStrings[L"name"] + L" Installer").c_str(),
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
 			NULL, NULL, hInstance, NULL
 		);
-		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);		
+		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 		auto dwStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_STYLE);
 		auto dwExStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
 		RECT rc = { 0, 0, 800, 500 };
@@ -161,8 +161,8 @@ void Installer::invalidate()
 	m_valid = false;
 }
 
-void Installer::setScreen(const ScreenEnums & screenIndex)
-{	
+void Installer::setScreen(const ScreenEnums& screenIndex)
+{
 	if (m_valid) {
 		m_screens[(int)m_currentIndex]->setVisible(false);
 		m_screens[(int)screenIndex]->enact();
@@ -178,7 +178,7 @@ std::string Installer::getDirectory() const
 	return m_directory;
 }
 
-void Installer::setDirectory(const std::string & directory)
+void Installer::setDirectory(const std::string& directory)
 {
 	m_directory = directory;
 	try {
@@ -186,7 +186,7 @@ void Installer::setDirectory(const std::string & directory)
 		m_capacity = spaceInfo.capacity;
 		m_available = spaceInfo.available;
 	}
-	catch (std::filesystem::filesystem_error &) {
+	catch (std::filesystem::filesystem_error&) {
 		m_capacity = 0ull;
 		m_available = 0ull;
 	}
@@ -225,7 +225,7 @@ void Installer::beginInstallation()
 			// Un-package using the rest of the resource file
 			const auto directory = NST::Directory::SanitizePath(getDirectory());
 			const auto virtual_directory = NST::Directory(NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false), directory);
-			if (!virtual_directory.apply_folder())			
+			if (!virtual_directory.apply_folder())
 				invalidate();
 			else {
 				// Write uninstaller to disk
@@ -262,7 +262,7 @@ void Installer::beginInstallation()
 						version = NST::from_wideString(m_mfStrings[L"version"]),
 						publisher = NST::from_wideString(m_mfStrings[L"publisher"]),
 						icon = NST::from_wideString(m_mfStrings[L"icon"]);
-					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize/1024ull);
+					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize / 1024ull);
 					if (icon.empty())
 						icon = uninstallerPath;
 					else
@@ -280,7 +280,7 @@ void Installer::beginInstallation()
 				RegCloseKey(hkey);
 			}
 		}
-	});
+		});
 }
 
 void Installer::dumpErrorLog()

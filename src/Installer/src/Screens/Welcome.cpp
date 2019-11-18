@@ -12,7 +12,7 @@ Welcome_Screen::~Welcome_Screen()
 	DestroyWindow(m_btnCancel);
 }
 
-Welcome_Screen::Welcome_Screen(Installer * installer, const HINSTANCE hInstance, const HWND parent, const vec2 & pos, const vec2 & size)
+Welcome_Screen::Welcome_Screen(Installer* installer, const HINSTANCE hInstance, const HWND parent, const vec2& pos, const vec2& size)
 	: Screen(installer, pos, size)
 {
 	// Create window class
@@ -99,7 +99,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 {
 	const auto ptr = reinterpret_cast<Welcome_Screen*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (message == WM_PAINT)
-		ptr->paint();	
+		ptr->paint();
 	else if (message == WM_COMMAND) {
 		const auto notification = HIWORD(wParam);
 		if (notification == BN_CLICKED) {
