@@ -73,7 +73,7 @@ Directory::Directory(const std::string& path, const std::vector<std::string>& ex
 		auto libSuccess = LoadLibraryA(path.c_str());
 		auto handle = GetModuleHandle(path.c_str());
 		Resource fileResource(IDR_ARCHIVE, "ARCHIVE", handle);
-		if (!libSuccess || handle == NULL || !fileResource.exists())
+		if ((libSuccess == nullptr) || handle == nullptr || !fileResource.exists())
 			Log::PushText("Error: cannot load the resource file specified!\r\n");
 		else {
 			virtualize_package(Buffer(fileResource.getPtr(), fileResource.getSize(), false));
@@ -171,7 +171,7 @@ Directory& Directory::operator=(Directory&& other) noexcept
 std::optional<Buffer> Directory::make_package() const
 {
 	// Ensure the source-directory has files
-	if (!m_files.size())
+	if (m_files.empty())
 		Log::PushText("Error: this directory with no (usable) files to package!\r\n");
 	else {
 		// Get a folder name, to name the package after
@@ -184,7 +184,7 @@ std::optional<Buffer> Directory::make_package() const
 
 		// Ensure we have a non-zero sized archive
 		size_t archiveSize(byteCount());
-		if (archiveSize == 0ull)
+		if (archiveSize == 0ULL)
 			Log::PushText("Error: the archive has no data in it!\r\n");
 		else {
 			// Create file buffer to contain all the file data
@@ -192,7 +192,7 @@ std::optional<Buffer> Directory::make_package() const
 
 			// Write file data into the buffer
 			Progress::SetRange(archiveSize + 2);
-			size_t byteIndex(0ull);
+			size_t byteIndex(0ULL);
 			for (auto& file : m_files) {
 				// Write the total number of characters in the path string, into the archive
 				const auto pathSize = file.relativePath.size();
@@ -205,7 +205,7 @@ std::optional<Buffer> Directory::make_package() const
 				byteIndex = filebuffer.writeData(&file.size, size_t(sizeof(size_t)), byteIndex);
 
 				// Copy the file data
-				if (file.size > 0ull && file.data != nullptr)
+				if (file.size > 0ULL && file.data != nullptr)
 					std::copy(file.data, file.data + file.size, &filebuffer[byteIndex]);
 				byteIndex += file.size;
 				Progress::SetProgress(byteIndex);
@@ -236,13 +236,13 @@ std::optional<Buffer> Directory::make_package() const
 bool Directory::apply_folder() const
 {
 	// Ensure the source-directory has files
-	if (!m_files.size())
+	if (m_files.empty())
 		Log::PushText("Error: this virtual-directory has no (usable) files to un-package!\r\n");
 	else {
 		Log::PushText("Dumping directory contents...\r\n");
 		const auto finalDestionation = SanitizePath(m_directoryPath + "\\" + m_directoryName);
 		Progress::SetRange(m_files.size());
-		size_t fileCount(0ull);
+		size_t fileCount(0ULL);
 		for (auto& file : m_files) {
 			// Write-out the file
 			const auto fullPath = finalDestionation + file.relativePath;
@@ -269,7 +269,7 @@ bool Directory::apply_folder() const
 std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 {
 	// Declarations that will only be used here
-	typedef std::vector<DirFile> PathList;
+	using PathList = std::vector<DirFile>;
 	typedef std::vector<std::pair<DirFile, DirFile>> PathPairList;
 	static constexpr auto getFileLists = [](const Directory& oldDirectory, const Directory& newDirectory, PathPairList& commonFiles, PathList& addFiles, PathList& delFiles) {
 		// Find all common and new files first
@@ -331,16 +331,19 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 	else {
 		// Retrieve all common, added, and removed files
 		PathPairList commonFiles;
-		PathList addedFiles, removedFiles;
+		PathList addedFiles;
+		PathList removedFiles;
 		getFileLists(*this, newDirectory, commonFiles, addedFiles, removedFiles);
 		// Generate Instructions from file lists, store them in this expanding buffer
 		Buffer instructionBuffer;
 
 		// These files are common, maybe some have changed
-		size_t fileCount(0ull);
+		size_t fileCount(0ULL);
 		for (const auto& cFiles : commonFiles) {
-			Buffer oldBuffer(cFiles.first.data, cFiles.first.size, false), newBuffer(cFiles.second.data, cFiles.second.size);
-			size_t oldHash(oldBuffer.hash()), newHash(newBuffer.hash());
+			Buffer oldBuffer(cFiles.first.data, cFiles.first.size, false);
+			Buffer newBuffer(cFiles.second.data, cFiles.second.size);
+			size_t oldHash(oldBuffer.hash());
+			size_t newHash(newBuffer.hash());
 			if (oldHash != newHash) {
 				// Files are different versions
 				auto diffBuffer = oldBuffer.diff(newBuffer);
@@ -361,7 +364,7 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 			auto diffBuffer = Buffer().diff(newBuffer);
 			if (diffBuffer) {
 				Log::PushText("Adding file \"" + nFile.relativePath + "\"\r\n");
-				writeInstructions(nFile.relativePath, 0ull, newHash, *diffBuffer, 'N', instructionBuffer);
+				writeInstructions(nFile.relativePath, 0ULL, newHash, *diffBuffer, 'N', instructionBuffer);
 				fileCount++;
 			}
 		}
@@ -373,7 +376,7 @@ std::optional<Buffer> Directory::make_delta(const Directory& newDirectory) const
 			Buffer oldBuffer(oFile.data, oFile.size, false);
 			size_t oldHash(oldBuffer.hash());
 			Log::PushText("Removing file \"" + oFile.relativePath + "\"\r\n");
-			writeInstructions(oFile.relativePath, oldHash, 0ull, Buffer(), 'D', instructionBuffer);
+			writeInstructions(oFile.relativePath, oldHash, 0ULL, Buffer(), 'D', instructionBuffer);
 			fileCount++;
 		}
 		removedFiles.clear();
@@ -407,7 +410,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 		// Read in header
 		Directory::PatchHeader header;
 		std::byte* dataPtr(nullptr);
-		size_t dataSize(0ull);
+		size_t dataSize(0ULL);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
@@ -423,15 +426,18 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 				struct FileInstruction {
 					std::string path = "", fullPath = "";
 					Buffer instructionBuffer;
-					size_t diff_oldHash = 0ull, diff_newHash = 0ull;
+					size_t diff_oldHash = 0ULL, diff_newHash = 0ULL;
 				};
-				std::vector<FileInstruction> diffFiles, addedFiles, removedFiles;
-				size_t files(0ull), byteIndex(0ull);
+				std::vector<FileInstruction> diffFiles;
+				std::vector<FileInstruction> addedFiles;
+				std::vector<FileInstruction> removedFiles;
+				size_t files(0ULL);
+				size_t byteIndex(0ULL);
 				while (files < header.m_fileCount) {
 					FileInstruction FI;
 
 					// Read file path length
-					size_t pathLength(0ull);
+					size_t pathLength(0ULL);
 					byteIndex = instructionBuffer->readData(&pathLength, size_t(sizeof(size_t)), byteIndex);
 					FI.path.resize(pathLength);
 
@@ -450,7 +456,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 					byteIndex = instructionBuffer->readData(&FI.diff_newHash, size_t(sizeof(size_t)), byteIndex);
 
 					// Read buffer size
-					size_t instructionSize(0ull);
+					size_t instructionSize(0ULL);
 					byteIndex = instructionBuffer->readData(&instructionSize, size_t(sizeof(size_t)), byteIndex);
 
 					// Copy buffer
@@ -474,7 +480,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 				for (FileInstruction& inst : diffFiles) {
 					// Try to read the target file
 					Buffer oldBuffer;
-					size_t oldHash(0ull);
+					size_t oldHash(0ULL);
 					DirFile* storedFile = nullptr;
 					std::find_if(m_files.begin(), m_files.end(), [&](auto& file) -> bool {
 						if (file.relativePath == inst.path) {
@@ -486,7 +492,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 						return false;
 						});
 					// Fail on missing Files
-					if (!storedFile)
+					if (storedFile == nullptr)
 						Log::PushText("Critical failure: Cannot update \"" + inst.path + "\", the file is missing!\r\n");
 					// Fail on empty files
 					else if (!oldBuffer.hasData())
@@ -546,7 +552,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 					for (FileInstruction& inst : addedFiles) {
 						// Try to read the target file
 						Buffer oldBuffer;
-						size_t oldHash(0ull);
+						size_t oldHash(0ULL);
 						DirFile* storedFile = nullptr;
 						std::find_if(m_files.begin(), m_files.end(), [&](auto& file) -> bool {
 							if (file.relativePath == inst.path) {
@@ -557,7 +563,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 							}
 							return false;
 							});
-						if (storedFile) {
+						if (storedFile != nullptr) {
 							// Skip updated files
 							if (oldHash == inst.diff_newHash) {
 								Log::PushText("The file \"" + inst.path + "\" already exists, skipping...\r\n");
@@ -581,7 +587,7 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 									Log::PushText("Critical failure: new file is corrupted (hash mismatch)!\r\n");
 								else {
 									// Update virtualized folder
-									std::byte* fileData = new std::byte[newBuffer->size()];
+									auto* fileData = new std::byte[newBuffer->size()];
 									std::copy(newBuffer->data(), &newBuffer->data()[newBuffer->size()], fileData);
 									m_files.push_back(DirFile{ inst.path, newBuffer->size(), fileData });
 
@@ -608,10 +614,10 @@ bool Directory::apply_delta(const Buffer& diffBuffer)
 						// If we made it this far, it should be safe to delete all files
 						for (FileInstruction& inst : removedFiles) {
 							// Try to read the target file (may not exist)
-							size_t oldHash(0ull);
+							size_t oldHash(0ULL);
 
 							// Try to find the source file (may not exist)
-							size_t index(0ull);
+							size_t index(0ULL);
 							for (const auto& file : m_files) {
 								if (file.relativePath == inst.path) {
 									oldHash = Buffer(file.data, file.size, false).hash();
@@ -656,7 +662,7 @@ size_t Directory::fileCount() const
 
 size_t Directory::byteCount() const
 {
-	size_t spaceUsed(0ull);
+	size_t spaceUsed(0ULL);
 	for (const auto& file : m_files) {
 		const auto pathSize = file.relativePath.size();
 		const size_t unitSize =
@@ -672,7 +678,7 @@ size_t Directory::byteCount() const
 std::string Directory::GetStartMenuPath()
 {
 	char cPath[FILENAME_MAX];
-	if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_COMMON_PROGRAMS, NULL, 0, cPath)))
+	if (SUCCEEDED(SHGetFolderPathA(nullptr, CSIDL_COMMON_PROGRAMS, nullptr, 0, cPath)))
 		return std::string(cPath);
 	return std::string();
 }
@@ -680,7 +686,7 @@ std::string Directory::GetStartMenuPath()
 std::string Directory::GetDesktopPath()
 {
 	char cPath[FILENAME_MAX];
-	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE))
+	if (SHGetSpecialFolderPathA(HWND_DESKTOP, cPath, CSIDL_DESKTOP, FALSE) != 0)
 		return std::string(cPath);
 	return std::string();
 }
@@ -688,8 +694,8 @@ std::string Directory::GetDesktopPath()
 std::string Directory::GetRunningDirectory()
 {
 	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)))
-		cCurrentPath[sizeof(cCurrentPath) - 1ull] = char('\0');
+	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)) != nullptr)
+		cCurrentPath[sizeof(cCurrentPath) - 1ULL] = char('\0');
 	return std::string(cCurrentPath);
 }
 
@@ -697,9 +703,9 @@ std::string Directory::SanitizePath(const std::string& path)
 {
 	std::string cpy(path);
 	while (cpy.front() == '"' || cpy.front() == '\'' || cpy.front() == '\"' || cpy.front() == '\\')
-		cpy.erase(0ull, 1ull);
+		cpy.erase(0ULL, 1ULL);
 	while (cpy.back() == '"' || cpy.back() == '\'' || cpy.back() == '\"' || cpy.back() == '\\')
-		cpy.erase(cpy.size() - 1ull);
+		cpy.erase(cpy.size() - 1ULL);
 	return cpy;
 }
 
@@ -732,7 +738,7 @@ void Directory::virtualize_package(const Buffer& buffer)
 	// Read in header
 	Directory::PackageHeader header;
 	std::byte* dataPtr(nullptr);
-	size_t dataSize(0ull);
+	size_t dataSize(0ULL);
 	buffer.readHeader(&header, &dataPtr, dataSize);
 	m_directoryName = header.m_folderName;
 
@@ -746,22 +752,22 @@ void Directory::virtualize_package(const Buffer& buffer)
 			Log::PushText("Critical failure: cannot decompress package file!\r\n");
 		else {
 			// Get lists of all files involved
-			size_t byteIndex(0ull);
+			size_t byteIndex(0ULL);
 			Progress::SetRange(decompressedBuffer->size() + 100);
 			while (byteIndex < decompressedBuffer->size()) {
 				// Read path char count, path string, and file size
-				size_t pathSize(0ull);
+				size_t pathSize(0ULL);
 				byteIndex = decompressedBuffer->readData(&pathSize, size_t(sizeof(size_t)), byteIndex);
 				char* pathArray = new char[pathSize];
 				byteIndex = decompressedBuffer->readData(pathArray, pathSize, byteIndex);
 				const std::string path(pathArray, pathSize);
 				delete[] pathArray;
-				size_t fileSize(0ull);
+				size_t fileSize(0ULL);
 				byteIndex = decompressedBuffer->readData(&fileSize, size_t(sizeof(size_t)), byteIndex);
 
 				// Save the file data
 				if (check_exclusion(path, m_exclusions)) {
-					std::byte* fileData = new std::byte[fileSize];
+					auto* fileData = new std::byte[fileSize];
 					std::copy(&((*decompressedBuffer)[byteIndex]), &((*decompressedBuffer)[byteIndex + fileSize]), fileData);
 					m_files.push_back(DirFile{ path, fileSize, fileData });
 				}

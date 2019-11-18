@@ -61,13 +61,13 @@ namespace NST {
 		// Public Methods
 		/** Retrieves whether or not this buffer is not zero-sized.
 		@return						true if has memory allocated, false otherwise. */
-		const bool hasData() const;
+		bool hasData() const;
 		/** Returns the size of memory allocated by this buffer.
 		@return						number of bytes allocated. */
-		const size_t& size() const;
+		size_t size() const;
 		/** Generates a hash value derived from this buffer's contents.
 		@return						hash value for this buffer. */
-		const size_t hash() const;
+		size_t hash() const;
 		/** Changes the size of this buffer to the new size specified.
 		@note	Will expand if the size requested is greater than the buffer's internal capacity.
 		@note	Expansion will copy over all data that will fit.

@@ -4,7 +4,7 @@
 #include <filesystem>
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
 Finish_Screen::~Finish_Screen()
 {
@@ -25,19 +25,19 @@ Finish_Screen::Finish_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance
 	m_wcex.cbWndExtra = 0;
 	m_wcex.hInstance = hInstance;
 	m_wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	m_wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	m_wcex.lpszMenuName = NULL;
+	m_wcex.lpszMenuName = nullptr;
 	m_wcex.lpszClassName = "FINISH_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, nullptr, hInstance, nullptr);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
 }
 
 void Finish_Screen::enact()
@@ -79,9 +79,9 @@ void Finish_Screen::goClose()
 	cmd.erase(std::find(cmd.begin(), cmd.end(), L'\0'), cmd.end());
 	cmd += L"\"";
 	STARTUPINFOW si = { 0 };
-	PROCESS_INFORMATION pi = { 0 };
+	PROCESS_INFORMATION pi = { nullptr };
 
-	CreateProcessW(NULL, (LPWSTR)cmd.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	CreateProcessW(nullptr, (LPWSTR)cmd.c_str(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
 
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);

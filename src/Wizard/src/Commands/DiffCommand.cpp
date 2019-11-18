@@ -18,7 +18,9 @@ int DiffCommand::execute(const int& argc, char* argv[]) const
 	);
 
 	// Check command line arguments
-	std::string oldDirectory(""), newDirectory(""), dstDirectory("");
+	std::string oldDirectory;
+	std::string newDirectory;
+	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
 		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
@@ -42,7 +44,7 @@ int DiffCommand::execute(const int& argc, char* argv[]) const
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory)) {
 		const auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		std::tm bt;
+		std::tm bt{};
 		localtime_s(&bt, &time);
 		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
 	}

@@ -19,19 +19,19 @@
 #include "Screens/Fail.h"
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE /*unused*/, _In_ LPSTR /*unused*/, _In_ int /*unused*/)
 {
-	CoInitialize(NULL);
+	CoInitialize(nullptr);
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
-	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 	Uninstaller uninstaller(hInstance);
 
 	// Main message loop:
 	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
+	while (GetMessage(&msg, nullptr, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -42,7 +42,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 }
 
 Uninstaller::Uninstaller()
-	: m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ull)
+	: m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ULL)
 {
 	// Process manifest
 	if (m_manifest.exists()) {
@@ -51,9 +51,10 @@ Uninstaller::Uninstaller()
 		ss << reinterpret_cast<char*>(m_manifest.getPtr());
 
 		// Cycle through every line, inserting attributes into the manifest map
-		std::wstring attrib, value;
+		std::wstring attrib;
+		std::wstring value;
 		while (ss >> attrib && ss >> std::quoted(value)) {
-			wchar_t* k = new wchar_t[attrib.length() + 1];
+			auto* k = new wchar_t[attrib.length() + 1];
 			wcscpy_s(k, attrib.length() + 1, attrib.data());
 			m_mfStrings[k] = value;
 		}
@@ -83,9 +84,9 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, (LPCSTR)IDI_ICON1);
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = NULL;
+	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = "Uninstaller";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex)) {
@@ -98,17 +99,17 @@ Uninstaller::Uninstaller(const HINSTANCE hInstance) : Uninstaller()
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
-			NULL, NULL, hInstance, NULL
+			nullptr, nullptr, hInstance, nullptr
 		);
 
 		// Create
 		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this); auto dwStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_STYLE);
 		auto dwExStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
 		RECT rc = { 0, 0, 800, 500 };
-		ShowWindow(m_hwnd, true);
+		ShowWindow(m_hwnd, 1);
 		UpdateWindow(m_hwnd);
-		AdjustWindowRectEx(&rc, dwStyle, false, dwExStyle);
-		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
+		AdjustWindowRectEx(&rc, dwStyle, 0, dwExStyle);
+		SetWindowPos(m_hwnd, nullptr, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
 		m_screens[(int)ScreenEnums::WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
@@ -138,7 +139,7 @@ void Uninstaller::setScreen(const ScreenEnums& screenIndex)
 		m_screens[(int)screenIndex]->setVisible(true);
 		m_currentIndex = screenIndex;
 		RECT rc = { 0, 0, 160, 500 };
-		RedrawWindow(m_hwnd, &rc, NULL, RDW_INVALIDATE);
+		RedrawWindow(m_hwnd, &rc, nullptr, RDW_INVALIDATE);
 	}
 }
 
@@ -159,9 +160,12 @@ void Uninstaller::beginUninstallation()
 					entries.emplace_back(entry);
 
 		// Find all shortcuts
-		const auto desktopStrings = m_mfStrings[L"shortcut"], startmenuStrings = m_mfStrings[L"startmenu"];
-		size_t numD = std::count(desktopStrings.begin(), desktopStrings.end(), L',') + 1ull, numS = std::count(startmenuStrings.begin(), startmenuStrings.end(), L',') + 1ull;
-		std::vector<std::wstring> shortcuts_d, shortcuts_s;
+		const auto desktopStrings = m_mfStrings[L"shortcut"];
+		const auto startmenuStrings = m_mfStrings[L"startmenu"];
+		size_t numD = std::count(desktopStrings.begin(), desktopStrings.end(), L',') + 1ull;
+		size_t numS = std::count(startmenuStrings.begin(), startmenuStrings.end(), L',') + 1ull;
+		std::vector<std::wstring> shortcuts_d;
+		std::vector<std::wstring> shortcuts_s;
 		shortcuts_d.reserve(numD + numS);
 		shortcuts_s.reserve(numD + numS);
 		size_t last = 0;
@@ -203,7 +207,7 @@ void Uninstaller::beginUninstallation()
 
 		// Remove all files in the installation folder, list them
 		std::error_code er;
-		if (!entries.size())
+		if (entries.empty())
 			NST::Log::PushText("Already uninstalled / no files found.\r\n");
 		else {
 			for (const auto& entry : entries) {
@@ -241,10 +245,10 @@ void Uninstaller::dumpErrorLog()
 {
 	// Dump error log to disk
 	const auto dir = NST::Directory::GetRunningDirectory() + "\\error_log.txt";
-	const auto t = std::time(0);
+	const auto t = std::time(nullptr);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);
-	std::string logData("");
+	std::string logData;
 
 	// If the log doesn't exist, add header text
 	if (!std::filesystem::exists(dir))

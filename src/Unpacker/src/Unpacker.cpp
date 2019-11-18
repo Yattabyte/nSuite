@@ -29,7 +29,7 @@ int main()
 		NST::Log::PushText("Cannot access archive resource (may be absent, corrupt, or have different identifiers), aborting...\r\n");
 	else {
 		// Parse the header
-		std::string packageName("");
+		std::string packageName;
 		// Report where we're unpacking to
 		NST::Log::PushText(
 			"Unpacking to the following directory:\r\n"

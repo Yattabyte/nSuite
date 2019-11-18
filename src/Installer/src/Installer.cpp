@@ -20,19 +20,19 @@
 #include "Screens/Fail.h"
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
-int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ int)
+int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE /*unused*/, _In_ LPSTR /*unused*/, _In_ int /*unused*/)
 {
-	CoInitialize(NULL);
+	CoInitialize(nullptr);
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
-	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 	Installer installer(hInstance);
 
 	// Main message loop:
 	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
+	while (GetMessage(&msg, nullptr, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -43,7 +43,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_ HINSTANCE, _In_ LPSTR, _In_ 
 }
 
 Installer::Installer()
-	: m_archive(IDR_ARCHIVE, "ARCHIVE"), m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ull)
+	: m_archive(IDR_ARCHIVE, "ARCHIVE"), m_manifest(IDR_MANIFEST, "MANIFEST"), m_threader(1ULL)
 {
 	// Process manifest
 	if (m_manifest.exists()) {
@@ -52,9 +52,10 @@ Installer::Installer()
 		ss << reinterpret_cast<char*>(m_manifest.getPtr());
 
 		// Cycle through every line, inserting attributes into the manifest map
-		std::wstring attrib, value;
+		std::wstring attrib;
+		std::wstring value;
 		while (ss >> attrib && ss >> std::quoted(value)) {
-			wchar_t* k = new wchar_t[attrib.length() + 1];
+			auto* k = new wchar_t[attrib.length() + 1];
 			wcscpy_s(k, attrib.length() + 1, attrib.data());
 			m_mfStrings[k] = value;
 		}
@@ -65,7 +66,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 {
 	// Get user's program files directory
 	TCHAR pf[MAX_PATH];
-	SHGetSpecialFolderPath(0, pf, CSIDL_PROGRAM_FILES, FALSE);
+	SHGetSpecialFolderPath(nullptr, pf, CSIDL_PROGRAM_FILES, FALSE);
 	setDirectory(std::string(pf));
 
 	// Check archive integrity
@@ -76,7 +77,7 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 		// Read in header
 		NST::Directory::PackageHeader packageHeader;
 		std::byte* dataPtr(nullptr);
-		size_t dataSize(0ull);
+		size_t dataSize(0ULL);
 		NST::Buffer(m_archive.getPtr(), m_archive.getSize(), false).readHeader(&packageHeader, &dataPtr, dataSize);
 
 		// Ensure header title matches
@@ -112,9 +113,9 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, (LPCSTR)IDI_ICON1);
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = NULL;
+	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = "Installer";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 	if (!RegisterClassEx(&wcex))
@@ -126,16 +127,16 @@ Installer::Installer(const HINSTANCE hInstance) : Installer()
 			WS_OVERLAPPED | WS_VISIBLE | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			800, 500,
-			NULL, NULL, hInstance, NULL
+			nullptr, nullptr, hInstance, nullptr
 		);
 		SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 		auto dwStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_STYLE);
 		auto dwExStyle = (DWORD)GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
 		RECT rc = { 0, 0, 800, 500 };
-		ShowWindow(m_hwnd, true);
+		ShowWindow(m_hwnd, 1);
 		UpdateWindow(m_hwnd);
-		AdjustWindowRectEx(&rc, dwStyle, false, dwExStyle);
-		SetWindowPos(m_hwnd, NULL, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
+		AdjustWindowRectEx(&rc, dwStyle, 0, dwExStyle);
+		SetWindowPos(m_hwnd, nullptr, 0, 0, rc.right - rc.left, rc.bottom - rc.top, SWP_NOZORDER | SWP_NOMOVE);
 
 		// The portions of the screen that change based on input
 		m_screens[(int)ScreenEnums::WELCOME_SCREEN] = new Welcome_Screen(this, hInstance, m_hwnd, { 170,0 }, { 630, 500 });
@@ -169,7 +170,7 @@ void Installer::setScreen(const ScreenEnums& screenIndex)
 		m_screens[(int)screenIndex]->setVisible(true);
 		m_currentIndex = screenIndex;
 		RECT rc = { 0, 0, 160, 500 };
-		RedrawWindow(m_hwnd, &rc, NULL, RDW_INVALIDATE);
+		RedrawWindow(m_hwnd, &rc, nullptr, RDW_INVALIDATE);
 	}
 }
 
@@ -187,8 +188,8 @@ void Installer::setDirectory(const std::string& directory)
 		m_available = spaceInfo.available;
 	}
 	catch (std::filesystem::filesystem_error&) {
-		m_capacity = 0ull;
-		m_available = 0ull;
+		m_capacity = 0ULL;
+		m_available = 0ULL;
 	}
 }
 
@@ -216,7 +217,8 @@ void Installer::beginInstallation()
 {
 	m_threader.addJob([&]() {
 		// Acquire the uninstaller resource
-		NST::Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER"), manifest(IDR_MANIFEST, "MANIFEST");
+		NST::Resource uninstaller(IDR_UNINSTALLER, "UNINSTALLER");
+		NST::Resource manifest(IDR_MANIFEST, "MANIFEST");
 		if (!uninstaller.exists()) {
 			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
 			setScreen(Installer::ScreenEnums::FAIL_SCREEN);
@@ -247,7 +249,7 @@ void Installer::beginInstallation()
 					std::string(reinterpret_cast<char*>(manifest.getPtr()), manifest.getSize())
 					+ "\r\ndirectory \"" + newDir + "\""
 				);
-				auto handle = BeginUpdateResource(uninstallerPath.c_str(), false);
+				auto handle = BeginUpdateResource(uninstallerPath.c_str(), 0);
 				if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPVOID)newManifest.c_str(), (DWORD)newManifest.size())) {
 					NST::Log::PushText("Cannot write manifest contents to the uninstaller, aborting...\r\n");
 					invalidate();
@@ -256,26 +258,30 @@ void Installer::beginInstallation()
 
 				// Add uninstaller to system registry
 				HKEY hkey;
-				if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, NULL) == ERROR_SUCCESS) {
+				if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + m_mfStrings[L"name"]).c_str(), 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, nullptr, &hkey, nullptr) == ERROR_SUCCESS) {
 					auto
-						name = NST::from_wideString(m_mfStrings[L"name"]),
-						version = NST::from_wideString(m_mfStrings[L"version"]),
-						publisher = NST::from_wideString(m_mfStrings[L"publisher"]),
+						name = NST::from_wideString(m_mfStrings[L"name"]);
+					auto
+						version = NST::from_wideString(m_mfStrings[L"version"]);
+					auto
+						publisher = NST::from_wideString(m_mfStrings[L"publisher"]);
+					auto
 						icon = NST::from_wideString(m_mfStrings[L"icon"]);
-					DWORD ONE = 1, SIZE = (DWORD)(m_maxSize / 1024ull);
+					DWORD ONE = 1;
+					auto SIZE = (DWORD)(m_maxSize / 1024ull);
 					if (icon.empty())
 						icon = uninstallerPath;
 					else
 						icon = fullDirectory + icon;
-					RegSetKeyValueA(hkey, 0, "UninstallString", REG_SZ, (LPCVOID)uninstallerPath.c_str(), (DWORD)uninstallerPath.size());
-					RegSetKeyValueA(hkey, 0, "DisplayIcon", REG_SZ, (LPCVOID)icon.c_str(), (DWORD)icon.size());
-					RegSetKeyValueA(hkey, 0, "DisplayName", REG_SZ, (LPCVOID)name.c_str(), (DWORD)name.size());
-					RegSetKeyValueA(hkey, 0, "DisplayVersion", REG_SZ, (LPCVOID)version.c_str(), (DWORD)version.size());
-					RegSetKeyValueA(hkey, 0, "InstallLocation", REG_SZ, (LPCVOID)fullDirectory.c_str(), (DWORD)fullDirectory.size());
-					RegSetKeyValueA(hkey, 0, "Publisher", REG_SZ, (LPCVOID)publisher.c_str(), (DWORD)publisher.size());
-					RegSetKeyValueA(hkey, 0, "NoModify", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
-					RegSetKeyValueA(hkey, 0, "NoRepair", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
-					RegSetKeyValueA(hkey, 0, "EstimatedSize", REG_DWORD, (LPCVOID)&SIZE, (DWORD)sizeof(DWORD));
+					RegSetKeyValueA(hkey, nullptr, "UninstallString", REG_SZ, (LPCVOID)uninstallerPath.c_str(), (DWORD)uninstallerPath.size());
+					RegSetKeyValueA(hkey, nullptr, "DisplayIcon", REG_SZ, (LPCVOID)icon.c_str(), (DWORD)icon.size());
+					RegSetKeyValueA(hkey, nullptr, "DisplayName", REG_SZ, (LPCVOID)name.c_str(), (DWORD)name.size());
+					RegSetKeyValueA(hkey, nullptr, "DisplayVersion", REG_SZ, (LPCVOID)version.c_str(), (DWORD)version.size());
+					RegSetKeyValueA(hkey, nullptr, "InstallLocation", REG_SZ, (LPCVOID)fullDirectory.c_str(), (DWORD)fullDirectory.size());
+					RegSetKeyValueA(hkey, nullptr, "Publisher", REG_SZ, (LPCVOID)publisher.c_str(), (DWORD)publisher.size());
+					RegSetKeyValueA(hkey, nullptr, "NoModify", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
+					RegSetKeyValueA(hkey, nullptr, "NoRepair", REG_DWORD, (LPCVOID)&ONE, (DWORD)sizeof(DWORD));
+					RegSetKeyValueA(hkey, nullptr, "EstimatedSize", REG_DWORD, (LPCVOID)&SIZE, (DWORD)sizeof(DWORD));
 				}
 				RegCloseKey(hkey);
 			}
@@ -287,10 +293,10 @@ void Installer::dumpErrorLog()
 {
 	// Dump error log to disk
 	const auto dir = NST::Directory::GetRunningDirectory() + "\\error_log.txt";
-	const auto t = std::time(0);
+	const auto t = std::time(nullptr);
 	char dateData[127];
 	ctime_s(dateData, 127, &t);
-	std::string logData("");
+	std::string logData;
 
 	// If the log doesn't exist, add header text
 	if (!std::filesystem::exists(dir))

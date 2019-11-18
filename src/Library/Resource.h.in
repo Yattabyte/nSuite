@@ -40,9 +40,12 @@ namespace NST {
 		/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
 		inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
 			m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
-			m_hMemory = LoadResource(moduleHandle, m_hResource);
-			m_ptr = LockResource(m_hMemory);
-			m_size = SizeofResource(moduleHandle, m_hResource);
+			if (m_hResource != 0)
+				m_hMemory = LoadResource(moduleHandle, m_hResource);
+			if (m_hMemory != 0)
+				m_ptr = LockResource(m_hMemory);
+			if (m_hResource != 0)
+				m_size = SizeofResource(moduleHandle, m_hResource);
 		}
 
 

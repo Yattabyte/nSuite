@@ -27,7 +27,7 @@ public:
 	@param	srcPath		path to the target file that the shortcut will link to.
 	@param	wrkPath		path to the working directory for the shortcut.
 	@param	dstPath		path to where the shortcut should be placed. */
-	void createShortcut(const std::string& srcPath, const std::string& wrkPath, const std::string& dstPath);
+	static void createShortcut(const std::string& srcPath, const std::string& wrkPath, const std::string& dstPath);
 
 
 	// Public Attributes

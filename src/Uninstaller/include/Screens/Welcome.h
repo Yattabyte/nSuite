@@ -22,7 +22,7 @@ public:
 	/** Switch to the next state. */
 	void goNext();
 	/** Switch to the cancel state. */
-	void goCancel();
+	static void goCancel();
 
 
 	// Public Attributes

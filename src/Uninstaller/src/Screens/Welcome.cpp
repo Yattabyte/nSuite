@@ -2,7 +2,7 @@
 #include "Uninstaller.h"
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
 Welcome_Screen::~Welcome_Screen()
 {
@@ -24,20 +24,20 @@ Welcome_Screen::Welcome_Screen(Uninstaller* uninstaller, const HINSTANCE hInstan
 	m_wcex.cbWndExtra = 0;
 	m_wcex.hInstance = hInstance;
 	m_wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	m_wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOWFRAME);
-	m_wcex.lpszMenuName = NULL;
+	m_wcex.lpszMenuName = nullptr;
 	m_wcex.lpszClassName = "WELCOME_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("WELCOME_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("WELCOME_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, nullptr, hInstance, nullptr);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnNext = CreateWindow("BUTTON", "Uninstall >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
-	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnNext = CreateWindow("BUTTON", "Uninstall >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
+	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
 }
 
 void Welcome_Screen::enact()

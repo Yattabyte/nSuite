@@ -20,7 +20,7 @@ public:
 
 	// Public Methods
 	/** Switch to the next state. */
-	void goClose();
+	static void goClose();
 
 
 	// Public Attributes

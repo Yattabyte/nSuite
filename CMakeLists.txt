@@ -2,7 +2,7 @@
 ### nSuite Tools ###
 ####################
 cmake_minimum_required(VERSION 3.10)
-project(nSuiteTools VERSION 1.3.4 DESCRIPTION "Directory and buffer compression & diffing tools.")
+project(nSuiteTools VERSION 1.3.5 DESCRIPTION "Directory and buffer compression & diffing tools.")
 
 # Get dependency directory locations from the user
 set(LZ4_DIR "" CACHE PATH "LZ4 root directory")

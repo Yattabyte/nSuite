@@ -5,7 +5,7 @@
 #include <fstream>
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
 Fail_Screen::~Fail_Screen()
 {
@@ -28,18 +28,18 @@ Fail_Screen::Fail_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, co
 	m_wcex.cbWndExtra = 0;
 	m_wcex.hInstance = hInstance;
 	m_wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	m_wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	m_wcex.lpszMenuName = NULL;
+	m_wcex.lpszMenuName = nullptr;
 	m_wcex.lpszClassName = "FAIL_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("FAIL_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("FAIL_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, nullptr, hInstance, nullptr);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create error log
-	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", 0, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
+	m_hwndLog = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", nullptr, WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, nullptr, hInstance, nullptr);
 	SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)"Error Log:\r\n");
 	m_logIndex = NST::Log::AddObserver([&](const std::string& message) {
 		SendMessage(m_hwndLog, EM_REPLACESEL, FALSE, (LPARAM)message.c_str());
@@ -47,7 +47,7 @@ Fail_Screen::Fail_Screen(Uninstaller* uninstaller, const HINSTANCE hInstance, co
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
 }
 
 void Fail_Screen::enact()

@@ -5,7 +5,7 @@
 #include <filesystem>
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
 Finish_Screen::~Finish_Screen()
 {
@@ -29,23 +29,25 @@ Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, co
 	m_wcex.cbWndExtra = 0;
 	m_wcex.hInstance = hInstance;
 	m_wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	m_wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	m_wcex.lpszMenuName = NULL;
+	m_wcex.lpszMenuName = nullptr;
 	m_wcex.lpszClassName = "FINISH_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("FINISH_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, nullptr, hInstance, nullptr);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create check-boxes
-	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, size.x, 15, m_hwnd, (HMENU)1, hInstance, NULL);
+	m_checkbox = CreateWindow("Button", "Show installation directory on close", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, 150, size.x, 15, m_hwnd, (HMENU)1, hInstance, nullptr);
 	CheckDlgButton(m_hwnd, 1, BST_CHECKED);
 
 	// Shortcuts
-	const auto desktopStrings = m_installer->m_mfStrings[L"shortcut"], startmenuStrings = m_installer->m_mfStrings[L"startmenu"];
-	size_t numD = std::count(desktopStrings.begin(), desktopStrings.end(), L',') + 1ull, numS = std::count(startmenuStrings.begin(), startmenuStrings.end(), L',') + 1ull;
+	const auto desktopStrings = m_installer->m_mfStrings[L"shortcut"];
+	const auto startmenuStrings = m_installer->m_mfStrings[L"startmenu"];
+	size_t numD = std::count(desktopStrings.begin(), desktopStrings.end(), L',') + 1ULL;
+	size_t numS = std::count(startmenuStrings.begin(), startmenuStrings.end(), L',') + 1ULL;
 	m_shortcutCheckboxes.reserve(numD + numS);
 	m_shortcuts_d.reserve(numD + numS);
 	m_shortcuts_s.reserve(numD + numS);
@@ -61,7 +63,7 @@ Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, co
 			m_shortcuts_d.push_back(desktopStrings.substr(last, nextComma - last));
 
 			// Skip whitespace, find next element
-			last = nextComma + 1ull;
+			last = nextComma + 1ULL;
 			while (last < desktopStrings.size() && (desktopStrings[last] == L' ' || desktopStrings[last] == L'\r' || desktopStrings[last] == L'\t' || desktopStrings[last] == L'\n'))
 				last++;
 		}
@@ -77,21 +79,22 @@ Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, co
 			m_shortcuts_s.push_back(startmenuStrings.substr(last, nextComma - last));
 
 			// Skip whitespace, find next element
-			last = nextComma + 1ull;
+			last = nextComma + 1ULL;
 			while (last < startmenuStrings.size() && (startmenuStrings[last] == L' ' || startmenuStrings[last] == L'\r' || startmenuStrings[last] == L'\t' || startmenuStrings[last] == L'\n'))
 				last++;
 		}
-	int vertical = 170, checkIndex = 2;
+	int vertical = 170;
+	int checkIndex = 2;
 	for (const auto& shortcut : m_shortcuts_d) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" on the desktop").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, nullptr));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
 	}
 	for (const auto& shortcut : m_shortcuts_s) {
 		const auto name = std::wstring(&shortcut[1], shortcut.length() - 1);
-		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, NULL));
+		m_shortcutCheckboxes.push_back(CreateWindowW(L"Button", (L"Create a shortcut for " + name + L" in the start-menu").c_str(), WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, vertical, size.x, 15, m_hwnd, (HMENU)(LONGLONG)checkIndex, hInstance, nullptr));
 		CheckDlgButton(m_hwnd, checkIndex, BST_CHECKED);
 		vertical += 20;
 		checkIndex++;
@@ -99,7 +102,7 @@ Finish_Screen::Finish_Screen(Installer* installer, const HINSTANCE hInstance, co
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnClose = CreateWindow("BUTTON", "Close", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
 }
 
 void Finish_Screen::enact()
@@ -135,21 +138,21 @@ void Finish_Screen::paint()
 
 void Finish_Screen::goClose()
 {
-	m_showDirectory = IsDlgButtonChecked(m_hwnd, 1);
+	m_showDirectory = (IsDlgButtonChecked(m_hwnd, 1) != 0U);
 	const auto instDir = m_installer->getDirectory() + "\\" + m_installer->getPackageName();
 	// Open the installation directory + if user wants it to
 	if (m_showDirectory)
-		ShellExecute(NULL, "open", instDir.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+		ShellExecute(nullptr, "open", instDir.c_str(), nullptr, nullptr, SW_SHOWDEFAULT);
 
 	// Create Shortcuts
 	int x = 2;
 	for (const auto& shortcut : m_shortcuts_d) {
-		if (IsDlgButtonChecked(m_hwnd, x)) {
+		if (IsDlgButtonChecked(m_hwnd, x) != 0U) {
 			std::error_code ec;
 			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
-				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
+				srcPath = std::string(&srcPath[0], srcPath.size() - 1ULL);
 			srcPath += nonwideShortcut;
 			const auto dstPath = NST::Directory::GetDesktopPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
@@ -157,12 +160,12 @@ void Finish_Screen::goClose()
 		x++;
 	}
 	for (const auto& shortcut : m_shortcuts_s) {
-		if (IsDlgButtonChecked(m_hwnd, x)) {
+		if (IsDlgButtonChecked(m_hwnd, x) != 0U) {
 			std::error_code ec;
 			const auto nonwideShortcut = NST::from_wideString(shortcut);
 			auto srcPath = instDir;
 			if (srcPath.back() == '\\')
-				srcPath = std::string(&srcPath[0], srcPath.size() - 1ull);
+				srcPath = std::string(&srcPath[0], srcPath.size() - 1ULL);
 			srcPath += nonwideShortcut;
 			const auto dstPath = NST::Directory::GetStartMenuPath() + "\\" + std::filesystem::path(srcPath).filename().string();
 			createShortcut(srcPath, instDir, dstPath);
@@ -175,7 +178,7 @@ void Finish_Screen::goClose()
 void Finish_Screen::createShortcut(const std::string& srcPath, const std::string& wrkPath, const std::string& dstPath)
 {
 	IShellLink* psl;
-	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
+	if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&psl))) {
 		IPersistFile* ppf;
 
 		// Set the path to the shortcut target and add the description.

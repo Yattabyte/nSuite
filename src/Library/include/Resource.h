@@ -2,8 +2,8 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#define NSUITE_VERSION_CSTR				"1.3.4"
-#define NSUITE_VERSION_VS				1,3,4					
+#define NSUITE_VERSION_CSTR				"1.3.5"
+#define NSUITE_VERSION_VS				1,3,5
 
 // Used for icons
 #define IDI_ICON1						101
@@ -38,18 +38,21 @@ namespace NST {
 			FreeResource(m_hMemory);
 		}
 		/** Creates a resource object, locking it, and gets a pointer to the underlying data. */
-		inline Resource(const int & resourceID, const char * resourceClass, const HMODULE & moduleHandle = nullptr) {
+		inline Resource(const int& resourceID, const char* resourceClass, const HMODULE& moduleHandle = nullptr) {
 			m_hResource = FindResource(moduleHandle, MAKEINTRESOURCE(resourceID), resourceClass);
-			m_hMemory = LoadResource(moduleHandle, m_hResource);
-			m_ptr = LockResource(m_hMemory);
-			m_size = SizeofResource(moduleHandle, m_hResource);
+			if (m_hResource != 0)
+				m_hMemory = LoadResource(moduleHandle, m_hResource);
+			if (m_hMemory != 0)
+				m_ptr = LockResource(m_hMemory);
+			if (m_hResource != 0)
+				m_size = SizeofResource(moduleHandle, m_hResource);
 		}
 
 
 		// Public Methods
 		/** Retrieve a pointer to this resources' data.
 		@return		a pointer to the beginning of this resources' data. */
-		inline void * getPtr() const {
+		inline void* getPtr() const {
 			return m_ptr;
 		}
 		/** Retrieve the size of this resource in bytes.
@@ -68,7 +71,7 @@ namespace NST {
 		// Private Attributes
 		HRSRC m_hResource = nullptr;
 		HGLOBAL m_hMemory = nullptr;
-		void * m_ptr = nullptr;
+		void* m_ptr = nullptr;
 		size_t m_size = 0;
 	};
 };

@@ -73,8 +73,8 @@ private:
 
 
 	// Private Attributes
-	NST::Threader m_threader;
 	NST::Resource m_archive, m_manifest;
+	NST::Threader m_threader;
 	std::string m_directory = "", m_packageName = "";
 	bool m_valid = true;
 	size_t m_maxSize = 0ull, m_capacity = 0ull, m_available = 0ull;

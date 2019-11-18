@@ -26,7 +26,7 @@ public:
 	/** Switch to the next state. */
 	void goInstall();
 	/** Switch to the cancel state. */
-	void goCancel();
+	static void goCancel();
 
 
 	// Public Attributes

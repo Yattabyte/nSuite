@@ -58,8 +58,8 @@ private:
 
 
 	// Private Attributes
-	NST::Threader m_threader;
 	NST::Resource m_manifest;
+	NST::Threader m_threader;
 	std::wstring m_directory = L"";
 	bool m_valid = true;
 	ScreenEnums m_currentIndex = ScreenEnums::WELCOME_SCREEN;

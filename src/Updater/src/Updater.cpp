@@ -40,7 +40,7 @@ int main()
 		"There are " + std::to_string(patches.size()) + " patches(s) found.\r\n"
 		"\r\n"
 	);
-	if (patches.size()) {
+	if (static_cast<unsigned int>(!patches.empty()) != 0U) {
 		NST::Log::PushText(std::string("Ready to update?") + ' ');
 		system("pause");
 		std::printf("\033[A\33[2K\r");
@@ -48,7 +48,8 @@ int main()
 
 		// Begin updating
 		const auto start = std::chrono::system_clock::now();
-		size_t bytesWritten(0ull), patchesApplied(0ull);
+		size_t bytesWritten(0ULL);
+		size_t patchesApplied(0ULL);
 		for (const auto& patch : patches) {
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
@@ -56,24 +57,23 @@ int main()
 				NST::Log::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
+
+			// Apply patch
+			NST::Buffer diffBuffer(std::filesystem::file_size(patch));
+			diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
+			diffFile.close();
+
+			// If patching success, write changes to disk
+			if (NST::Directory(dstDirectory).apply_delta(diffBuffer)) {
+				patchesApplied++;
+
+				// Delete patch file at very end
+				if (!std::filesystem::remove(patch))
+					NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
+			}
 			else {
-				// Apply patch
-				NST::Buffer diffBuffer(std::filesystem::file_size(patch));
-				diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
-				diffFile.close();
-
-				// If patching success, write changes to disk
-				if (NST::Directory(dstDirectory).apply_delta(diffBuffer)) {
-					patchesApplied++;
-
-					// Delete patch file at very end
-					if (!std::filesystem::remove(patch))
-						NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
-				}
-				else {
-					NST::Log::PushText("skipping patch...\r\n");
-					continue;
-				}
+				NST::Log::PushText("skipping patch...\r\n");
+				continue;
 			}
 		}
 

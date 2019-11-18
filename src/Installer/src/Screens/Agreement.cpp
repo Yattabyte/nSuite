@@ -2,7 +2,7 @@
 #include "Installer.h"
 
 
-static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK WndProc(HWND /*hWnd*/, UINT /*message*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
 
 Agreement_Screen::~Agreement_Screen()
 {
@@ -26,18 +26,18 @@ Agreement_Screen::Agreement_Screen(Installer* installer, const HINSTANCE hInstan
 	m_wcex.cbWndExtra = 0;
 	m_wcex.hInstance = hInstance;
 	m_wcex.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-	m_wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	m_wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	m_wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	m_wcex.lpszMenuName = NULL;
+	m_wcex.lpszMenuName = nullptr;
 	m_wcex.lpszClassName = "AGREEMENT_SCREEN";
 	m_wcex.hIconSm = LoadIcon(m_wcex.hInstance, IDI_APPLICATION);
 	RegisterClassEx(&m_wcex);
-	m_hwnd = CreateWindow("AGREEMENT_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, NULL, hInstance, NULL);
+	m_hwnd = CreateWindow("AGREEMENT_SCREEN", "", WS_OVERLAPPED | WS_CHILD | WS_VISIBLE, pos.x, pos.y, size.x, size.y, parent, nullptr, hInstance, nullptr);
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	setVisible(false);
 
 	// Create EULA
-	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"EULA"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, NULL, hInstance, NULL);
+	m_log = CreateWindowExW(WS_EX_CLIENTEDGE, L"edit", m_installer->m_mfStrings[L"EULA"].c_str(), WS_VISIBLE | WS_OVERLAPPED | WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL, 10, 75, size.x - 20, size.y - 125, m_hwnd, nullptr, hInstance, nullptr);
 	if (m_installer->m_mfStrings[L"EULA"].empty())
 		SetWindowTextW(m_log,
 			L"nSuite installers can be created freely by anyone, as such those who generate them are responsible for its contents, not the developers.\r\n"
@@ -45,19 +45,19 @@ Agreement_Screen::Agreement_Screen(Installer* installer, const HINSTANCE hInstan
 		);
 
 	// Create check-boxes
-	m_checkYes = CreateWindow("Button", "I accept the terms of this license agreement", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, size.y - 35, 310, 15, m_hwnd, (HMENU)1, hInstance, NULL);
+	m_checkYes = CreateWindow("Button", "I accept the terms of this license agreement", WS_OVERLAPPED | WS_VISIBLE | WS_CHILD | BS_CHECKBOX | BS_AUTOCHECKBOX, 10, size.y - 35, 310, 15, m_hwnd, (HMENU)1, hInstance, nullptr);
 	CheckDlgButton(m_hwnd, 1, BST_UNCHECKED);
 
 	// Create Buttons
 	constexpr auto BUTTON_STYLES = WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON;
-	m_btnPrev = CreateWindow("BUTTON", "< Back", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 290, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
-	m_btnNext = CreateWindow("BUTTON", "Next >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
-	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, NULL, hInstance, NULL);
+	m_btnPrev = CreateWindow("BUTTON", "< Back", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 290, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
+	m_btnNext = CreateWindow("BUTTON", "Next >", BUTTON_STYLES | BS_DEFPUSHBUTTON, size.x - 200, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
+	m_btnCancel = CreateWindow("BUTTON", "Cancel", BUTTON_STYLES, size.x - 95, size.y - 40, 85, 30, m_hwnd, nullptr, hInstance, nullptr);
 }
 
 void Agreement_Screen::enact()
 {
-	EnableWindow(m_btnNext, m_agrees);
+	EnableWindow(m_btnNext, static_cast<BOOL>(m_agrees));
 }
 
 void Agreement_Screen::paint()
@@ -91,9 +91,9 @@ void Agreement_Screen::paint()
 
 void Agreement_Screen::checkYes()
 {
-	m_agrees = IsDlgButtonChecked(m_hwnd, 1);
+	m_agrees = (IsDlgButtonChecked(m_hwnd, 1) != 0U);
 	CheckDlgButton(m_hwnd, 1, m_agrees ? BST_CHECKED : BST_UNCHECKED);
-	EnableWindow(m_btnNext, m_agrees);
+	EnableWindow(m_btnNext, static_cast<BOOL>(m_agrees));
 }
 
 void Agreement_Screen::goPrevious()

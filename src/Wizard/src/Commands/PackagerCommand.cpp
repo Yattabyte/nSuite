@@ -19,7 +19,8 @@ int PackagerCommand::execute(const int& argc, char* argv[]) const
 	);
 
 	// Check command line arguments
-	std::string srcDirectory(""), dstDirectory("");
+	std::string srcDirectory;
+	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
 		std::string command = NST::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
@@ -69,7 +70,7 @@ int PackagerCommand::execute(const int& argc, char* argv[]) const
 				file.close();
 
 				// Try to update packager's resource
-				handle = BeginUpdateResource(dstDirectory.c_str(), false);
+				handle = BeginUpdateResource(dstDirectory.c_str(), 0);
 				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
 					NST::Log::PushText("Cannot write archive contents to the package, aborting...\r\n");
 				else {
@@ -86,6 +87,6 @@ int PackagerCommand::execute(const int& argc, char* argv[]) const
 	}
 
 	// Clean-up
-	EndUpdateResource(handle, !success);
+	EndUpdateResource(handle, static_cast<BOOL>(!success));
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

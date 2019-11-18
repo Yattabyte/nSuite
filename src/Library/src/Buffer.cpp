@@ -49,8 +49,8 @@ Buffer::Buffer(Buffer&& other) noexcept :
 	m_ownsData(other.m_ownsData)
 {
 	other.m_data = nullptr;
-	other.m_size = 0ull;
-	other.m_capacity = 0ull;
+	other.m_size = 0ULL;
+	other.m_capacity = 0ULL;
 	other.m_ownsData = false;
 }
 
@@ -79,8 +79,8 @@ Buffer& Buffer::operator=(Buffer&& other) noexcept
 		m_ownsData = other.m_ownsData;
 
 		other.m_data = nullptr;
-		other.m_size = 0ull;
-		other.m_capacity = 0ull;
+		other.m_size = 0ULL;
+		other.m_capacity = 0ULL;
 		other.m_ownsData = false;
 	}
 	return *this;
@@ -98,28 +98,30 @@ void Buffer::alloc(const size_t& capacity)
 
 // Public Methods
 
-const bool Buffer::hasData() const
+bool Buffer::hasData() const
 {
-	return m_size > 0ull;
+	return m_size > 0ULL;
 }
 
-const size_t& Buffer::size() const
+size_t Buffer::size() const
 {
 	return m_size;
 }
 
-const size_t Buffer::hash() const
+size_t Buffer::hash() const
 {
 	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
-	size_t value(1234567890ull);
-	auto pointer = reinterpret_cast<size_t*>(const_cast<std::byte*>(&m_data[0]));
-	size_t x(0ull), full(size()), max(full / 8ull);
+	size_t value(1234567890ULL);
+	auto pointer = reinterpret_cast<size_t*>(&m_data[0]);
+	size_t x(0ULL);
+	size_t full(size());
+	size_t max(full / 8ULL);
 	for (; x < max; ++x)
 		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
 
 	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
-	x *= 8ull;
-	auto remainderPtr = reinterpret_cast<char*>(const_cast<std::byte*>(&m_data[0]));
+	x *= 8ULL;
+	auto remainderPtr = reinterpret_cast<char*>(&m_data[0]);
 	for (; x < full; ++x)
 		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
 
@@ -130,13 +132,13 @@ const size_t Buffer::hash() const
 void Buffer::resize(const size_t& size)
 {
 	// Ensure this is a valid buffer
-	if (m_data != nullptr && m_size > 0ull && m_capacity > 0ull) {
+	if (m_data != nullptr && m_size > 0ULL && m_capacity > 0ULL) {
 		// Check if we've previously allocated enough memory
 		if (size > m_capacity) {
 			// Copy old pointer
 			auto dataPtrCpy = m_data;
 			// Need to expand our container
-			alloc(size * 2ull);
+			alloc(size * 2ULL);
 			// Copy over old memory
 			std::copy(dataPtrCpy, dataPtrCpy + m_size, m_data);
 			// Delete old memory
@@ -148,18 +150,18 @@ void Buffer::resize(const size_t& size)
 	}
 	// Otherwise allocate new memory
 	else
-		alloc(size * 2ull);
+		alloc(size * 2ULL);
 	m_size = size;
 }
 
 void Buffer::release()
 {
-	if (m_data != nullptr && m_size > 0ull && m_ownsData)
+	if (m_data != nullptr && m_size > 0ULL && m_ownsData)
 		delete[] m_data;
 
 	m_data = nullptr;
-	m_size = 0ull;
-	m_capacity = 0ull;
+	m_size = 0ULL;
+	m_capacity = 0ULL;
 }
 
 
@@ -182,7 +184,7 @@ std::byte& Buffer::operator[](const size_t& byteOffset) const
 
 size_t Buffer::readData(void* outputPtr, const size_t& size, const size_t byteOffset) const
 {
-	if (outputPtr != nullptr && size > 0ull)
+	if (outputPtr != nullptr && size > 0ULL)
 		std::copy(&m_data[byteOffset], &m_data[byteOffset + size], reinterpret_cast<std::byte*>(outputPtr));
 	return byteOffset + size;
 }
@@ -190,7 +192,7 @@ size_t Buffer::readData(void* outputPtr, const size_t& size, const size_t byteOf
 size_t Buffer::writeData(const void* inputPtr, const size_t& size, const size_t byteOffset)
 {
 	auto* ptrCast = reinterpret_cast<std::byte*>(const_cast<void*>(inputPtr));
-	if (inputPtr != nullptr && size > 0ull)
+	if (inputPtr != nullptr && size > 0ULL)
 		std::copy(ptrCast, ptrCast + size, &m_data[byteOffset]);
 	return byteOffset + size;
 }
@@ -204,7 +206,7 @@ std::optional<Buffer> Buffer::compress() const
 	if (hasData()) {
 		// Pre-allocate a huge buffer to allow for compression operations
 		const auto sourceSize = size();
-		const auto workingSize = sourceSize * 2ull;
+		const auto workingSize = sourceSize * 2ULL;
 		Buffer compressedBuffer(workingSize);
 
 		// Try to compress the source buffer
@@ -240,7 +242,7 @@ std::optional<Buffer> Buffer::decompress() const
 		// Read in header
 		CompressionHeader header;
 		std::byte* dataPtr(nullptr);
-		size_t dataSize(0ull);
+		size_t dataSize(0ULL);
 		readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
@@ -273,14 +275,14 @@ struct Copy_Instruction : public Buffer::Differential_Instruction {
 
 
 	// Interface Implementation
-	virtual size_t size() const override;
-	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
-	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
-	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
+	[[nodiscard]] size_t size() const override;
+	void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Public Attributes
-	size_t m_beginRead = 0ull, m_endRead = 0ull;
+	size_t m_beginRead = 0ULL, m_endRead = 0ULL;
 };
 /** Contains a block of data to insert into the 'new' file, at a given point. */
 struct Insert_Instruction : public Buffer::Differential_Instruction {
@@ -289,10 +291,10 @@ struct Insert_Instruction : public Buffer::Differential_Instruction {
 
 
 	// Interface Implementation
-	virtual size_t size() const override;
-	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
-	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
-	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
+	[[nodiscard]] size_t size() const override;
+	void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Attributes
@@ -305,14 +307,14 @@ struct Repeat_Instruction : public Buffer::Differential_Instruction {
 
 
 	// Interface Implementation
-	virtual size_t size() const override;
-	virtual void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
-	virtual void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
-	virtual void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
+	[[nodiscard]] size_t size() const override;
+	void execute(NST::Buffer& bufferNew, const NST::Buffer& bufferOld) const override;
+	void write(NST::Buffer& outputBuffer, size_t& byteIndex) const override;
+	void read(const NST::Buffer& inputBuffer, size_t& byteIndex) override;
 
 
 	// Attributes
-	size_t m_amount = 0ull;
+	size_t m_amount = 0ULL;
 	std::byte m_value = std::byte(0);
 };
 
@@ -323,11 +325,12 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 		const auto size_old = size();
 		const auto size_new = target.size();
 		std::vector<Differential_Instruction*> instructions;
-		instructions.reserve(std::max<size_t>(size_old, size_new) / 8ull);
+		instructions.reserve(std::max<size_t>(size_old, size_new) / 8ULL);
 		std::mutex instructionMutex;
 		Threader threader;
 		constexpr size_t m_amount(4096);
-		size_t bytesUsed_old(0ull), bytesUsed_new(0ull);
+		size_t bytesUsed_old(0ULL);
+		size_t bytesUsed_new(0ULL);
 		while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
 			// Variables for this current chunk
 			auto windowSize = std::min<size_t>(m_amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
@@ -336,7 +339,8 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 			threader.addJob([&, windowSize, bytesUsed_old, bytesUsed_new]() {
 				// Step 1: Find all regions that match
 				struct MatchInfo { size_t length = 0ull, start1 = 0ull, start2 = 0ull; };
-				size_t bestContinuous(0ull), bestMatchCount(windowSize);
+				size_t bestContinuous(0ull);
+				size_t bestMatchCount(windowSize);
 				std::vector<MatchInfo> bestSeries;
 				auto buffer_slice_old = &(operator[](bytesUsed_old));
 				auto buffer_slice_new = &target[bytesUsed_new];
@@ -384,10 +388,10 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 				// Note:
 				//			data from [start1 -> +length] equals [start2 -> + length]
 				//			data before and after these ranges isn't equal
-				if (!bestSeries.size()) {
+				if (bestSeries.empty()) {
 					// NO MATCHES
 					// NEW INSERT_INSTRUCTION: use entire window
-					Insert_Instruction* inst = new Insert_Instruction();
+					auto* inst = new Insert_Instruction();
 					inst->m_index = bytesUsed_new;
 					inst->m_newData.resize(windowSize);
 					std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst->m_newData.data());
@@ -396,13 +400,11 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 				}
 				else {
 					size_t lastMatchEnd(bytesUsed_new);
-					for (size_t mx = 0, ms = bestSeries.size(); mx < ms; ++mx) {
-						const auto& match = bestSeries[mx];
-
+					for (const auto& match : bestSeries) {
 						const auto newDataLength = match.start2 - lastMatchEnd;
 						if (newDataLength > 0ull) {
 							// NEW INSERT_INSTRUCTION: Use data from end of last match until beginning of current match
-							Insert_Instruction* inst = new Insert_Instruction();
+							auto* inst = new Insert_Instruction();
 							inst->m_index = lastMatchEnd;
 							inst->m_newData.resize(newDataLength);
 							std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
@@ -411,7 +413,7 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 						}
 
 						// NEW COPY_INSTRUCTION: Use data from beginning of match until end of match
-						Copy_Instruction* inst = new Copy_Instruction();
+						auto* inst = new Copy_Instruction();
 						inst->m_index = match.start2;
 						inst->m_beginRead = match.start1;
 						inst->m_endRead = match.start1 + match.length;
@@ -423,7 +425,7 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 					const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
 					if (newDataLength > 0ull) {
 						// NEW INSERT_INSTRUCTION: Use data from end of last match until end of window
-						Insert_Instruction* inst = new Insert_Instruction();
+						auto* inst = new Insert_Instruction();
 						inst->m_index = lastMatchEnd;
 						inst->m_newData.resize(newDataLength);
 						std::copy(&target[lastMatchEnd], &target[lastMatchEnd + newDataLength], inst->m_newData.data());
@@ -439,7 +441,7 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 
 		if (bytesUsed_new < size_new) {
 			// NEW INSERT_INSTRUCTION: Use data from end of last block until end-of-file
-			Insert_Instruction* inst = new Insert_Instruction();
+			auto* inst = new Insert_Instruction();
 			inst->m_index = bytesUsed_new;
 			inst->m_newData.resize(size_new - bytesUsed_new);
 			std::copy(&target[bytesUsed_new], &target[bytesUsed_new + (size_new - bytesUsed_new)], inst->m_newData.data());
@@ -477,13 +479,13 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 							if (length > 36ull) {
 								// Worthwhile to insert a new instruction
 								// Keep data up-until region where repeats occur
-								Insert_Instruction* instBefore = new Insert_Instruction();
+								auto* instBefore = new Insert_Instruction();
 								instBefore->m_index = inst->m_index;
 								instBefore->m_newData.resize(x);
 								std::copy(inst->m_newData.data(), inst->m_newData.data() + x, instBefore->m_newData.data());
 
 								// Generate new Repeat Instruction
-								Repeat_Instruction* instRepeat = new Repeat_Instruction();
+								auto* instRepeat = new Repeat_Instruction();
 								instRepeat->m_index = inst->m_index + x;
 								instRepeat->m_value = value_at_x;
 								instRepeat->m_amount = length;
@@ -518,13 +520,13 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
 		threader.shutdown();
 
 		// Create a buffer to contain all the diff instructions
-		size_t size_patch(0ull);
+		size_t size_patch(0ULL);
 		for (const auto& instruction : instructions)
 			size_patch += instruction->size();
 		Buffer patchBuffer(size_patch);
 
 		// Write instruction data to the buffer
-		size_t m_index(0ull);
+		size_t m_index(0ULL);
 		for (const auto& instruction : instructions)
 			instruction->write(patchBuffer, m_index);
 
@@ -558,7 +560,7 @@ std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 		// Read in header
 		DiffHeader header;
 		std::byte* dataPtr(nullptr);
-		size_t dataSize(0ull);
+		size_t dataSize(0ULL);
 		diffBuffer.readHeader(&header, &dataPtr, dataSize);
 
 		// Ensure header title matches
@@ -568,7 +570,8 @@ std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 			if (diffInstructionBuffer) {
 				// Convert buffer into instructions
 				Buffer bufferNew(header.m_targetSize);
-				size_t bytesRead(0ull), byteIndex(0ull);
+				size_t bytesRead(0ULL);
+				size_t byteIndex(0ULL);
 				while (bytesRead < diffInstructionBuffer->size()) {
 					// Deduce the instruction type
 					char type(0);
@@ -614,10 +617,10 @@ std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 
 void Buffer::readHeader(Buffer::Header* header, std::byte** dataPtr, size_t& dataSize) const
 {
-	(*header) << (const_cast<std::byte*>(&m_data[0]));
+	(*header) << &m_data[0];
 
 	const size_t full_header_size = Header::TITLE_SIZE + header->size();
-	*dataPtr = const_cast<std::byte*>(&m_data[full_header_size]);
+	*dataPtr = &m_data[full_header_size];
 	dataSize = size() - full_header_size;
 }
 
@@ -638,7 +641,7 @@ void Buffer::writeHeader(const Header* header)
 
 size_t Copy_Instruction::size() const
 {
-	return sizeof(char) + (sizeof(size_t) * 3ull);
+	return sizeof(char) + (sizeof(size_t) * 3ULL);
 }
 
 void Copy_Instruction::execute(Buffer& bufferNew, const Buffer& bufferOld) const
@@ -675,9 +678,9 @@ size_t Insert_Instruction::size() const
 	return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * m_newData.size());
 }
 
-void Insert_Instruction::execute(Buffer& bufferNew, const Buffer&) const
+void Insert_Instruction::execute(Buffer& bufferNew, const Buffer& /*bufferOld*/) const
 {
-	for (auto i = m_index, x = size_t(0ull), length = m_newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
+	for (auto i = m_index, x = size_t(0ULL), length = m_newData.size(); i < bufferNew.size() && x < length; ++i, ++x)
 		bufferNew[i] = m_newData[x];
 }
 
@@ -690,7 +693,7 @@ void Insert_Instruction::write(Buffer& outputBuffer, size_t& byteIndex) const
 	// Write Length
 	auto length = m_newData.size();
 	byteIndex = outputBuffer.writeData(&length, size_t(sizeof(size_t)), byteIndex);
-	if (length) {
+	if (length != 0U) {
 		// Write Data
 		byteIndex = outputBuffer.writeData(m_newData.data(), length, byteIndex);
 	}
@@ -704,7 +707,7 @@ void Insert_Instruction::read(const Buffer& inputBuffer, size_t& byteIndex)
 	// Read Length
 	size_t length;
 	byteIndex = inputBuffer.readData(&length, size_t(sizeof(size_t)), byteIndex);
-	if (length) {
+	if (length != 0U) {
 		// Read Data
 		m_newData.resize(length);
 		byteIndex = inputBuffer.readData(m_newData.data(), length, byteIndex);
@@ -713,12 +716,12 @@ void Insert_Instruction::read(const Buffer& inputBuffer, size_t& byteIndex)
 
 size_t Repeat_Instruction::size() const
 {
-	return sizeof(char) + (sizeof(size_t) * 2ull) + sizeof(char);
+	return sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char);
 }
 
-void Repeat_Instruction::execute(Buffer& bufferNew, const Buffer&) const
+void Repeat_Instruction::execute(Buffer& bufferNew, const Buffer& /*bufferOld*/) const
 {
-	for (auto i = m_index, x = size_t(0ull); i < bufferNew.size() && x < m_amount; ++i, ++x)
+	for (auto i = m_index, x = size_t(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
 		bufferNew[i] = m_value;
 }
 
