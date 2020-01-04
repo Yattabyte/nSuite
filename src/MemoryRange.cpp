@@ -22,21 +22,21 @@ size_t MemoryRange::size() const noexcept
 
 size_t MemoryRange::hash() const noexcept
 {
-	// Use data 8-bytes at a time, until end of data or less than 8 bytes remains
-	size_t value(1234567890ULL);
-	const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr);
-	size_t x(0ULL);
-	const size_t max(m_range / 8ULL);
-	for (; x < max; ++x)
-		value = ((value << 5) + value) + pointer[x]; // use 8 bytes
+    // Use data 8-bytes at a time, until end of data or less than 8 bytes remains
+    size_t value(1234567890ULL);
+    const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr);
+    size_t x(0ULL);
+    const size_t max(m_range / 8ULL);
+    for (; x < max; ++x)
+        value = ((value << 5) + value) + pointer[x]; // use 8 bytes
 
-	// If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
-	x *= 8ULL;
-	const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr);
-	for (; x < m_range; ++x)
-		value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
+    // If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
+    x *= 8ULL;
+    const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr);
+    for (; x < m_range; ++x)
+        value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
 
-	return value;
+    return value;
 }
 
 

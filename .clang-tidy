@@ -1,0 +1,6 @@
+---
+Checks:            '*, -*array-to-pointer-decay*, -*pointer-arithmetic*, -modernize-use-trailing-return-type, -*braces-around-statements*'
+WarningsAsErrors:  ''
+HeaderFilterRegex: none
+FormatStyle:       'LLVM'
+User:              troy lowry
