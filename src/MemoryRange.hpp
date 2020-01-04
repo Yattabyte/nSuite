@@ -61,9 +61,9 @@ namespace yatta {
 			// Copy Data
 			// Only reinterpret-cast if T is not std::byte
 			if constexpr (std::is_same<T, std::byte>::value)
-				m_data[byteIndex] = dataObj;
+				m_dataPtr[byteIndex] = dataObj;
 			else
-				*reinterpret_cast<T*>(&m_data[byteIndex]) = dataObj;
+				*reinterpret_cast<T*>(&m_dataPtr[byteIndex]) = dataObj;
 		}
 		/** Copies raw data found in this buffer out to the specified pointer.
 		@param	dataPtr				pointer to copy the data into.

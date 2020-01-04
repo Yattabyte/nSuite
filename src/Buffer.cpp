@@ -378,7 +378,7 @@ struct Insert_Instruction final : public Differential_Instruction {
 	inline size_t size() const noexcept final {
 		return sizeof(char) + (sizeof(size_t) * 2) + (sizeof(char) * m_newData.size());
 	}
-	inline void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const noexcept final {
+	inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const noexcept final {
 		const auto length = m_newData.size();
 		for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < length; ++i, ++x)
 			bufferNew[i] = m_newData[x];
@@ -431,7 +431,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
 	inline size_t size() const noexcept final {
 		return sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char);
 	}
-	inline void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const noexcept final {
+	inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const noexcept final {
 		for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
 			bufferNew[i] = m_value;
 	}
