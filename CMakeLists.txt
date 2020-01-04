@@ -1,10 +1,10 @@
-#################
-### Yatta lib ###
-##################
+#############
+### Yatta ###
+#############
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0079 NEW)
 include(ExternalProject)
-project(YattaLib VERSION 1.4.0 DESCRIPTION "Directory and buffer compression & diffing tools.")
+project(Yatta VERSION 1.4.1 DESCRIPTION "Directory and buffer compression & diffing tools.")
 
 
 # Set consistent compiler flags for our project and our dependencies
@@ -23,6 +23,25 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 
 # Add our own source files
 add_subdirectory( src )
+
+
+# Optionally build unit tests
+option(UNIT_TESTS "Build Unit Tests" true)
+if (UNIT_TESTS)
+	add_subdirectory( tests/BufferTest )
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT bufferTest)
+endif (UNIT_TESTS)
+
+
+# Optionally build examples
+option(EXAMPLES "Build Examples" true)
+if (EXAMPLES)
+	add_subdirectory( examples/Installer )
+	add_subdirectory( examples/Uninstaller )
+	add_subdirectory( examples/Unpacker )
+	add_subdirectory( examples/Updater )
+	add_subdirectory( examples/Wizard )
+endif (EXAMPLES)
 
 
 #################
