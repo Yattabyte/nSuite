@@ -12,7 +12,7 @@ namespace yatta {
         // (de)Constructors
         /** Construct a buffer of the specified size in bytes.
         @param	size				the number of bytes in the range.
-        @param	dataPointer			pointer to some data source. */
+        @param	dataPtr			    pointer to some data source. */
         BufferView(const size_t& size, std::byte* const dataPtr) noexcept;
 
 

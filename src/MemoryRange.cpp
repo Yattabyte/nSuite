@@ -1,18 +1,19 @@
 #include "MemoryRange.hpp"
+#include <stdexcept>
 
-using namespace yatta;
+using yatta::MemoryRange;
 
 
 // Public Inquiry Methods
 
 bool MemoryRange::empty() const noexcept
 {
-    return m_range == 0ULL;
+    return m_dataPtr == nullptr || m_range == 0ULL;
 }
 
 bool MemoryRange::hasData() const noexcept
 {
-    return m_range > 0ULL;
+    return m_dataPtr != nullptr && m_range > 0ULL;
 }
 
 size_t MemoryRange::size() const noexcept
@@ -22,19 +23,25 @@ size_t MemoryRange::size() const noexcept
 
 size_t MemoryRange::hash() const noexcept
 {
+    // Ensure data is valid
+    if (m_dataPtr == nullptr)
+        return 0ULL; // Failure
+
     // Use data 8-bytes at a time, until end of data or less than 8 bytes remains
     size_t value(1234567890ULL);
-    const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr);
-    size_t x(0ULL);
-    const size_t max(m_range / 8ULL);
-    for (; x < max; ++x)
-        value = ((value << 5) + value) + pointer[x]; // use 8 bytes
+    if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
+        size_t x(0ULL);
+        const size_t max(m_range / 8ULL);
+        for (; x < max; ++x)
+            value = ((value << 5ULL) + value) + pointer[x]; // use 8 bytes
 
-    // If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
-    x *= 8ULL;
-    const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr);
-    for (; x < m_range; ++x)
-        value = ((value << 5) + value) + remainderPtr[x]; // use remaining bytes
+        // If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
+        if (const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr)) {
+            x *= 8ULL;
+            for (; x < m_range; ++x)
+                value = ((value << 5ULL) + value) + remainderPtr[x]; // use remaining bytes
+        }
+    }
 
     return value;
 }
@@ -42,8 +49,17 @@ size_t MemoryRange::hash() const noexcept
 
 // Public Manipulation Methods
 
-std::byte& MemoryRange::operator[](const size_t& byteIndex) const noexcept
+std::byte& MemoryRange::operator[](const size_t& byteIndex)
 {
+    if (byteIndex >= m_range)
+        throw std::out_of_range("Memory Range index out of bounds");
+    return m_dataPtr[byteIndex];
+}
+
+const std::byte& MemoryRange::operator[](const size_t& byteIndex) const
+{
+    if (byteIndex >= m_range)
+        throw std::out_of_range("Memory Range index out of bounds");
     return m_dataPtr[byteIndex];
 }
 

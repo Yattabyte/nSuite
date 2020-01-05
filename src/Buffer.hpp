@@ -62,7 +62,11 @@ namespace yatta {
         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        std::byte& operator[](const size_t& byteIndex) const noexcept;
+        std::byte& operator[](const size_t& byteIndex);
+        /** Retrieves a const reference to the data at the byte index specified.
+       @param	byteIndex			how many bytes into this buffer to index at.
+       @return						reference to data found at the byte index. */
+        const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
@@ -138,24 +142,39 @@ namespace yatta {
 
 
         // Public Derivation Methods
-        /** Compresses this buffer into an equal or smaller-sized version.
+        /** Compresses this buffer into an equal or smaller-sized buffer.
         @return						a pointer to the compressed buffer on compression success, empty otherwise.
         Buffer format:
         ------------------------------------------------------------------
         | header: identifier title, uncompressed size | compressed data  |
         ------------------------------------------------------------------ */
         [[nodiscard]] std::optional<Buffer> compress() const;
-        /***/
+        /** Compresses the supplied buffer into an equal or smaller-sized buffer.
+        @param  buffer              the buffer to compress.
+        @return						a pointer to the compressed buffer on compression success, empty otherwise.
+        Buffer format:
+        ------------------------------------------------------------------
+        | header: identifier title, uncompressed size | compressed data  |
+        ------------------------------------------------------------------ */
         [[nodiscard]] static std::optional<Buffer> compress(const Buffer& buffer);
-        /***/
+        /** Compresses the supplied memory range into an equal or smaller-sized buffer.
+        @param  memoryRange         the memory range to compress.
+        @return						a pointer to the compressed buffer on compression success, empty otherwise.
+        Buffer format:
+        ------------------------------------------------------------------
+        | header: identifier title, uncompressed size | compressed data  |
+        ------------------------------------------------------------------ */
         [[nodiscard]] static std::optional<Buffer> compress(const MemoryRange& memoryRange);
-
         /** Generates a decompressed version of this buffer.
         @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> decompress() const;
-        /***/
+        /** Generates a decompressed version of the supplied buffer.
+        @param  buffer              the buffer to decompress.
+        @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> decompress(const Buffer& buffer);
-        /***/
+        /** Generates a decompressed version of the supplied memory range.
+        @param  memoryRange         the memory range to decompress.
+        @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> decompress(const MemoryRange& memoryRange);
         /** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
         @param	target				the newer of the 2 buffers.
@@ -166,17 +185,39 @@ namespace yatta {
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
         [[nodiscard]] std::optional<Buffer> diff(const Buffer& target, const size_t& maxThreads) const;
-        /***/
+        /** Generates a differential buffer containing patch instructions to get from SOURCE ->to-> TARGET.
+        @param	source				the older of the 2 buffers.
+        @param	target				the newer of the 2 buffers.
+        @param	maxThreads			the number of threads to use in accelerating the operation.
+        @return						a pointer to the diff buffer on diff success, empty otherwise.
+        Buffer format:
+        -----------------------------------------------------------------------------------
+        | header: identifier title, final target file size | compressed instruction data  |
+        ----------------------------------------------------------------------------------- */
         [[nodiscard]] static std::optional<Buffer> diff(const Buffer& source, const Buffer& target, const size_t& maxThreads);
-        /***/
-        [[nodiscard]] static std::optional<Buffer> diff(const MemoryRange& sourceMemory, const MemoryRange& destinationMemory, const size_t& maxThreads);
+        /** Generates a differential buffer containing patch instructions to get from SOURCEMEMORY ->to-> TARGETMEMORY.
+        @param	sourceMemory		the older of the 2 memory ranges.
+        @param	targetMemory    	the newer of the 2 memory ranges.
+        @param	maxThreads			the number of threads to use in accelerating the operation.
+        @return						a pointer to the diff buffer on diff success, empty otherwise.
+        Buffer format:
+        -----------------------------------------------------------------------------------
+        | header: identifier title, final target file size | compressed instruction data  |
+        ----------------------------------------------------------------------------------- */
+        [[nodiscard]] static std::optional<Buffer> diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory, const size_t& maxThreads);
         /** Generates a patched version of this buffer, using data found in the supplied diff buffer.
         @param	diffBuffer			the diff buffer to patch with.
         @return						a pointer to the patched buffer on patch success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> patch(const Buffer& diffBuffer) const;
-        /***/
-        [[nodiscard]] static std::optional<Buffer> patch(const Buffer& source, const Buffer& diffBuffer);
-        /***/
+        /** Generates a patched version of the supplied source buffer, using data found in the supplied diff buffer.
+        @param	sourceBuffer		the source buffer to patch from.
+        @param	diffBuffer			the diff buffer to patch with.
+        @return						a pointer to the patched buffer on patch success, empty otherwise. */
+        [[nodiscard]] static std::optional<Buffer> patch(const Buffer& sourceBuffer, const Buffer& diffBuffer);
+        /** Generates a patched version of the supplied source memory, using data found in the supplied diff memory.
+        @param	sourceMemory		the source memory range to patch from.
+        @param	diffMemory			the diff memory range to patch with.
+        @return						a pointer to the patched buffer on patch success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory);
 
 

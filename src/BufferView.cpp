@@ -1,6 +1,8 @@
 #include "BufferView.hpp"
 
-using namespace yatta;
+using yatta::Buffer;
+using yatta::BufferView;
+using yatta::MemoryRange;
 
 
 // Public (de)Constructors

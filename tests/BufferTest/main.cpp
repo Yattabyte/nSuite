@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-using namespace yatta;
+using yatta::Buffer;
 
 
 // Forward Declarations
@@ -153,13 +153,13 @@ static bool CompressionTest()
 
             // Ensure data matches
             if (testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0) {
-                std::cout << "(De)Compression Test - Success\n";
+                std::cout << "Compression/Decompression Test - Success\n";
                 return true; // Success
             }
         }
     }
 
-    std::cout << "(De)Compression Test - Failure\n";
+    std::cout << "Compression/Decompression Test - Failure\n";
     return false; // Failure
 }
 
@@ -187,12 +187,12 @@ static bool DiffTest()
             Bar dataC;
             patchedBuffer->out_type(dataC);
             if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
-                std::cout << "Diff-Patch Test - Success\n";
+                std::cout << "Diff/Patch Test - Success\n";
                 return true; // Success
             }
         }
     }
 
-    std::cout << "Diff-Patch Test - Failure\n";
+    std::cout << "Diff/Patch Test - Failure\n";
     return false; // Failure
 }

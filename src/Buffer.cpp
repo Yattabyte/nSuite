@@ -6,7 +6,9 @@
 #include <numeric>
 #include <vector>
 
-using namespace yatta;
+using yatta::Buffer;
+using yatta::BufferView;
+using yatta::MemoryRange;
 
 
 // Public (de)Constructors
@@ -69,12 +71,12 @@ Buffer& Buffer::operator=(Buffer&& other) noexcept
 
 bool Buffer::empty() const noexcept
 {
-    return m_size == 0ULL && m_capacity == 0ULL;
+    return m_data == nullptr || m_size == 0ULL || m_capacity == 0ULL;
 }
 
 bool Buffer::hasData() const noexcept
 {
-    return m_size > 0ULL;
+    return m_data != nullptr && m_size > 0ULL;
 }
 
 size_t Buffer::size() const noexcept
@@ -95,8 +97,17 @@ size_t Buffer::hash() const noexcept
 
 // Public Manipulation Methods
 
-std::byte& Buffer::operator[](const size_t& byteIndex) const noexcept
+std::byte& Buffer::operator[](const size_t& byteIndex)
 {
+    if (byteIndex >= m_size)
+        throw std::out_of_range("Buffer index out of bounds");
+    return m_data[byteIndex];
+}
+
+const std::byte& Buffer::operator[](const size_t& byteIndex) const
+{
+    if (byteIndex >= m_size)
+        throw std::out_of_range("Buffer index out of bounds");
     return m_data[byteIndex];
 }
 
@@ -226,7 +237,7 @@ std::optional<Buffer> Buffer::compress(const MemoryRange& memoryRange)
 
     // Try to compress the source buffer
     const auto compressedSize = LZ4_compress_default(
-        reinterpret_cast<char*>(memoryRange.m_dataPtr),
+        memoryRange.charArray(),
         &compressedBuffer.charArray()[headerSize], // Offset by header's amount
         int(sourceSize),
         int(destinationSize)
@@ -253,7 +264,7 @@ std::optional<Buffer> yatta::Buffer::decompress(const Buffer& buffer)
 {
     // Ensure this buffer has some data to compress
     constexpr auto headerSize = sizeof(CompressionHeader);
-    if (buffer.empty() || buffer.size() < headerSize)
+    if (buffer.size() < headerSize)
         return {}; // Failure
 
     MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
@@ -264,7 +275,7 @@ std::optional<Buffer> yatta::Buffer::decompress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to decompress
     constexpr auto headerSize = sizeof(CompressionHeader);
-    if (memoryRange.m_range == 0ULL || memoryRange.m_range < headerSize)
+    if (memoryRange.m_range < headerSize)
         return {}; // Failure
 
     // Read in header
@@ -278,7 +289,7 @@ std::optional<Buffer> yatta::Buffer::decompress(const MemoryRange& memoryRange)
     // Uncompress the remaining data
     Buffer uncompressedBuffer(header.m_uncompressedSize);
     const auto decompressionResult = LZ4_decompress_safe(
-        &reinterpret_cast<char*>(memoryRange.m_dataPtr)[headerSize],
+        &memoryRange.charArray()[headerSize],
         uncompressedBuffer.charArray(),
         int(memoryRange.size() - headerSize),
         int(uncompressedBuffer.size())
@@ -313,9 +324,9 @@ struct Differential_Instruction {
     /** Retrieve the byte-size of this instruction. */
     [[nodiscard]] virtual size_t size() const noexcept = 0;
     /** Execute this instruction. */
-    virtual void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const noexcept = 0;
+    virtual void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const = 0;
     /** Write-out this instruction to a buffer. */
-    virtual void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept = 0;
+    virtual void write(Buffer& outputBuffer, size_t& byteIndex) const = 0;
     /** Read-in this instruction from a buffer. */
     virtual void read(const Buffer& inputBuffer, size_t& byteIndex) = 0;
 
@@ -334,7 +345,7 @@ struct Copy_Instruction final : public Differential_Instruction {
     [[nodiscard]] inline size_t size() const noexcept final {
         return sizeof(char) + (sizeof(size_t) * 3ULL);
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const noexcept final {
+    inline void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
         for (auto i = m_index, x = m_beginRead; i < bufferNew.size() && x < m_endRead && x < bufferOld.size(); ++i, ++x)
             bufferNew[i] = bufferOld[x];
     }
@@ -380,7 +391,7 @@ struct Insert_Instruction final : public Differential_Instruction {
         return sizeof(char) + (sizeof(size_t) * 2) +
             (sizeof(char) * m_newData.size());
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const noexcept final {
+    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         const auto length = m_newData.size();
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < length; ++i, ++x)
             bufferNew[i] = m_newData[x];
@@ -408,10 +419,10 @@ struct Insert_Instruction final : public Differential_Instruction {
         inputBuffer.out_type(m_index, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
         // Read Length
-        size_t length;
+        size_t length(0ULL);
         inputBuffer.out_type(length, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        if (length != 0U) {
+        if (length != 0ULL) {
             // Read Data
             m_newData.resize(length);
             inputBuffer.out_raw(m_newData.data(), length, byteIndex);
@@ -433,7 +444,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
     [[nodiscard]] inline size_t size() const noexcept final {
         return sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char);
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const noexcept final {
+    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
             bufferNew[i] = m_value;
     }
@@ -486,14 +497,14 @@ std::optional<Buffer> Buffer::diff(const Buffer& source, const Buffer& target, c
     return Buffer::diff(sourceRange, destinationRange, maxThreads);
 }
 
-std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& destinationMemory, const size_t& maxThreads)
+std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory, const size_t& maxThreads)
 {
     // Ensure that at least ONE of the two source buffers exists
-    if (sourceMemory.empty() && destinationMemory.empty())
+    if (sourceMemory.empty() && targetMemory.empty())
         return {}; // Failure
 
     const auto size_old = sourceMemory.size();
-    const auto size_new = destinationMemory.size();
+    const auto size_new = targetMemory.size();
     std::vector<std::unique_ptr<Differential_Instruction>> instructions;
     instructions.reserve(std::max<size_t>(size_old, size_new) / 8ULL);
     std::mutex instructionMutex;
@@ -512,14 +523,14 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
             size_t bestContinuous(0ull);
             size_t bestMatchCount(windowSize);
             std::vector<MatchInfo> bestSeries;
-            const auto buffer_slice_old = &sourceMemory[bytesUsed_old];
-            auto buffer_slice_new = &destinationMemory[bytesUsed_new];
+            auto buffer_slice_old = &sourceMemory[bytesUsed_old];
+            auto buffer_slice_new = &targetMemory[bytesUsed_new];
             for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
-                const size_t OLD_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_old[index1]);
+                const size_t& OLD_FIRST8 = *reinterpret_cast<const size_t*>(&buffer_slice_old[index1]);
                 std::vector<MatchInfo> matches;
                 size_t largestContinuous(0ull);
                 for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2 += 8ull) {
-                    const size_t NEW_FIRST8 = *reinterpret_cast<size_t*>(&buffer_slice_new[index2]);
+                    const size_t& NEW_FIRST8 = *reinterpret_cast<const size_t*>(&buffer_slice_new[index2]);
                     // Check if values match
                     if (OLD_FIRST8 == NEW_FIRST8) {
                         size_t offset = 8ull;
@@ -577,7 +588,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                         auto inst = std::make_unique<Insert_Instruction>();
                         inst->m_index = lastMatchEnd;
                         inst->m_newData.resize(newDataLength);
-                        std::copy(&destinationMemory[lastMatchEnd], &destinationMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
+                        std::copy(&targetMemory[lastMatchEnd], &targetMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
                         std::unique_lock<std::mutex> writeGuard(instructionMutex);
                         instructions.emplace_back(std::move(inst));
                     }
@@ -598,7 +609,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                     auto inst = std::make_unique<Insert_Instruction>();
                     inst->m_index = lastMatchEnd;
                     inst->m_newData.resize(newDataLength);
-                    std::copy(&destinationMemory[lastMatchEnd], &destinationMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
+                    std::copy(&targetMemory[lastMatchEnd], &targetMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
                     std::unique_lock<std::mutex> writeGuard(instructionMutex);
                     instructions.emplace_back(std::move(inst));
                 }
@@ -614,7 +625,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
         auto inst = std::make_unique<Insert_Instruction>();
         inst->m_index = bytesUsed_new;
         inst->m_newData.resize(size_new - bytesUsed_new);
-        std::copy(&destinationMemory[bytesUsed_new], &destinationMemory[bytesUsed_new + (size_new - bytesUsed_new)], inst->m_newData.data());
+        std::copy(&targetMemory[bytesUsed_new], &targetMemory[bytesUsed_new + (size_new - bytesUsed_new) - 1], inst->m_newData.data());
         std::unique_lock<std::mutex> writeGuard(instructionMutex);
         instructions.emplace_back(std::move(inst));
     }
@@ -734,13 +745,13 @@ std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
     return Buffer::patch(*this, diffBuffer);
 }
 
-std::optional<Buffer> Buffer::patch(const Buffer& source, const Buffer& diffBuffer)
+std::optional<Buffer> Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer)
 {
     // Ensure diff buffer at least *exists* (ignore source buffer, when empty we treat instruction as a brand new file)
     if (diffBuffer.empty())
         return {}; // Failure
 
-    MemoryRange sourceRange{ source.size(), source.bytes() };
+    MemoryRange sourceRange{ sourceBuffer.size(), sourceBuffer.bytes() };
     MemoryRange diffRange{ diffBuffer.size(), diffBuffer.bytes() };
     return Buffer::patch(sourceRange, diffRange);
 }

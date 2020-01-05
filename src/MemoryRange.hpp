@@ -24,10 +24,14 @@ namespace yatta {
 
 
         // Public Manipulation Methods
-        /** Retrieves a reference to the data at the byte index specified.
+         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        std::byte& operator[](const size_t& byteIndex) const noexcept;
+        std::byte& operator[](const size_t& byteIndex);
+        /** Retrieves a const reference to the data at the byte index specified.
+        @param	byteIndex			how many bytes into this buffer to index at.
+        @return						reference to data found at the byte index. */
+        const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
@@ -90,7 +94,9 @@ namespace yatta {
 
 
         // Attributes
+        /** Range of memory in use. */
         size_t m_range = 0ULL;
+        /** Underlying data pointer. */
         std::byte* const m_dataPtr = nullptr;
     };
 };
