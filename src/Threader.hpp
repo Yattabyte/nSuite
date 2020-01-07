@@ -33,7 +33,7 @@ namespace yatta {
                         if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
                             if (m_jobs.size()) {
                                 // Get the first job, remove it from the list
-                                auto job = std::move(m_jobs.front());
+                                auto job = m_jobs.front();
                                 m_jobs.pop_front();
                                 // Unlock
                                 writeGuard.unlock();
@@ -59,10 +59,9 @@ namespace yatta {
         /** Adds a job/task/function to the queue.
         @param	func	the task to be executed on a separate thread. A function with void return type and no arguments. */
         inline void addJob(const std::function<void()>&& func) {
-            if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
-                m_jobs.emplace_back(func);
-                m_jobsStarted++;
-            }
+            std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
+            m_jobs.emplace_back(func);
+            m_jobsStarted++;
         }
         /** Check if the threader has completed all its jobs.
         @return			true if finished, false otherwise. */
@@ -77,10 +76,9 @@ namespace yatta {
         inline void shutdown() {
             m_alive = false;
             m_keepOpen = false;
-            for (size_t x = 0; x < m_maxThreads && x < m_threads.size(); ++x) {
-                if (m_threads[x].joinable())
-                    m_threads[x].join();
-            }
+            for (auto& thread : m_threads)
+                if (thread.joinable())
+                    thread.join();
             while (m_threadsActive > 0ull)
                 continue;
             m_threads.clear();

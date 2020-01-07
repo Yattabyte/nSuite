@@ -275,7 +275,7 @@ std::optional<Buffer> yatta::Buffer::decompress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to decompress
     constexpr auto headerSize = sizeof(CompressionHeader);
-    if (memoryRange.m_range < headerSize)
+    if (memoryRange.size() < headerSize)
         return {}; // Failure
 
     // Read in header
@@ -635,8 +635,8 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
         continue;
 
     // Replace insertions with some repeat instructions
-    const auto& originalInstructionCount = instructions.size();
-    for (size_t i = 0; i < originalInstructionCount; ++i) {
+    const size_t ORIGINALInstructionCount = instructions.size();
+    for (size_t i = 0; i < ORIGINALInstructionCount; ++i) {
         if (auto inst = dynamic_cast<Insert_Instruction*>(instructions[i].get())) {
             threader.addJob([inst, &instructions, &instructionMutex]() {
                 // We only care about repeats larger than 36 bytes.
@@ -696,7 +696,6 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
     }
 
     // Wait for jobs to finish
-    threader.prepareForShutdown();
     while (!threader.isFinished())
         continue;
     threader.shutdown();

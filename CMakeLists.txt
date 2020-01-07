@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0079 NEW)
 include(ExternalProject)
-project(Yatta VERSION 1.4.4 DESCRIPTION "Directory and buffer compression & diffing tools.")
+project(Yatta VERSION 1.4.5 DESCRIPTION "Directory and buffer compression & diffing tools.")
 
 
 # Set consistent compiler flags for our project and our dependencies
@@ -28,8 +28,8 @@ add_subdirectory( src )
 # Optionally build unit tests
 option(UNIT_TESTS "Build Unit Tests" true)
 if (UNIT_TESTS)
-	add_subdirectory( tests/BufferTest )
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT bufferTest)
+	add_subdirectory( tests/UnitTests )
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
 endif (UNIT_TESTS)
 
 

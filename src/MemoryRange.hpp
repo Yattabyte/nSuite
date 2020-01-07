@@ -7,8 +7,16 @@
 
 namespace yatta {
     /** A range of pre-defined memory. */
-    struct MemoryRange {
-        // Inquiry Methods
+    class MemoryRange {
+    public:
+        // Public Constructor
+        /** Construct a memory range from the specified pointer and size.
+        @param	size				the number of bytes in the range.
+        @param	dataPtr			    pointer to some data source. */
+        MemoryRange(const size_t& size, std::byte* dataPtr) noexcept;
+
+
+        // Public Inquiry Methods
         /** Check if this buffer is empty - has no data allocated.
         @return						true if no memory has been allocated, false otherwise. */
         bool empty() const noexcept;
@@ -24,7 +32,7 @@ namespace yatta {
 
 
         // Public Manipulation Methods
-         /** Retrieves a reference to the data at the byte index specified.
+        /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
         std::byte& operator[](const size_t& byteIndex);
@@ -93,11 +101,12 @@ namespace yatta {
         }
 
 
-        // Attributes
+    protected:
+        // Protected Attributes
         /** Range of memory in use. */
         size_t m_range = 0ULL;
         /** Underlying data pointer. */
-        std::byte* const m_dataPtr = nullptr;
+        std::byte* m_dataPtr = nullptr;
     };
 };
 

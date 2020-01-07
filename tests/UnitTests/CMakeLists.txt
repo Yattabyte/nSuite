@@ -1,7 +1,7 @@
 ##################
-### BufferTest ###
+### Unit Tests ###
 ##################
-set (Module bufferTest)
+set (Module UnitTests)
 
 # Configure and acquire files
 set(FILES main.cpp)
@@ -10,7 +10,7 @@ set(FILES main.cpp)
 add_executable(${Module} ${FILES})
 
 # Add library dependencies
-add_dependencies(${Module} yatta bufferTest)
+add_dependencies(${Module} yatta UnitTests)
 target_link_libraries(${Module} PUBLIC yatta)
 
 # Set all project settings

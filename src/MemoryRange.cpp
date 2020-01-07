@@ -4,6 +4,13 @@
 using yatta::MemoryRange;
 
 
+// Public Constructor
+
+MemoryRange::MemoryRange(const size_t& size, std::byte* dataPtr) noexcept :
+    m_range(size), m_dataPtr(dataPtr)
+{
+}
+
 // Public Inquiry Methods
 
 bool MemoryRange::empty() const noexcept

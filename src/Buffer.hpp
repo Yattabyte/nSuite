@@ -230,6 +230,6 @@ namespace yatta {
         /** Underlying data pointer. */
         std::unique_ptr<std::byte[]> m_data = nullptr;
     };
-}
+};
 
 #endif // BUFFER_H

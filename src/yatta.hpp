@@ -3,6 +3,9 @@
 #define YATTA_H
 
 #include "Buffer.hpp"
+#include "BufferView.hpp"
+#include "MemoryRange.hpp"
+#include "Threader.hpp"
 
 
 /** This namespace encompasses all yatta classes and methods. */

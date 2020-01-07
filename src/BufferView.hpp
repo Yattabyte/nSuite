@@ -8,12 +8,16 @@
 namespace yatta {
     /** An expandable container representing a contiguous memory space.
     Allocates 2x its creation size, expanding when its capacity is exhausted. */
-    struct BufferView : protected MemoryRange {
-        // (de)Constructors
-        /** Construct a buffer of the specified size in bytes.
+    class BufferView : public MemoryRange {
+    public:
+        // Public Constructors
+        /** Construct a buffer view from the specified buffer.
+        @param  buffer              the buffer to construct a view from. */
+        explicit BufferView(const Buffer& buffer) noexcept;
+        /** Construct a buffer view from the specified pointer and size.
         @param	size				the number of bytes in the range.
         @param	dataPtr			    pointer to some data source. */
-        BufferView(const size_t& size, std::byte* const dataPtr) noexcept;
+        BufferView(const size_t& size, std::byte* dataPtr) noexcept;
 
 
         // Public Derivation Methods
@@ -41,7 +45,6 @@ namespace yatta {
         @return						a pointer to the patched buffer on patch success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> patch(const BufferView& diffBuffer) const;
     };
-}
-
+};
 
 #endif // BUFFERVIEW_H

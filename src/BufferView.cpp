@@ -5,9 +5,14 @@ using yatta::BufferView;
 using yatta::MemoryRange;
 
 
-// Public (de)Constructors
+// Public Constructor
 
-BufferView::BufferView(const size_t& size, std::byte* const dataPtr) noexcept :
+BufferView::BufferView(const Buffer& buffer) noexcept :
+    BufferView(buffer.size(), buffer.bytes())
+{
+}
+
+BufferView::BufferView(const size_t& size, std::byte* dataPtr) noexcept :
     MemoryRange{ size, dataPtr }
 {
 }
