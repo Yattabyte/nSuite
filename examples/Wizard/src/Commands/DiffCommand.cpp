@@ -9,7 +9,7 @@
 int DiffCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to log
-	NST::Log::PushText(
+	yatta::Log::PushText(
 		"                      ~\r\n"
 		"      Patch Maker    /\r\n"
 		"  ~-----------------~\r\n"
@@ -22,15 +22,15 @@ int DiffCommand::execute(const int& argc, char* argv[]) const
 	std::string newDirectory;
 	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
-		std::string command = NST::string_to_lower(std::string(argv[x], 5));
+		std::string command = yatta::string_to_lower(std::string(argv[x], 5));
 		if (command == "-old=")
-			oldDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			oldDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-new=")
-			newDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			newDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
-			NST::Log::PushText(
+			yatta::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -old=[path to the older directory]\r\n"
 				" -new=[path to the newer directory]\r\n"
@@ -46,7 +46,7 @@ int DiffCommand::execute(const int& argc, char* argv[]) const
 		const auto time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::tm bt{};
 		localtime_s(&bt, &time);
-		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
+		dstDirectory = yatta::Directory::SanitizePath(dstDirectory) + "\\" + std::to_string(bt.tm_year) + std::to_string(bt.tm_mon) + std::to_string(bt.tm_mday) + std::to_string(bt.tm_hour) + std::to_string(bt.tm_min) + std::to_string(bt.tm_sec);
 	}
 
 	// Ensure a file-extension is chosen
@@ -54,22 +54,22 @@ int DiffCommand::execute(const int& argc, char* argv[]) const
 		dstDirectory += ".ndiff";
 
 	// Try to diff the 2 directories specified
-	const auto diffBuffer = NST::Directory(oldDirectory).make_delta(NST::Directory(newDirectory));
+	const auto diffBuffer = yatta::Directory(oldDirectory).make_delta(yatta::Directory(newDirectory));
 	if (!diffBuffer)
-		NST::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
+		yatta::Log::PushText("Cannot diff the two paths chosen, aborting...\r\n");
 	else {
 		// Try to create diff file
 		std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
 		std::ofstream file(dstDirectory, std::ios::binary | std::ios::out);
 		if (!file.is_open())
-			NST::Log::PushText("Cannot write diff file to disk, aborting...\r\n");
+			yatta::Log::PushText("Cannot write diff file to disk, aborting...\r\n");
 		else {
 			// Write the diff file to disk
 			file.write(diffBuffer->cArray(), std::streamsize(diffBuffer->size()));
 			file.close();
 
 			// Output results
-			NST::Log::PushText("Bytes written:  " + std::to_string(diffBuffer->size()) + "\r\n");
+			yatta::Log::PushText("Bytes written:  " + std::to_string(diffBuffer->size()) + "\r\n");
 			return EXIT_SUCCESS;
 		}
 	}

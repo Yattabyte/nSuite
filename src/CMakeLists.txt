@@ -9,6 +9,7 @@ set(FILES
 	Buffer.hpp
 	BufferView.hpp
 	MemoryRange.hpp
+	Directory.hpp
 	Threader.hpp
 	yatta.hpp
 	lz4/lz4.h
@@ -17,6 +18,7 @@ set(FILES
 	Buffer.cpp
 	BufferView.cpp
 	MemoryRange.cpp
+	Directory.cpp
 	lz4/lz4.c
 )
 

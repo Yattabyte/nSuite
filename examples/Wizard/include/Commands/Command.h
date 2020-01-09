@@ -3,7 +3,7 @@
 #define COMMAND_H
 
 
-/** An interface for specific commands used in the nStlr application.*/
+/** An interface for specific commands used in the yattalr application.*/
 struct Command {
 	// Public Interface
 	/** Virtual method for executing a command.

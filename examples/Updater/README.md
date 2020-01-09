@@ -3,7 +3,7 @@ This program is a naive upadater application. It consumes .ndiff files found nex
 
 Its goal is to be a quick means of updating a directory for a user. 
 
-It attempts to provide reasonable security against corruption by comparing hashes before/after patching, and aborts before any actual changes are made to disk.
+It attempts to provide reasonable security agaiyatta corruption by comparing hashes before/after patching, and aborts before any actual changes are made to disk.
 
 The tool applies all .ndiff files it can find in the same folder it runs from, and if successfull, deletes them afterwards.
 
@@ -15,7 +15,7 @@ The tool and diff files should be kept at the root of an affected directory. It 
 
 This program essentially encapsulates nSuite's `-patch` command.
 
-It doesn't use any fancy rendering library, it instead runs in a terminal and requires minimal user input.
+It doesn't use any fancy rendering library, it iyattaead runs in a terminal and requires minimal user input.
 
 This application has 1 (one) resource embedded within it:
   - IDI_ICON1		the application icon

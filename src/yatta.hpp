@@ -4,6 +4,7 @@
 
 #include "Buffer.hpp"
 #include "BufferView.hpp"
+#include "Directory.hpp"
 #include "MemoryRange.hpp"
 #include "Threader.hpp"
 

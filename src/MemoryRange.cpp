@@ -1,5 +1,4 @@
 #include "MemoryRange.hpp"
-#include <stdexcept>
 
 using yatta::MemoryRange;
 
@@ -10,6 +9,7 @@ MemoryRange::MemoryRange(const size_t& size, std::byte* dataPtr) noexcept :
     m_range(size), m_dataPtr(dataPtr)
 {
 }
+
 
 // Public Inquiry Methods
 
@@ -28,15 +28,15 @@ size_t MemoryRange::size() const noexcept
     return m_range;
 }
 
-size_t MemoryRange::hash() const noexcept
+size_t MemoryRange::hash() const
 {
+    size_t value(1234567890ULL);
+
     // Ensure data is valid
     if (m_dataPtr == nullptr)
-        return 0ULL; // Failure
-
-    // Use data 8-bytes at a time, until end of data or less than 8 bytes remains
-    size_t value(1234567890ULL);
-    if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
+        throw std::runtime_error("Invalid Memory Range (null pointer)");
+    else if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
+        // Use data 8-bytes at a time, until end of data or less than 8 bytes remains
         size_t x(0ULL);
         const size_t max(m_range / 8ULL);
         for (; x < max; ++x)
@@ -59,14 +59,14 @@ size_t MemoryRange::hash() const noexcept
 std::byte& MemoryRange::operator[](const size_t& byteIndex)
 {
     if (byteIndex >= m_range)
-        throw std::out_of_range("Memory Range index out of bounds");
+        throw std::runtime_error("Memory Range index out of bounds");
     return m_dataPtr[byteIndex];
 }
 
 const std::byte& MemoryRange::operator[](const size_t& byteIndex) const
 {
     if (byteIndex >= m_range)
-        throw std::out_of_range("Memory Range index out of bounds");
+        throw std::runtime_error("Memory Range index out of bounds");
     return m_dataPtr[byteIndex];
 }
 
@@ -83,29 +83,33 @@ std::byte* MemoryRange::bytes() const noexcept
 
 // Public IO Methods
 
-void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex) noexcept
+void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex)
 {
     // Ensure pointers are valid
-    if (m_dataPtr == nullptr || dataPtr == nullptr)
-        return; // Failure
+    if (m_dataPtr == nullptr)
+        throw std::runtime_error("Invalid Memory Range (null pointer)");
+    if (dataPtr == nullptr)
+        throw std::runtime_error("Invalid argument (null pointer)");    
 
     // Ensure data won't exceed range
     if ((size + byteIndex) > m_range)
-        return; // Failure
+        throw std::runtime_error("Memory Range index out of bounds");
 
     // Copy Data
     std::memcpy(&bytes()[byteIndex], dataPtr, size);
 }
 
-void MemoryRange::out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex) const noexcept
+void MemoryRange::out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex) const
 {
     // Ensure pointers are valid
-    if (m_dataPtr == nullptr || dataPtr == nullptr)
-        return; // Failure
+    if (m_dataPtr == nullptr)
+        throw std::runtime_error("Invalid Memory Range (null pointer)");
+    if (dataPtr == nullptr)
+        throw std::runtime_error("Invalid argument (null pointer)");
 
     // Ensure data won't exceed range
     if ((size + byteIndex) > m_range)
-        return; // Failure
+        throw std::runtime_error("Memory Range index out of bounds");
 
     // Copy Data
     std::memcpy(dataPtr, &bytes()[byteIndex], size);

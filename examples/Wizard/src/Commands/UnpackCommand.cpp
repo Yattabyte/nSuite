@@ -9,7 +9,7 @@
 int UnpackCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
-	NST::Log::PushText(
+	yatta::Log::PushText(
 		"                      ~\r\n"
 		"       Unpacker      /\r\n"
 		"  ~-----------------~\r\n"
@@ -21,13 +21,13 @@ int UnpackCommand::execute(const int& argc, char* argv[]) const
 	std::string srcDirectory;
 	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
-		std::string command = NST::string_to_lower(std::string(argv[x], 5));
+		std::string command = yatta::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
-			NST::Log::PushText(
+			yatta::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the package file]\r\n"
 				" -dst=[directory to write package contents]\r\n"
@@ -44,20 +44,20 @@ int UnpackCommand::execute(const int& argc, char* argv[]) const
 	// Try to open pack file
 	std::ifstream packFile(srcDirectory, std::ios::binary | std::ios::beg);
 	if (!packFile.is_open())
-		NST::Log::PushText("Cannot read package file, aborting...\r\n");
+		yatta::Log::PushText("Cannot read package file, aborting...\r\n");
 	else {
 		// Copy contents into a buffer
-		NST::Buffer packBuffer(std::filesystem::file_size(srcDirectory));
+		yatta::Buffer packBuffer(std::filesystem::file_size(srcDirectory));
 		packFile.read(packBuffer.cArray(), std::streamsize(packBuffer.size()));
 		packFile.close();
 
 		// Try to un-package using the resource file
-		NST::Directory directory(packBuffer, dstDirectory);
+		yatta::Directory directory(packBuffer, dstDirectory);
 		if (!directory.apply_folder())
-			NST::Log::PushText("Cannot decompress package file, aborting...\r\n");
+			yatta::Log::PushText("Cannot decompress package file, aborting...\r\n");
 		else {
 			// Output results
-			NST::Log::PushText(
+			yatta::Log::PushText(
 				"Files processed: " + std::to_string(directory.fileCount()) + "\r\n" +
 				"Bytes processed: " + std::to_string(directory.byteCount()) + "\r\n"
 			);

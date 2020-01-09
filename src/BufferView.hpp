@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BUFFERVIEW_H
-#define BUFFERVIEW_H
+#ifndef YATTA_BUFFERVIEW_H
+#define YATTA_BUFFERVIEW_H
 
 #include "Buffer.hpp"
 
@@ -27,10 +27,10 @@ namespace yatta {
         ------------------------------------------------------------------
         | header: identifier title, uncompressed size | compressed data  |
         ------------------------------------------------------------------ */
-        [[nodiscard]] std::optional<Buffer> compress() const;
+        [[nodiscard]] Buffer compress() const;
         /** Generates a decompressed version of this buffer.
         @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
-        [[nodiscard]] std::optional<Buffer> decompress() const;
+        [[nodiscard]] Buffer decompress() const;
         /** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
         @param	target				the newer of the 2 buffers.
         @param	maxThreads			the number of threads to use in accelerating the operation.
@@ -39,12 +39,12 @@ namespace yatta {
         -----------------------------------------------------------------------------------
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
-        [[nodiscard]] std::optional<Buffer> diff(const BufferView& target, const size_t& maxThreads) const;
+        [[nodiscard]] Buffer diff(const BufferView& target, const size_t& maxThreads) const;
         /** Generates a patched version of this buffer, using data found in the supplied diff buffer.
         @param	diffBuffer			the diff buffer to patch with.
         @return						a pointer to the patched buffer on patch success, empty otherwise. */
-        [[nodiscard]] std::optional<Buffer> patch(const BufferView& diffBuffer) const;
+        [[nodiscard]] Buffer patch(const BufferView& diffBuffer) const;
     };
 };
 
-#endif // BUFFERVIEW_H
+#endif // YATTA_BUFFERVIEW_H

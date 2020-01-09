@@ -22,16 +22,16 @@ static auto get_patches(const std::string& srcDirectory)
 int main()
 {
 	// Tap-in to the log, have it redirect to the console
-	auto index = NST::Log::AddObserver([&](const std::string& message) {
+	auto index = yatta::Log::AddObserver([&](const std::string& message) {
 		std::cout << message;
 		});
 
 	// Find all patch files?
-	const auto dstDirectory = NST::Directory::SanitizePath(NST::Directory::GetRunningDirectory());
+	const auto dstDirectory = yatta::Directory::SanitizePath(yatta::Directory::GetRunningDirectory());
 	const auto patches = get_patches(dstDirectory);
 
 	// Report an overview of supplied procedure
-	NST::Log::PushText(
+	yatta::Log::PushText(
 		"                       ~\r\n"
 		"        Updater       /\r\n"
 		"  ~------------------~\r\n"
@@ -41,7 +41,7 @@ int main()
 		"\r\n"
 	);
 	if (static_cast<unsigned int>(!patches.empty()) != 0U) {
-		NST::Log::PushText(std::string("Ready to update?") + ' ');
+		yatta::Log::PushText(std::string("Ready to update?") + ' ');
 		system("pause");
 		std::printf("\033[A\33[2K\r");
 		std::printf("\033[A\33[2K\r\n");
@@ -54,25 +54,25 @@ int main()
 			// Open diff file
 			std::ifstream diffFile(patch, std::ios::binary | std::ios::beg);
 			if (!diffFile.is_open()) {
-				NST::Log::PushText("Cannot read diff file, skipping...\r\n");
+				yatta::Log::PushText("Cannot read diff file, skipping...\r\n");
 				continue;
 			}
 
 			// Apply patch
-			NST::Buffer diffBuffer(std::filesystem::file_size(patch));
+			yatta::Buffer diffBuffer(std::filesystem::file_size(patch));
 			diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 			diffFile.close();
 
 			// If patching success, write changes to disk
-			if (NST::Directory(dstDirectory).apply_delta(diffBuffer)) {
+			if (yatta::Directory(dstDirectory).apply_delta(diffBuffer)) {
 				patchesApplied++;
 
 				// Delete patch file at very end
 				if (!std::filesystem::remove(patch))
-					NST::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
+					yatta::Log::PushText("Cannot delete diff file \"" + patch.path().string() + "\" from disk, make sure to delete it manually.\r\n");
 			}
 			else {
-				NST::Log::PushText("skipping patch...\r\n");
+				yatta::Log::PushText("skipping patch...\r\n");
 				continue;
 			}
 		}
@@ -80,7 +80,7 @@ int main()
 		// Success, report results
 		const auto end = std::chrono::system_clock::now();
 		const std::chrono::duration<double> elapsed_seconds = end - start;
-		NST::Log::PushText(
+		yatta::Log::PushText(
 			"Patches used:   " + std::to_string(patchesApplied) + " out of " + std::to_string(patches.size()) + "\r\n" +
 			"Bytes written:  " + std::to_string(bytesWritten) + "\r\n" +
 			"Total duration: " + std::to_string(elapsed_seconds.count()) + " seconds\r\n\r\n"
@@ -88,7 +88,7 @@ int main()
 	}
 
 	// Pause and exit
-	NST::Log::RemoveObserver(index);
+	yatta::Log::RemoveObserver(index);
 	system("pause");
 	exit(EXIT_SUCCESS);
 }

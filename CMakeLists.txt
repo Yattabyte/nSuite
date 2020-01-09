@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0079 NEW)
 include(ExternalProject)
-project(Yatta VERSION 1.4.5 DESCRIPTION "Directory and buffer compression & diffing tools.")
+project(Yatta VERSION 1.4.6 DESCRIPTION "Library for compressing and diffing buffers and files.")
 
 
 # Set consistent compiler flags for our project and our dependencies
@@ -36,11 +36,11 @@ endif (UNIT_TESTS)
 # Optionally build examples
 option(EXAMPLES "Build Examples" true)
 if (EXAMPLES)
-	add_subdirectory( examples/Installer )
-	add_subdirectory( examples/Uninstaller )
-	add_subdirectory( examples/Unpacker )
-	add_subdirectory( examples/Updater )
-	add_subdirectory( examples/Wizard )
+	#add_subdirectory( examples/Unpacker )
+	#add_subdirectory( examples/Updater )
+	#add_subdirectory( examples/Installer )
+	#add_subdirectory( examples/Uninstaller )
+	#add_subdirectory( examples/Wizard )
 endif (EXAMPLES)
 
 

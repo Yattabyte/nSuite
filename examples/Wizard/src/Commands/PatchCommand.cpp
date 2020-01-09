@@ -9,7 +9,7 @@
 int PatchCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
-	NST::Log::PushText(
+	yatta::Log::PushText(
 		"                      ~\r\n"
 		"        Patcher      /\r\n"
 		"  ~-----------------~\r\n"
@@ -21,13 +21,13 @@ int PatchCommand::execute(const int& argc, char* argv[]) const
 	std::string srcDirectory;
 	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
-		std::string command = NST::string_to_lower(std::string(argv[x], 5));
+		std::string command = yatta::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
-			NST::Log::PushText(
+			yatta::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the .ndiff file]\r\n"
 				" -dst=[path to the directory to patch]\r\n"
@@ -44,18 +44,18 @@ int PatchCommand::execute(const int& argc, char* argv[]) const
 	// Try to open diff file
 	std::ifstream diffFile(srcDirectory, std::ios::binary | std::ios::beg);
 	if (!diffFile.is_open())
-		NST::Log::PushText("Cannot read diff file, aborting...\r\n");
+		yatta::Log::PushText("Cannot read diff file, aborting...\r\n");
 	else {
 		// Try to patch the directory specified
-		NST::Buffer diffBuffer(std::filesystem::file_size(srcDirectory));
+		yatta::Buffer diffBuffer(std::filesystem::file_size(srcDirectory));
 		diffFile.read(diffBuffer.cArray(), std::streamsize(diffBuffer.size()));
 		diffFile.close();
 
 		// Try to patch the destination directory
-		NST::Directory directory(dstDirectory);
+		yatta::Directory directory(dstDirectory);
 		if (directory.apply_delta(diffBuffer)) {
 			// Output results
-			/*NST::Log::PushText(
+			/*yatta::Log::PushText(
 				"Bytes written:  " + std::to_string(bytesWritten) + "\r\n"
 			);*/
 

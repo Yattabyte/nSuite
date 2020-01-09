@@ -1,8 +1,9 @@
 #pragma once
-#ifndef MEMORYRANGE_H
-#define MEMORYRANGE_H
+#ifndef YATTA_MEMORYRANGE_H
+#define YATTA_MEMORYRANGE_H
 
 #include <memory>
+#include <stdexcept>
 
 
 namespace yatta {
@@ -28,7 +29,7 @@ namespace yatta {
         size_t size() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        size_t hash() const noexcept;
+        size_t hash() const;
 
 
         // Public Manipulation Methods
@@ -55,20 +56,20 @@ namespace yatta {
         @param	dataPtr				pointer to copy the data from.
         @param	size				the number of bytes to copy.
         @param	byteIndex			the destination index to begin copying to. */
-        void in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex = 0) noexcept;
+        void in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex = 0);
         /** Copies a data object into this buffer.
         @tparam T					the data type (auto-deducible).
         @param	dataObj				const reference to some object to copy from.
         @param	byteIndex			the destination index to begin copying to. */
         template <typename T>
-        inline void in_type(const T& dataObj, const size_t byteIndex = 0) noexcept {
+        inline void in_type(const T& dataObj, const size_t byteIndex = 0) {
             // Ensure pointers are valid
             if (m_dataPtr == nullptr)
-                return; // Failure
+                throw std::runtime_error("Invalid Memory Range (null pointer)");
 
             // Ensure data won't exceed range
             if ((sizeof(T) + byteIndex) > m_range)
-                return; // Failure
+                throw std::runtime_error("Memory Range index out of bounds");
 
             // Copy Data
             // Only reinterpret-cast if T is not std::byte
@@ -81,23 +82,27 @@ namespace yatta {
         @param	dataPtr				pointer to copy the data into.
         @param	size				the number of bytes to copy.
         @param	byteIndex			the destination index to begin copying from. */
-        void out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex = 0) const noexcept;
+        void out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex = 0) const;
         /** Copies data found in this buffer out to a data object.
         @tparam T					the data type (auto-deducible).
         @param	dataObj				reference to some object to copy into.
         @param	byteIndex			the destination index to begin copying from. */
         template <typename T>
-        inline void out_type(T& dataObj, const size_t byteIndex = 0) const noexcept {
+        inline void out_type(T& dataObj, const size_t byteIndex = 0) const {
             // Ensure pointers are valid
             if (m_dataPtr == nullptr)
-                return; // Failure
+                throw std::runtime_error("Invalid Memory Range (null pointer)");
 
             // Ensure data won't exceed range
             if ((sizeof(T) + byteIndex) > m_range)
-                return; // Failure
+                throw std::runtime_error("Memory Range index out of bounds");
 
             // Copy Data
-            dataObj = *reinterpret_cast<T*>(&m_dataPtr[byteIndex]);
+            // Only reinterpret-cast if T is not std::byte
+            if constexpr (std::is_same<T, std::byte>::value)
+                dataObj = m_dataPtr[byteIndex];
+            else
+                dataObj = *reinterpret_cast<T*>(&m_dataPtr[byteIndex]);
         }
 
 
@@ -110,4 +115,4 @@ namespace yatta {
     };
 };
 
-#endif // MEMORYRANGE_H
+#endif // YATTA_MEMORYRANGE_H

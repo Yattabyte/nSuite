@@ -20,22 +20,22 @@ BufferView::BufferView(const size_t& size, std::byte* dataPtr) noexcept :
 
 // Public Derivation Methods
 
-std::optional<Buffer> BufferView::compress() const
+Buffer BufferView::compress() const
 {
     return Buffer::compress(*this);
 }
 
-std::optional<Buffer> BufferView::decompress() const
+Buffer BufferView::decompress() const
 {
     return Buffer::decompress(*this);
 }
 
-std::optional<Buffer> BufferView::diff(const BufferView& target, const size_t& maxThreads) const
+Buffer BufferView::diff(const BufferView& target, const size_t& maxThreads) const
 {
     return Buffer::diff(*this, target, maxThreads);
 }
 
-std::optional<Buffer> BufferView::patch(const BufferView& diffBuffer) const
+Buffer BufferView::patch(const BufferView& diffBuffer) const
 {
     return Buffer::patch(*this, diffBuffer);
 }

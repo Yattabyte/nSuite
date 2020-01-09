@@ -1,6 +1,6 @@
 #pragma once
-#ifndef THREADER_H
-#define THREADER_H
+#ifndef YATTA_THREADER_H
+#define YATTA_THREADER_H
 
 #include <atomic>
 #include <algorithm>
@@ -100,4 +100,4 @@ namespace yatta {
     };
 };
 
-#endif // THREADER_H
+#endif // YATTA_THREADER_H

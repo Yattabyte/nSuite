@@ -10,7 +10,7 @@ set(FILES main.cpp)
 add_executable(${Module} ${FILES})
 
 # Add library dependencies
-add_dependencies(${Module} yatta UnitTests)
+add_dependencies(${Module} yatta)
 target_link_libraries(${Module} PUBLIC yatta)
 
 # Set all project settings

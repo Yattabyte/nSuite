@@ -10,7 +10,7 @@
 int InstallerCommand::execute(const int& argc, char* argv[]) const
 {
 	// Supply command header to console
-	NST::Log::PushText(
+	yatta::Log::PushText(
 		"                      ~\r\n"
 		"    Installer Maker  /\r\n"
 		"  ~-----------------~\r\n"
@@ -22,16 +22,16 @@ int InstallerCommand::execute(const int& argc, char* argv[]) const
 	std::string srcDirectory;
 	std::string dstDirectory;
 	for (int x = 2; x < argc; ++x) {
-		std::string command = NST::string_to_lower(std::string(argv[x], 5));
+		std::string command = yatta::string_to_lower(std::string(argv[x], 5));
 		if (command == "-src=")
-			srcDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			srcDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else if (command == "-dst=")
-			dstDirectory = NST::Directory::SanitizePath(std::string(&argv[x][5]));
+			dstDirectory = yatta::Directory::SanitizePath(std::string(&argv[x][5]));
 		else {
-			NST::Log::PushText(
+			yatta::Log::PushText(
 				" Arguments Expected:\r\n"
 				" -src=[path to the directory to package]\r\n"
-				" -dst=[path to write the installer] (can omit filename)\r\n"
+				" -dst=[path to write the Installer] (can omit filename)\r\n"
 				"\r\n"
 			);
 			return EXIT_FAILURE;
@@ -40,7 +40,7 @@ int InstallerCommand::execute(const int& argc, char* argv[]) const
 
 	// If user provides a directory only, append a filename
 	if (std::filesystem::is_directory(dstDirectory))
-		dstDirectory = NST::Directory::SanitizePath(dstDirectory) + "\\installer.exe";
+		dstDirectory = yatta::Directory::SanitizePath(dstDirectory) + "\\Installer.exe";
 
 	// Ensure a file-extension is chosen
 	if (!std::filesystem::path(dstDirectory).has_extension())
@@ -49,50 +49,50 @@ int InstallerCommand::execute(const int& argc, char* argv[]) const
 	// Try to compress the directory specified
 	bool success = false;
 	HANDLE handle(nullptr);
-	NST::Directory directory(srcDirectory, { "\\manifest.nman" });
+	yatta::Directory directory(srcDirectory, { "\\manifest.nman" });
 	auto packBuffer = directory.make_package();
 	if (!packBuffer)
-		NST::Log::PushText("Cannot create installer from the directory specified, aborting...\r\n");
+		yatta::Log::PushText("Cannot create Installer from the directory specified, aborting...\r\n");
 	else {
 		// Ensure resource exists
-		const NST::Resource installer(IDR_INSTALLER, "INSTALLER");
-		if (!installer.exists())
-			NST::Log::PushText("Cannot access installer resource, aborting...\r\n");
+		const yatta::Resource Installer(IDR_InstallER, "InstallER");
+		if (!Installer.exists())
+			yatta::Log::PushText("Cannot access Installer resource, aborting...\r\n");
 		else {
-			// Try to create installer file
+			// Try to create Installer file
 			std::filesystem::create_directories(std::filesystem::path(dstDirectory).parent_path());
-			std::ofstream instFile(dstDirectory, std::ios::binary | std::ios::out);
-			if (!instFile.is_open())
-				NST::Log::PushText("Cannot write installer to disk, aborting...\r\n");
+			std::ofstream iyattaFile(dstDirectory, std::ios::binary | std::ios::out);
+			if (!iyattaFile.is_open())
+				yatta::Log::PushText("Cannot write Installer to disk, aborting...\r\n");
 			else {
-				// Write installer to disk
-				instFile.write(reinterpret_cast<char*>(installer.getPtr()), (std::streamsize)installer.getSize());
-				instFile.close();
+				// Write Installer to disk
+				iyattaFile.write(reinterpret_cast<char*>(Installer.getPtr()), (std::streamsize)Installer.getSize());
+				iyattaFile.close();
 
-				// Try to update installer's resource
+				// Try to update Installer's resource
 				handle = BeginUpdateResource(dstDirectory.c_str(), 0);
 				if (!(bool)UpdateResource(handle, "ARCHIVE", MAKEINTRESOURCE(IDR_ARCHIVE), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), packBuffer->data(), (DWORD)packBuffer->size()))
-					NST::Log::PushText("Cannot write archive contents to the installer, aborting...\r\n");
+					yatta::Log::PushText("Cannot write archive contents to the Installer, aborting...\r\n");
 				else {
 					// Try to find manifest file
 					if (std::filesystem::exists(srcDirectory + "\\manifest.nman")) {
 						const auto manifestSize = std::filesystem::file_size(srcDirectory + "\\manifest.nman");
 						std::ifstream maniFile(srcDirectory + "\\manifest.nman", std::ios::binary | std::ios::beg);
 						if (!maniFile.is_open())
-							NST::Log::PushText("Cannot open manifest file!\r\n");
+							yatta::Log::PushText("Cannot open manifest file!\r\n");
 						else {
 							// Read manifest file
-							NST::Buffer manifestBuffer(manifestSize);
+							yatta::Buffer manifestBuffer(manifestSize);
 							maniFile.read(manifestBuffer.cArray(), (std::streamsize)manifestSize);
 							maniFile.close();
 
-							// Update installers' manifest resource
+							// Update Installers' manifest resource
 							if (!(bool)UpdateResource(handle, "MANIFEST", MAKEINTRESOURCE(IDR_MANIFEST), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), manifestBuffer.data(), (DWORD)manifestSize))
-								NST::Log::PushText("Cannot write manifest contents to the installer!\r\n");
+								yatta::Log::PushText("Cannot write manifest contents to the Installer!\r\n");
 						}
 					}
 					// Output results
-					NST::Log::PushText(
+					yatta::Log::PushText(
 						"Files packaged:  " + std::to_string(directory.fileCount()) + "\r\n" +
 						"Bytes packaged:  " + std::to_string(directory.byteCount()) + "\r\n" +
 						"Compressed Size: " + std::to_string(packBuffer->size()) + "\r\n"

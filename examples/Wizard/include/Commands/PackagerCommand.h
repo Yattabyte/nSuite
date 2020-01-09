@@ -5,7 +5,7 @@
 #include "Command.h"
 
 
-/** Command to compress an entire directory into a portable installer. */
+/** Command to compress an entire directory into a portable Installer. */
 class PackagerCommand : public Command {
 public:
 	// Public interface implementation
