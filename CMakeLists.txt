@@ -2,7 +2,7 @@
 ### Yatta ###
 #############
 cmake_minimum_required(VERSION 3.9.2)
-project(Yatta VERSION 1.4.29  DESCRIPTION "Library for compressing and diffing buffers and files.")
+project(Yatta VERSION 1.4.30  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 
@@ -20,11 +20,11 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 else()
-    add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
+    add_compile_options("-std=c++17 -Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options("-stdlib=libc++")
     else()
-		add_compile_options("-lstdc++fs -std=c++17")
+		add_compile_options("-lstdc++fs")
     endif()
 endif()
 
