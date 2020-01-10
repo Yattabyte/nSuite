@@ -2,6 +2,7 @@
 #ifndef YATTA_MEMORYRANGE_H
 #define YATTA_MEMORYRANGE_H
 
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 
