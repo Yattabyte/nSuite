@@ -52,8 +52,7 @@ jobs:
       dist: trusty
       compiler: clang
   
-    - os: windows
-      compiler: mingw64
+    #- os: windows
     
     #- os: osx
     #  osx_image: xcode10.1
