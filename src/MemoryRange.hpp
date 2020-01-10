@@ -20,35 +20,35 @@ namespace yatta {
         // Public Inquiry Methods
         /** Check if this buffer is empty - has no data allocated.
         @return						true if no memory has been allocated, false otherwise. */
-        bool empty() const noexcept;
+        [[nodiscard]] bool empty() const noexcept;
         /** Retrieves whether or not this buffer's size is greater than zero.
         @return						true if has memory allocated, false otherwise. */
-        bool hasData() const noexcept;
+        [[nodiscard]] bool hasData() const noexcept;
         /** Returns the size of memory allocated by this buffer.
         @return						number of bytes allocated. */
-        size_t size() const noexcept;
+        [[nodiscard]] size_t size() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        size_t hash() const;
+        [[nodiscard]] size_t hash() const;
 
 
         // Public Manipulation Methods
         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        std::byte& operator[](const size_t& byteIndex);
+        [[nodiscard]] std::byte& operator[](const size_t& byteIndex);
         /** Retrieves a const reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        const std::byte& operator[](const size_t& byteIndex) const;
+        [[nodiscard]] const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
-        char* charArray() const noexcept;
+        [[nodiscard]] char* charArray() const noexcept;
         /** Retrieves a raw pointer to this buffer's data.
         Does not copy underlying data.
         @return						pointer to this buffer's data. */
-        std::byte* bytes() const noexcept;
+        [[nodiscard]] std::byte* bytes() const noexcept;
 
 
         // Public IO Methods
@@ -62,7 +62,7 @@ namespace yatta {
         @param	dataObj				const reference to some object to copy from.
         @param	byteIndex			the destination index to begin copying to. */
         template <typename T>
-        inline void in_type(const T& dataObj, const size_t byteIndex = 0) {
+        void in_type(const T& dataObj, const size_t byteIndex = 0) {
             // Ensure pointers are valid
             if (m_dataPtr == nullptr)
                 throw std::runtime_error("Invalid Memory Range (null pointer)");
@@ -88,7 +88,7 @@ namespace yatta {
         @param	dataObj				reference to some object to copy into.
         @param	byteIndex			the destination index to begin copying from. */
         template <typename T>
-        inline void out_type(T& dataObj, const size_t byteIndex = 0) const {
+        void out_type(T& dataObj, const size_t byteIndex = 0) const {
             // Ensure pointers are valid
             if (m_dataPtr == nullptr)
                 throw std::runtime_error("Invalid Memory Range (null pointer)");

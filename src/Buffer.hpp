@@ -14,9 +14,9 @@ namespace yatta {
     public:
         // Public (de)Constructors
         /** Destroy the buffer, freeing the memory underlying memory. */
-        inline ~Buffer() = default;
+        ~Buffer() = default;
         /** Construct an empty buffer, allocating no memory. */
-        inline Buffer() = default;
+        Buffer() = default;
         /** Construct a buffer of the specified size in bytes.
         @param	size				the number of bytes to allocate. */
         explicit Buffer(const size_t& size);
@@ -42,38 +42,38 @@ namespace yatta {
         // Public Inquiry Methods
         /** Check if this buffer is empty - has no data allocated.
         @return						true if no memory has been allocated, false otherwise. */
-        bool empty() const noexcept;
+        [[nodiscard]] bool empty() const noexcept;
         /** Retrieves whether or not this buffer's size is greater than zero.
         @return						true if has memory allocated, false otherwise. */
-        bool hasData() const noexcept;
+        [[nodiscard]] bool hasData() const noexcept;
         /** Returns the size of memory allocated by this buffer.
         @return						number of bytes allocated. */
-        size_t size() const noexcept;
+        [[nodiscard]] size_t size() const noexcept;
         /** Returns the total size + reserved capacity of memory allocated by this buffer.
         @return						actual number of bytes allocated. */
-        size_t capacity() const noexcept;
+        [[nodiscard]] size_t capacity() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        size_t hash() const;
+        [[nodiscard]] size_t hash() const;
 
 
         // Public Manipulation Methods
         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        std::byte& operator[](const size_t& byteIndex);
+        [[nodiscard]] std::byte& operator[](const size_t& byteIndex);
         /** Retrieves a const reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        const std::byte& operator[](const size_t& byteIndex) const;
+        [[nodiscard]] const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
-        char* charArray() const noexcept;
+        [[nodiscard]] char* charArray() const noexcept;
         /** Retrieves a raw pointer to this buffer's data.
         Does not copy underlying data.
         @return						pointer to this buffer's data. */
-        std::byte* bytes() const noexcept;
+        [[nodiscard]] std::byte* bytes() const noexcept;
         /** Changes the size of this buffer, expanding if need be.
         @note	won't ever reduce the capacity of the container.
         @note	will invalidate previous pointers when expanding.
@@ -90,7 +90,7 @@ namespace yatta {
         @param	dataPtr				pointer to copy the data from.
         @param	size				the number of bytes to copy.
         @param	byteIndex			the destination index to begin copying to. */
-        inline void in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex = 0) {
+        void in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex = 0) {
             MemoryRange{ m_size, bytes() }.in_raw(dataPtr, size, byteIndex);
         }
         /** Copies a data object into this buffer.
@@ -98,14 +98,14 @@ namespace yatta {
         @param	dataObj				const reference to some object to copy from.
         @param	byteIndex			the destination index to begin copying to. */
         template <typename T>
-        inline void in_type(const T& dataObj, const size_t byteIndex = 0) {
+        void in_type(const T& dataObj, const size_t byteIndex = 0) {
             MemoryRange{ m_size, bytes() }.in_type(dataObj, byteIndex);
         }
         /** Copies raw data found in this buffer out to the specified pointer.
         @param	dataPtr				pointer to copy the data into.
         @param	size				the number of bytes to copy.
         @param	byteIndex			the destination index to begin copying from. */
-        inline void out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex = 0) const {
+        void out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex = 0) const {
             MemoryRange{ m_size, bytes() }.out_raw(dataPtr, size, byteIndex);
         }
         /** Copies data found in this buffer out to a data object.
@@ -113,7 +113,7 @@ namespace yatta {
         @param	dataObj				reference to some object to copy into.
         @param	byteIndex			the destination index to begin copying from. */
         template <typename T>
-        inline void out_type(T& dataObj, const size_t byteIndex = 0) const {
+        void out_type(T& dataObj, const size_t byteIndex = 0) const {
             MemoryRange{ m_size, bytes() }.out_type(dataObj, byteIndex);
         }
 

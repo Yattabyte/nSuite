@@ -279,13 +279,13 @@ struct DifferentialHeader {
 /** Super-class for buffer diff instructions. */
 struct Differential_Instruction {
     // (de)Constructors
-    inline virtual ~Differential_Instruction() = default;
-    inline explicit Differential_Instruction(const char& t) noexcept
+    virtual ~Differential_Instruction() = default;
+    explicit Differential_Instruction(const char& t) noexcept
         : m_type(t) {}
-    inline Differential_Instruction(const Differential_Instruction& other) = delete;
-    inline Differential_Instruction(Differential_Instruction&& other) = delete;
-    inline Differential_Instruction& operator=(const Differential_Instruction& other) = delete;
-    inline Differential_Instruction& operator=(Differential_Instruction&& other) = delete;
+    Differential_Instruction(const Differential_Instruction& other) = delete;
+    Differential_Instruction(Differential_Instruction&& other) = delete;
+    Differential_Instruction& operator=(const Differential_Instruction& other) = delete;
+    Differential_Instruction& operator=(Differential_Instruction&& other) = delete;
 
 
     // Interface Declaration
@@ -306,18 +306,18 @@ struct Differential_Instruction {
 /** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */
 struct Copy_Instruction final : public Differential_Instruction {
     // Constructor
-    inline Copy_Instruction() noexcept : Differential_Instruction('C') {}
+    Copy_Instruction() noexcept : Differential_Instruction('C') {}
 
 
     // Interface Implementation
-    [[nodiscard]] inline size_t size() const noexcept final {
+    [[nodiscard]] size_t size() const noexcept final {
         return sizeof(char) + (sizeof(size_t) * 3ULL);
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
+    void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
         for (auto i = m_index, x = m_beginRead; i < bufferNew.size() && x < m_endRead && x < bufferOld.size(); ++i, ++x)
             bufferNew[i] = bufferOld[x];
     }
-    inline void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -331,7 +331,7 @@ struct Copy_Instruction final : public Differential_Instruction {
         outputBuffer.in_type(m_endRead, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
     }
-    inline void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
+    void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
         // Type already read
         // Read Index
         inputBuffer.out_type(m_index, byteIndex);
@@ -351,20 +351,20 @@ struct Copy_Instruction final : public Differential_Instruction {
 /** Contains a block of data to insert into the 'new' file, at a given point. */
 struct Insert_Instruction final : public Differential_Instruction {
     // Constructor
-    inline Insert_Instruction() noexcept : Differential_Instruction('I') {}
+    Insert_Instruction() noexcept : Differential_Instruction('I') {}
 
 
     // Interface Implementation
-    [[nodiscard]] inline size_t size() const noexcept final {
+    [[nodiscard]] size_t size() const noexcept final {
         return sizeof(char) + (sizeof(size_t) * 2) +
             (sizeof(char) * m_newData.size());
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
+    void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         const auto length = m_newData.size();
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < length; ++i, ++x)
             bufferNew[i] = m_newData[x];
     }
-    inline void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -381,7 +381,7 @@ struct Insert_Instruction final : public Differential_Instruction {
             byteIndex += length;
         }
     }
-    inline void read(const Buffer& inputBuffer, size_t& byteIndex) final {
+    void read(const Buffer& inputBuffer, size_t& byteIndex) final {
         // Type already read
         // Read Index
         inputBuffer.out_type(m_index, byteIndex);
@@ -405,18 +405,18 @@ struct Insert_Instruction final : public Differential_Instruction {
 /** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
 struct Repeat_Instruction final : public Differential_Instruction {
     // Constructor
-    inline Repeat_Instruction() noexcept : Differential_Instruction('R') {}
+    Repeat_Instruction() noexcept : Differential_Instruction('R') {}
 
 
     // Interface Implementation
-    [[nodiscard]] inline size_t size() const noexcept final {
+    [[nodiscard]] size_t size() const noexcept final {
         return sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char);
     }
-    inline void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
+    void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
             bufferNew[i] = m_value;
     }
-    inline void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -430,7 +430,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
         outputBuffer.in_type(m_value, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
     }
-    inline void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
+    void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
         // Type already read
         // Read Index
         inputBuffer.out_type(m_index, byteIndex);

@@ -27,6 +27,7 @@ static bool MemoryRange_AssignmentTest();
 static bool MemoryRange_MethodTest();
 static bool MemoryRange_IOTest();
 static bool Directory_ConstructionTest();
+static bool Directory_MethodTest();
 
 
 template <typename FirstFunc, typename ...RestFuncs>
@@ -65,7 +66,8 @@ int main()
         MemoryRange_MethodTest,
         MemoryRange_IOTest,
 
-        Directory_ConstructionTest
+        Directory_ConstructionTest,
+        Directory_MethodTest
     ) ? 0 : 1;
 }
 
@@ -648,8 +650,6 @@ static bool MemoryRange_IOTest()
 static bool Directory_ConstructionTest()
 {
     try {
-        //Directory directory(Directory::GetRunningDirectory() + "\\old");
-
         // Ensure we can make an empty directory
         Directory directory;
         if (directory.empty()) {
@@ -674,5 +674,34 @@ static bool Directory_ConstructionTest()
     }
 
     std::cout << "Directory Construction Test - Failure\n";
+    return false; // Failure
+}
+
+static bool Directory_MethodTest()
+{
+    try {
+        // Verify empty directories
+        Directory directory;
+        if (directory.empty()) {
+            // Verify that we can add another multiple folders
+            directory.in_folder(Directory::GetRunningDirectory() + "\\old");
+            directory.in_folder(Directory::GetRunningDirectory() + "\\new");
+            if (directory.hasFiles()) {
+                // Ensure we have 8 files all together
+                if (directory.fileCount() == 8ULL) {
+                    // Ensure the total size is as expected
+                    if (directory.fileSize() == 189747ULL) {
+                        std::cout << "Directory Method Test - Success\n";
+                        return true; // Success      
+                    }
+                }
+            }
+        }          
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Directory Method Test - Failure\n";
     return false; // Failure
 }
