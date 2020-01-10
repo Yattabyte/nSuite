@@ -18,7 +18,7 @@ matrix:
         - export CXX=g++-9
     
     - os: linux
-      dist: trusty
+      dist: bionic
       compiler: clang
   
     - os: windows
