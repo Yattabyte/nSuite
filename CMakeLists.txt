@@ -3,8 +3,8 @@
 #############
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0079 NEW)
+project(Yatta VERSION 1.4.11  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
-project(Yatta VERSION 1.4.10 DESCRIPTION "Library for compressing and diffing buffers and files.")
 
 
 # Set consistent compiler flags for our project and our dependencies
