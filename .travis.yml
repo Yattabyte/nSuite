@@ -1,5 +1,6 @@
 language: cpp
 sudo: required
+dist: xenial
 
 matrix:
   include:
@@ -38,43 +39,13 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
+            - llvm-toolchain-xenial-9
           packages:
             - clang-9
             - libc++-9-dev
             - libc++abi-9-dev
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
-    
-    ##############
-    # GCC BUILDS #
-    ##############    
-    - os: linux
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-8
-      env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-    
-    - os: linux
-      compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
-      env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-  
-    #- os: windows
-    
-    #- os: osx
-    #  osx_image: xcode10.1
   
 before_install:
     - eval "${MATRIX_EVAL}"
