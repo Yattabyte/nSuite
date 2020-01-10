@@ -12,11 +12,11 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7
+            - llvm-toolchain-xenial-8
           packages:
-            - clang-7.0
+            - clang-7
       env:
-        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     
     - os: linux
       compiler: clang
@@ -30,7 +30,7 @@ matrix:
             - libc++-8-dev
             - libc++abi-8-dev
       env:
-        - MATRIX_EVAL="CC=clang-8.0 && CXX=clang++-8.0"
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
     
     - os: linux
       compiler: clang
@@ -38,13 +38,13 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-9
+            - llvm-toolchain-xenial-8
           packages:
-            - clang-9.0
+            - clang-9
             - libc++-9-dev
             - libc++abi-9-dev
       env:
-        - MATRIX_EVAL="CC=clang-9.0 && CXX=clang++-9.0"
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
     
     ##############
     # GCC BUILDS #
