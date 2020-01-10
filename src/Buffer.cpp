@@ -4,6 +4,7 @@
 #include "lz4/lz4.h"
 #include <algorithm>
 #include <cstring>
+#include <climits>
 #include <numeric>
 #include <vector>
 
