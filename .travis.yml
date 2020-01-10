@@ -23,8 +23,9 @@ matrix:
         - MSBUILD_PATH="/C/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/MSBuild/16.0/Bin"
       script:
         - export PATH=$MSBUILD_PATH:$PATH
+		
     - os: osx
-      osx_image xcode10.1
+      osx_image: xcode10.1
   
 script:
   - cmake .
