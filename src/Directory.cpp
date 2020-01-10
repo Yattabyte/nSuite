@@ -46,11 +46,11 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
 		if (entry.is_regular_file()) {
 			// Read the file data
 			Buffer fileBuffer(entry.file_size());
-			std::ifstream fileOnDisk(entry.path(), std::ios::binary | std::ios::beg | std::ios::in);
+			std::ifstream fileOnDisk(entry.path(), static_cast<int>(std::ios::binary | std::ios::beg | std::ios::in));
 			if (!fileOnDisk.is_open()) 
 				throw std::runtime_error("Cannot read the file" + entry.path().string());			
 
-			fileOnDisk.read(fileBuffer.charArray(), (std::streamsize)fileBuffer.size());
+			fileOnDisk.read(fileBuffer.charArray(), static_cast<std::streamsize>(fileBuffer.size()));
 			fileOnDisk.close();
 			
 			m_files.emplace_back(VirtualFile{ (std::filesystem::relative(entry.path(), path)).string(), std::move(fileBuffer) });
@@ -64,11 +64,11 @@ void Directory::out_folder(const std::filesystem::path& path)
 		// Write-out the file
 		const auto fullPath = path.string() + file.m_relativePath;
 		std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-		std::ofstream fileOnDisk(fullPath, std::ios::binary | std::ios::out);
+		std::ofstream fileOnDisk(fullPath, static_cast<int>(std::ios::binary | std::ios::out));
 		if (!fileOnDisk.is_open())
 			throw std::runtime_error("Cannot write the file" + file.m_relativePath);
 
-		fileOnDisk.write(file.m_data.charArray(), (std::streamsize)file.m_data.size());
+		fileOnDisk.write(file.m_data.charArray(), static_cast<std::streamsize>(file.m_data.size()));
 		fileOnDisk.close();
 	}
 }
