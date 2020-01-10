@@ -2,13 +2,15 @@ language: cpp
 sudo: required
 dist: xenial
 addons:
-  sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-xenial-6
-    - llvm-toolchain-xenial-7
-    - llvm-toolchain-xenial-8
-    - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main'
+        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+      - llvm-toolchain-xenial-7
+      - llvm-toolchain-xenial-8
+      - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
 
 matrix:
   include:
