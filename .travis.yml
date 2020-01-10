@@ -18,9 +18,9 @@ matrix:
           packages:
             - clang-6.0
             - g++-8
-            - libc++-6-dev
-            - libc++abi-6-dev
-            - libstdc++-6-dev
+            - libc++-6.0-dev
+            - libc++abi-6.0-dev
+            - libstdc++-6.0-dev
       env:
         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
 
