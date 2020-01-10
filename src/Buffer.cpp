@@ -3,6 +3,7 @@
 #include "Threader.hpp"
 #include "lz4/lz4.h"
 #include <algorithm>
+#include <cstring>
 #include <numeric>
 #include <vector>
 
