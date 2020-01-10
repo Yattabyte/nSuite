@@ -1,27 +1,28 @@
 sudo: false
 language: cpp
 
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-9
+
 matrix:
   include:
     - os: linux
       dist: trusty
-      compiler: 
-        - gcc
-        - clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
+      compiler: gcc
       script:
         - export CC=gcc-9
         - export CXX=g++-9
+		
+    - os: linux
+      dist: trusty
+      compiler: clang
   
     - os: windows
       compiler: msvc
-      env:
-        - LABEL="windows-msvc"
     
     - os: osx
       osx_image: xcode11.3
