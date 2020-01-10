@@ -1,19 +1,19 @@
 sudo: false
 language: cpp
 matrix:
-	include: 
-		os: linux
-		dist: trusty
-		compiler: 
-			- gcc
-			- clang
-		addons:
-			apt:
-				sources:
-					- ubuntu-toolchain-r-test
-				packages:
-					- g++-9
-	
+  include: 
+    os: linux
+    dist: trusty
+    compiler: 
+      - gcc
+      - clang
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-9
+  
 script:
   - export CC=gcc-9
   - export CXX=g++-9
