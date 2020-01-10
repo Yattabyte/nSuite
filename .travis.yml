@@ -53,6 +53,7 @@ jobs:
       compiler: clang
   
     - os: windows
+      compiler: mingw64
     
     #- os: osx
     #  osx_image: xcode10.1
