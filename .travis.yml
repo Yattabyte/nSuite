@@ -62,4 +62,4 @@ script:
   - export CC=gcc-9
   - export CXX=g++-9
   - cmake .
-  - cmake --build . -- -j2
+  - cmake --build . --
