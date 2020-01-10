@@ -3,6 +3,7 @@
 #define YATTA_MEMORYRANGE_H
 
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 
