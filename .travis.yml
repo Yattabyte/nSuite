@@ -1,7 +1,7 @@
 sudo: false
 language: cpp
 
-jobs:
+matrix:
   include:
     - os: linux
       dist: trusty
@@ -17,17 +17,15 @@ jobs:
       script:
         - export CC=gcc-9
         - export CXX=g++-9
-        - cmake .
-        - cmake --build .
   
     - os: windows
       compiler: msvc
-      script:
-        - cmake .
-        - cmake --build .
+      env:
+        - LABEL="windows-msvc"
     
     - os: osx
       osx_image: xcode11.3
-      script:
-        - cmake .
-        - cmake --build .
+  
+script:
+  - cmake .
+  - cmake --build .
