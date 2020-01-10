@@ -51,6 +51,10 @@ jobs:
     - os: linux
       dist: trusty
       compiler: clang
+    
+    - os: linux
+      dist: trusty
+      compiler: mingw64
   
     #- os: windows
     
