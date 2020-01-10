@@ -1,6 +1,20 @@
 language: cpp
 sudo: required
 dist: xenial
+addons:
+  sources:
+    - ubuntu-toolchain-r-test
+  apt:
+    packages:
+      - libc++-7-dev
+      - libc++abi-7-dev
+      - libstdc++-7-dev
+      - libc++-8-dev
+      - libc++abi-8-dev
+      - libstdc++-8-dev
+      - libc++-9-dev
+      - libc++abi-9-dev
+      - libstdc++-9-dev
 
 matrix:
   include:
@@ -15,10 +29,7 @@ matrix:
             - llvm-toolchain-xenial-7
           packages:
             - clang-7
-            - g++-7
-            - libc++-7-dev
-            - libc++abi-7-dev
-            - libstdc++-7-dev
+            - g++-8
       env:
         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     
@@ -31,9 +42,6 @@ matrix:
           packages:
             - clang-8
             - g++-8
-            - libc++-8-dev
-            - libc++abi-8-dev
-            - libstdc++-8-dev
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
     
@@ -47,9 +55,6 @@ matrix:
           packages:
             - clang-9
             - g++-9
-            - libc++-9-dev
-            - libc++abi-9-dev
-            - libstdc++-9-dev
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
     
