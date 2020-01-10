@@ -1,43 +1,32 @@
 sudo: false
 language: cpp
 
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-9
 
-matrix:
+jobs:
   include:
     - os: linux
       dist: trusty
       compiler: gcc
-      addons:
-      apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-9
       script:
         - export CC=gcc-9
         - export CXX=g++-9
-        - cmake .
-        - cmake --build . 
     
     - os: linux
       dist: bionic
       compiler: clang
-      addons:
-      apt:
-        sources:
-          - ubuntu-toolchain-r-test
-        packages:
-          - g++-9
-      script:
-        - export CC=gcc-9
-        - export CXX=g++-9
-        - cmake .
-        - cmake --build . 
   
-#    - os: windows
-#      compiler: msvc
+    #- os: windows
+    #  compiler: msvc
     
-#    - os: osx
-#      osx_image: xcode11.3
+    #- os: osx
+    #  osx_image: xcode11.3
   
 script:
+  - cmake .
+  - cmake --build .
