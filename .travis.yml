@@ -17,18 +17,17 @@ jobs:
       script:
         - export CC=gcc-9
         - export CXX=g++-9
+        - cmake .
+        - cmake --build .
   
     - os: windows
       compiler: msvc
-      env:
-        - LABEL="windows-msvc"
-        - MSBUILD_PATH="/C/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/MSBuild/15.0/Bin"
       script:
-        - export PATH=$MSBUILD_PATH:$PATH
+        - cmake .
+        - cmake --build .
     
     - os: osx
       osx_image: xcode11.3
-  
-script:
-  - cmake .
-  - cmake --build .
+      script:
+        - cmake .
+        - cmake --build .
