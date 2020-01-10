@@ -17,11 +17,9 @@ jobs:
       script:
         - export CC=gcc-9
         - export CXX=g++-9
-  
+
     - os: windows
-	
-    fast_finish: true
-    allow_failures:
+  
     - os: osx
       osx_image: xcode11.3
   
