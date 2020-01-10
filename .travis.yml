@@ -1,10 +1,5 @@
 sudo: false
 language: cpp
-dist:
-  - precise
-  - trusty
-  - xenial
-  - bionic
 
 matrix:
   include:
@@ -16,70 +11,11 @@ matrix:
       addons:
         apt:
           sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
-          packages:
-            - clang-3.6
-      env:
-        - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.7
-          packages:
-            - clang-3.7
-      env:
-        - MATRIX_EVAL="CC=clang-3.7 && CXX=clang++-3.7"
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.8
-          packages:
-            - clang-3.8
-      env:
-        - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-3.9
-          packages:
-            - clang-3.9
-      env:
-        - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-4.0
-          packages:
-            - clang-4.0
-      env:
-        - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
-
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
             - llvm-toolchain-trusty-5.0
           packages:
-            - clang-5.0
+            - clang-5
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-        # works on Trusty
   
     - os: linux
       compiler: clang
@@ -88,7 +24,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang-6.0
+            - clang-6
       env:
         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
     
@@ -99,9 +35,22 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - clang-7.0
+            - clang-7
       env:
         - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
+    
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+      env:
+        - MATRIX_EVAL="CC=clang-8.0 && CXX=clang++-8.0"
     
     ##############
     # GCC BUILDS #
