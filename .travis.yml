@@ -1,18 +1,19 @@
-dist: trusty
 sudo: false
 language: cpp
-compiler: 
-  - gcc
-  - clang
-
-os: linux
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-9
-
+matrix:
+	include: 
+		os: linux
+		dist: trusty
+		compiler: 
+			- gcc
+			- clang
+		addons:
+			apt:
+				sources:
+					- ubuntu-toolchain-r-test
+				packages:
+					- g++-9
+	
 script:
   - export CC=gcc-9
   - export CXX=g++-9
