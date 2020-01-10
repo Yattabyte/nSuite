@@ -2,7 +2,7 @@
 ### Yatta ###
 #############
 cmake_minimum_required(VERSION 3.9)
-project(Yatta VERSION 1.4.26  DESCRIPTION "Library for compressing and diffing buffers and files.")
+project(Yatta VERSION 1.4.27  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 
@@ -23,7 +23,7 @@ else()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options("-stdlib=libc++")
     else()
-		add_compile_options("-lstdc++fs")
+		add_compile_options("-lstdc++fs -std=c++17")
     endif()
 endif()
 
