@@ -46,7 +46,9 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
 		if (entry.is_regular_file()) {
 			// Read the file data
 			Buffer fileBuffer(entry.file_size());
-			std::ifstream fileOnDisk = std::ifstream(entry.path().string().c_str(), std::ifstream::binary | std::ifstream::beg | std::ifstream::in);
+			const std::string path_string = entry.path().string();
+			constexpr std::ios_base::openmode mode = std::ios_base::in | std::ios_base::binary;
+			std::ifstream fileOnDisk = std::ifstream(path_string, mode);
 			if (!fileOnDisk.is_open()) 
 				throw std::runtime_error("Cannot read the file" + entry.path().string());			
 
