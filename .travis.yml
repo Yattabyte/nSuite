@@ -19,8 +19,8 @@ jobs:
         - export CXX=g++-9
   
     #- os: windows
-	#  compiler: msvc
-		
+    #  compiler: msvc
+    
     #- os: osx
     #  osx_image: xcode10.1
   
