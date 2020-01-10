@@ -14,7 +14,7 @@ jobs:
             - ubuntu-toolchain-r-test
           packages:
             - g++-9
-    script:
+      script:
         - export CC=gcc-9
         - export CXX=g++-9
   
