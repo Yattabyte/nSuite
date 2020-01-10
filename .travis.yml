@@ -13,7 +13,7 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-9
-	  script:
+    script:
         - export CC=gcc-9
         - export CXX=g++-9
   
@@ -23,9 +23,9 @@ matrix:
         - MSBUILD_PATH="/C/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/MSBuild/16.0/Bin"
       script:
         - export PATH=$MSBUILD_PATH:$PATH
-	- os: osx
-	  osx_image xcode10.1
-	
+    - os: osx
+      osx_image xcode10.1
+  
 script:
   - cmake .
   - cmake --build . -- -j2
