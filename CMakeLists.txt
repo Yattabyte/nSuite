@@ -1,8 +1,8 @@
 #############
 ### Yatta ###
 #############
-cmake_minimum_required(VERSION 3.10)
-project(Yatta VERSION 1.4.16  DESCRIPTION "Library for compressing and diffing buffers and files.")
+cmake_minimum_required(VERSION 3.9)
+project(Yatta VERSION 1.4.17  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 
