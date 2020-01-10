@@ -5,29 +5,7 @@ matrix:
   include:
     ################
     # CLANG BUILDS #
-    ################
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - clang-5.0
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-  
-    - os: linux
-      compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - clang-6.0
-      env:
-        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
-    
+    ################    
     - os: linux
       compiler: clang
       addons:
@@ -48,7 +26,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-xenial-8
           packages:
-            - clang-8.0
+            - clang-8
             - libc++-8-dev
             - libc++abi-8-dev
       env:
