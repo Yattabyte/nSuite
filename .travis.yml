@@ -1,7 +1,9 @@
 dist: trusty
 sudo: false
 language: cpp
-compiler: gcc
+compiler: 
+  - gcc
+  - clang
 
 os: linux
 addons:
@@ -15,4 +17,4 @@ script:
   - export CC=gcc-9
   - export CXX=g++-9
   - cmake .
-  - cmake --build .
+  - cmake --build . -- -j2
