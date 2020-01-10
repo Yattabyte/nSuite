@@ -18,8 +18,8 @@ jobs:
       dist: trusty
       compiler: clang
   
-    #- os: windows
-    #  compiler: msvc
+    - os: windows
+      compiler: msvc
     
     #- os: osx
     #  osx_image: xcode10.1
