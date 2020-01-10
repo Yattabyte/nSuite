@@ -1,5 +1,4 @@
 #include "Directory.hpp"
-#include <direct.h>
 #include <fstream>
 #include <numeric>
 
@@ -104,10 +103,17 @@ size_t Directory::fileSize() const noexcept
 	);
 }
 
+#ifdef __GNUC__
+#include <unistd.h> 
+#else
+#include <direct.h>
+#define getcwd _getcwd
+#endif // __GNUC__
+
 std::string Directory::GetRunningDirectory() noexcept
 {
 	char cCurrentPath[FILENAME_MAX];
-	if (_getcwd(cCurrentPath, sizeof(cCurrentPath)) != nullptr)
+	if (getcwd(cCurrentPath, sizeof(cCurrentPath)) != nullptr)
 		cCurrentPath[sizeof(cCurrentPath) - 1ULL] = char('\0');
 	return std::string(cCurrentPath);
 }
