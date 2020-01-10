@@ -1,14 +1,15 @@
 #############
 ### Yatta ###
 #############
-cmake_minimum_required(VERSION 3.9)
-project(Yatta VERSION 1.4.27  DESCRIPTION "Library for compressing and diffing buffers and files.")
+cmake_minimum_required(VERSION 3.9.2)
+project(Yatta VERSION 1.4.28  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 
 # Set consistent compiler flags for our project and our dependencies
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CXX_EXTENSIONS YES)
 if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Oi /Ot /GF /Qpar /std:c++17 /Zc:rvalueCast /W4 /WX /permissive-")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od /Gy /MDd /JMC")
