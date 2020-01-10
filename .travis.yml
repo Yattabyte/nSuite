@@ -16,9 +16,9 @@ matrix:
           packages:
             - clang-7
             - g++-8
-            - libc++-8-dev
-            - libc++abi-8-dev
-            - libstdc++-8-dev
+            - libc++-7-dev
+            - libc++abi-7-dev
+            - libstdc++-7-dev
       env:
         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     
@@ -52,6 +52,22 @@ matrix:
             - libstdc++-9-dev
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+    
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-10 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-10
+            - g++-9
+            - libc++-10-dev
+            - libc++abi-10-dev
+            - libstdc++-10-dev
+      env:
+        - MATRIX_EVAL="CC=clang-10 && CXX=clang++-10"
     
     ##############
     # GCC BUILDS #
