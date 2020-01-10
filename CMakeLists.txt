@@ -22,7 +22,8 @@ if(MSVC)
 else()
     add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        add_compile_options("-stdlib=libc++")
+        #add_compile_options("-stdlib=libc++")
+        # No Clang specific options
     else()
         # No GCC specific options
     endif()
