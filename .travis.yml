@@ -4,80 +4,81 @@ dist: xenial
 addons:
   sources:
     - ubuntu-toolchain-r-test
-  apt:
-    packages:
-      - libc++-7-dev
-      - libc++abi-7-dev
-      - libstdc++-7-dev
-      - libc++-8-dev
-      - libc++abi-8-dev
-      - libstdc++-8-dev
-      - libc++-9-dev
-      - libc++abi-9-dev
-      - libstdc++-9-dev
+    - llvm-toolchain-xenial-6
+    - llvm-toolchain-xenial-7
+    - llvm-toolchain-xenial-8
+    - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
 
 matrix:
   include:
     ################
     # CLANG BUILDS #
-    ################    
+    # ver: 7-9     #
+    ################        
     - os: linux
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7
+          packages:
+            - clang-6.0
+            - g++-8
+            - libc++-6-dev
+            - libc++abi-6-dev
+            - libstdc++-6-dev
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+
+    - os: linux
+      addons:
+        apt:
           packages:
             - clang-7
             - g++-8
+            - libc++-7-dev
+            - libc++abi-7-dev
+            - libstdc++-7-dev
       env:
         - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     
     - os: linux
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
           packages:
             - clang-8
             - g++-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - libstdc++-8-dev
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
     
     - os: linux
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
           packages:
             - clang-9
-            - g++-9
+            - g++-9      
+            - libc++-9-dev
+            - libc++abi-9-dev
+            - libstdc++-9-dev
       env:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
     
     ##############
     # GCC BUILDS #
+    # ver: 8-9   #
     ##############    
     - os: linux
-      compiler: gcc
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
           packages:
             - g++-8
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
     
     - os: linux
-      compiler: gcc
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
           packages:
             - g++-9
       env:
