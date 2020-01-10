@@ -1,28 +1,30 @@
 sudo: false
 language: cpp
 
-jobs:
-  include:
-    - os: linux
-      dist: trusty
-      compiler: 
-        - gcc
-        - clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
-      script:
-        - export CC=gcc-9
-        - export CXX=g++-9
+compiler:
+  - gcc
+  - clang
+  - msvc
+  - mingw
+  
+os:
+  - linux
+  - windows
+  - osx
 
-    - os: windows
-  
-    - os: osx
-      osx_image: xcode11.3
-  
+dist: trusty
+
+osx_image: xcode11.3
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-9
+
 script:
+  - export CC=gcc-9
+  - export CXX=g++-9
   - cmake .
   - cmake --build . -- -j2
