@@ -7,6 +7,6 @@ build_script:
    
     cd build
   
-    cmake clone_folder: c:\projects\source - G "Visual Studio 16"
+    cmake c:\projects\source -G "Visual Studio 16"
   
     cmake --build . --config "Debug"
