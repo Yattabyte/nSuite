@@ -42,6 +42,7 @@ add_subdirectory( src )
 # Optionally build unit tests
 option(UNIT_TESTS "Build Unit Tests" true)
 if (UNIT_TESTS)
+	enable_testing()
 	add_subdirectory( tests/UnitTests )
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
 endif (UNIT_TESTS)

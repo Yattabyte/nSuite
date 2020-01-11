@@ -23,3 +23,5 @@ set_target_properties(${Module} PROPERTIES
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VERSION ${PROJECT_VERSION}	
 )
+
+add_test(Test UnitTests)
