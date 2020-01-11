@@ -27,7 +27,9 @@ add_library(${Module} STATIC ${FILES})
 target_include_directories(${Module} 
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_link_libraries (${Module} ${CMAKE_THREAD_LIBS_INIT})
+
+target_compile_features(${Module} PRIVATE cxx_std_17)
+target_link_libraries(${Module} ${CMAKE_THREAD_LIBS_INIT} PRIVATE --coverage)
 
 # Set all project settings
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
