@@ -102,8 +102,8 @@ before_install:
 
 install:
   - mkdir -p $HOME/.cache
-  - pip install coverage
-  - pip install codecov
+  - pip install --user coverage
+  - pip install --user codecov
   
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
