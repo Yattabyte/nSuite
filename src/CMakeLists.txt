@@ -1,7 +1,7 @@
 #############
 ### Yatta ###
 #############
-set (Module yatta)
+set(Module yatta)
 
 # Configure and acquire files
 set(FILES
