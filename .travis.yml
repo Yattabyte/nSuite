@@ -95,5 +95,5 @@ before_install:
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
   - cmake --build .
-  - ctest
+  - ctest --verbose --output-on-failure
   - bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-5
