@@ -24,7 +24,7 @@ else()
     add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
 	if(ENABLE_COVERAGE)
 		add_compile_options(--coverage -O0)
-		add_link_option(--coverage)
+		add_link_options(--coverage)
 	endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         # No Clang specific options
@@ -45,6 +45,7 @@ if (UNIT_TESTS)
 	enable_testing()
 	add_subdirectory( tests/UnitTests )
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
+	add_test(Test UnitTests)
 endif (UNIT_TESTS)
 
 
