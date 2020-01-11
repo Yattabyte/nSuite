@@ -29,7 +29,7 @@ target_include_directories(${Module}
 )
 
 target_compile_features(${Module} PRIVATE cxx_std_17)
-target_link_libraries(${Module} ${CMAKE_THREAD_LIBS_INIT} PRIVATE --coverage)
+target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT} PRIVATE --coverage)
 
 # Set all project settings
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
