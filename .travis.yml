@@ -91,14 +91,9 @@ matrix:
   
 before_install:
     - eval "${MATRIX_EVAL}"
-
-install:
-  - pip install codecov
-
+  
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
   - cmake --build .
   - ctest --extra-verbose --output-on-failure
-  
-after_success:
-  - codecov
+  - bash <(curl -s https://codecov.io/bash)
