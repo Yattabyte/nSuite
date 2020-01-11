@@ -10,7 +10,7 @@ using yatta::Directory;
 
 
 //// Forward Declarations
-//static bool Buffer_ConstructionTest();
+static bool Buffer_ConstructionTest();
 //static bool Buffer_AssignmentTest();
 //static bool Buffer_MethodTest();
 //static bool Buffer_IOTest();
@@ -28,27 +28,26 @@ using yatta::Directory;
 //static bool MemoryRange_IOTest();
 //static bool Directory_ConstructionTest();
 //static bool Directory_MethodTest();
-//
-//
-//template <typename FirstFunc, typename ...RestFuncs>
-//static bool RunTests(const FirstFunc& firstFunc, const RestFuncs&... restFuncs)
-//{
-//    auto result = firstFunc();
-//
-//    // For each remaining member of the parameter pack, recursively call this function
-//    if constexpr (sizeof...(restFuncs) > 0) {
-//        const auto restResults = RunTests(restFuncs...);
-//        result = bool(result && restResults);
-//    }
-//
-//    return result;
-//}
+
+
+template <typename FirstFunc, typename ...RestFuncs>
+static bool RunTests(const FirstFunc& firstFunc, const RestFuncs&... restFuncs)
+{
+    auto result = firstFunc();
+
+    // For each remaining member of the parameter pack, recursively call this function
+    if constexpr (sizeof...(restFuncs) > 0) {
+        const auto restResults = RunTests(restFuncs...);
+        result = bool(result && restResults);
+    }
+
+    return result;
+}
 
 int main()
 {
-    return 0;
-    /*return RunTests(
-        Buffer_ConstructionTest,
+    return RunTests(
+        Buffer_ConstructionTest/*,
         Buffer_AssignmentTest,
         Buffer_MethodTest,
         Buffer_IOTest,
@@ -68,41 +67,41 @@ int main()
         MemoryRange_IOTest,
 
         Directory_ConstructionTest,
-        Directory_MethodTest
-    ) ? 0 : 1;*/
+        Directory_MethodTest*/
+    ) ? 0 : 1;
 }
 
-//static bool Buffer_ConstructionTest()
-//{
-//    try {
-//        // Ensure we can make empty buffers
-//        Buffer buffer;
-//        if (buffer.empty()) {
-//            // Ensure we can make a large buffer
-//            Buffer largeBuffer(1234ULL);
-//            if (largeBuffer.hasData()) {
-//                // Ensure move constructor works
-//                Buffer moveBuffer(Buffer(1234ULL));
-//                if (moveBuffer.size() == 1234ULL) {
-//                    // Ensure copy constructor works
-//                    largeBuffer[0] = static_cast<std::byte>(255U);
-//                    const Buffer& copyBuffer(largeBuffer);
-//                    if (copyBuffer[0] == largeBuffer[0]) {
-//                        std::cout << "Buffer Construction Test - Success\n";
-//                        return true; // Success
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Buffer Construction Test - Failure\n";
-//    return false; // Failure
-//}
-//
+static bool Buffer_ConstructionTest()
+{
+    try {
+        // Ensure we can make empty buffers
+        Buffer buffer;
+        if (buffer.empty()) {
+            // Ensure we can make a large buffer
+            Buffer largeBuffer(1234ULL);
+            if (largeBuffer.hasData()) {
+                // Ensure move constructor works
+                Buffer moveBuffer(Buffer(1234ULL));
+                if (moveBuffer.size() == 1234ULL) {
+                    // Ensure copy constructor works
+                    largeBuffer[0] = static_cast<std::byte>(255U);
+                    const Buffer& copyBuffer(largeBuffer);
+                    if (copyBuffer[0] == largeBuffer[0]) {
+                        std::cout << "Buffer Construction Test - Success\n";
+                        return true; // Success
+                    }
+                }
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Buffer Construction Test - Failure\n";
+    return false; // Failure
+}
+
 //static bool Buffer_AssignmentTest()
 //{
 //    try {
