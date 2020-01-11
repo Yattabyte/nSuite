@@ -87,7 +87,7 @@ before_install:
     - eval "${MATRIX_EVAL}"
   
 script:
-  - cmake . -D ENABLE_COVERAGE:BOOL=TRUE
+  - cmake -D ENABLE_COVERAGE:BOOL=TRUE . 
   - cmake --build .
   - ctest
   - bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-5
