@@ -95,6 +95,9 @@ matrix:
   
 before_install:
     - eval "${MATRIX_EVAL}"
+
+install:
+  - mkdir -p $HOME/.cache
   
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
