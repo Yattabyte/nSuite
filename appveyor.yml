@@ -13,6 +13,6 @@ build_script:
    
     cd build
   
-    cmake c:\projects\source -G VS_VER
+    cmake c:\projects\source -G %VS_VER%
   
     cmake --build . --config "Debug"
