@@ -1,10 +1,10 @@
 environment:
   matrix:
     - image: Visual Studio 2017  
-      VS_VER: "Visual Studio 15"
+      VS_VER: Visual Studio 15
 
     - image: Visual Studio 2019
-      VS_VER: "Visual Studio 16"
+      VS_VER: Visual Studio 16
     
 clone_folder: c:\projects\source
 build_script:
