@@ -3,7 +3,10 @@ image:
 clone_folder: c:\projects\source
 build_script:
 - cmd: >-
-   mkdir build_script
-   cd build
-   cmake clone_folder: c:\projects\source - G "Visual Studio 16 2019"
-   cmake --build . --config "Debug"
+    mkdir build
+   
+    cd build
+	
+    cmake clone_folder: c:\projects\source - G "Visual Studio 16 2019"
+	
+    cmake --build . --config "Debug"
