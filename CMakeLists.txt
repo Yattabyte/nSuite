@@ -40,7 +40,7 @@ add_subdirectory( src )
 
 
 # Optionally build unit tests
-option(UNIT_TESTS "Build Unit Tests" true)
+option(UNIT_TESTS "Build Unit Tests" TRUE)
 if (UNIT_TESTS)
 	enable_testing()
 	add_subdirectory( tests/UnitTests )
@@ -50,7 +50,7 @@ endif (UNIT_TESTS)
 
 
 # Optionally build examples
-option(EXAMPLES "Build Examples" true)
+option(EXAMPLES "Build Examples" FALSE)
 if (EXAMPLES)
 	#add_subdirectory( examples/Unpacker )
 	#add_subdirectory( examples/Updater )
