@@ -24,6 +24,3 @@ set_target_properties(${Module} PROPERTIES
 	PDB_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VERSION ${PROJECT_VERSION}	
 )
-
-# Flag this executable for testing
-add_test(Tests ${Module})
