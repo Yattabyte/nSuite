@@ -16,12 +16,12 @@ static bool Buffer_MethodTest();
 static bool Buffer_IOTest();
 static bool Buffer_CompressionTest();
 static bool Buffer_DiffTest();
-//static bool BufferView_ConstructionTest();
-//static bool BufferView_AssignmentTest();
-//static bool BufferView_MethodTest();
-//static bool BufferView_IOTest();
-//static bool BufferView_CompressionTest();
-//static bool BufferView_DiffTest();
+static bool BufferView_ConstructionTest();
+static bool BufferView_AssignmentTest();
+static bool BufferView_MethodTest();
+static bool BufferView_IOTest();
+static bool BufferView_CompressionTest();
+static bool BufferView_DiffTest();
 //static bool MemoryRange_ConstructionTest();
 //static bool MemoryRange_AssignmentTest();
 //static bool MemoryRange_MethodTest();
@@ -52,14 +52,14 @@ int main()
         Buffer_MethodTest,
         Buffer_IOTest,
         Buffer_CompressionTest,
-        Buffer_DiffTest/*,
+        Buffer_DiffTest,
 
         BufferView_ConstructionTest,
         BufferView_AssignmentTest,
         BufferView_MethodTest,
         BufferView_IOTest,
         BufferView_CompressionTest,
-        BufferView_DiffTest,
+        BufferView_DiffTest/*,
 
         MemoryRange_ConstructionTest,
         MemoryRange_AssignmentTest,
@@ -281,227 +281,227 @@ static bool Buffer_DiffTest()
     return false; // Failure
 }
 
-//static bool BufferView_ConstructionTest()
-//{
-//    try {
-//        // Ensure we can make empty buffer views
-//        Buffer buffer;
-//        BufferView bView(buffer);
-//        if (bView.empty()) {
-//            // Ensure we can make a large buffer view with a manual size
-//            Buffer largeBuffer(1234ULL);
-//            BufferView largeBView(largeBuffer.size(), largeBuffer.bytes());
-//            if (largeBView.hasData()) {
-//                // Ensure move constructor works
-//                BufferView moveBView(BufferView(largeBuffer.size(), largeBuffer.bytes()));
-//                if (moveBView.size() == 1234ULL) {
-//                    // Ensure copy constructor works
-//                    largeBView[0] = static_cast<std::byte>(255U);
-//                    const BufferView& copyBView(largeBView);
-//                    if (copyBView[0] == largeBView[0]) {
-//                        std::cout << "Buffer-View Construction Test - Success\n";
-//                        return true; // Success
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Buffer-View Construction Test - Failure\n";
-//    return false; // Failure
-//}
-//
-//static bool BufferView_AssignmentTest()
-//{
-//    try {
-//        Buffer bufferA(1234ULL);
-//        Buffer bufferB(123456789ULL);
-//        BufferView viewA(bufferA);
-//        BufferView viewB(bufferB);
-//        viewA[0] = static_cast<std::byte>(255U);
-//        viewB[0] = static_cast<std::byte>(126U);
-//
-//        // Ensure views are equal
-//        viewA = viewB;
-//        if (viewA[0] == viewB[0]) {
-//            Buffer bufferC(456);
-//            BufferView viewC(bufferC);
-//            viewC[0] = static_cast<std::byte>(64U);
-//            viewA = viewC;
-//            // Ensure viewC is fully moved over to viewA
-//            if (viewA[0] == static_cast<std::byte>(64U)) {
-//                std::cout << "Buffer-View Assignment Test - Success\n";
-//                return true; // Success
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Buffer-View Assignment Test - Failure\n";
-//    return false; // Failure
-//}
-//
-//static bool BufferView_MethodTest()
-//{
-//    try {
-//        Buffer buffer;
-//        BufferView bView(buffer);
-//        // Ensure the view is empty
-//        if (bView.empty()) {
-//            buffer.resize(1234ULL);
-//            // Ensure we can reassign the buffer view
-//            bView = BufferView(buffer);
-//            if (bView.hasData()) {
-//                // Ensure the size is 1234
-//                if (bView.size() == 1234ULL) {
-//                    // Ensure we can hash the buffer view
-//                    if (const auto hash = bView.hash(); hash != 0ULL && hash != 1234567890ULL) {
-//                        // Ensure we can return a char array
-//                        if (const auto cArray = bView.charArray(); cArray != nullptr) {
-//                            // Ensure we can return a byte array
-//                            if (const auto bytes = bView.bytes(); bytes != nullptr) {
-//                                // Ensure both char array and byte array are the same underlying pointer
-//                                if (static_cast<const void*>(cArray) == static_cast<const void*>(bytes)) {
-//                                    std::cout << "Buffer-View Method Test - Success\n";
-//                                    return true; // Success
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Buffer-View Method Test - Failure\n";
-//    return false; // Failure
-//}
-//
-//static bool BufferView_IOTest()
-//{
-//    try {
-//        // Ensure object IO is correct
-//        Buffer buffer(sizeof(int));
-//        BufferView bView(buffer);
-//        constexpr int in_int(64);
-//        bView.in_type(in_int);
-//        int out_int(0);
-//        bView.out_type(out_int);
-//        if (in_int == out_int) {
-//            // Ensure raw pointer IO is correct
-//            const char word[28] = ("This is a sample sentence.\0");
-//            constexpr auto sentenceSize = sizeof(char) * 28;
-//            buffer.resize(sentenceSize + sizeof(int));
-//            bView = BufferView(buffer);
-//            bView.in_raw(&word, sentenceSize, sizeof(int));
-//
-//            struct TestStructure {
-//                int a;
-//                char b[28];
-//            } combinedOutput{};
-//            bView.out_raw(&combinedOutput, sizeof(TestStructure));
-//
-//            if (combinedOutput.a == in_int && std::string(combinedOutput.b) == word) {
-//                std::cout << "Buffer-View IO Test - Success\n";
-//                return true; // Success
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Buffer-View IO Test - Failure\n";
-//    return false; // Failure
-//}
-//
-//static bool BufferView_CompressionTest()
-//{
-//    try {
-//        // The structure we'll compress and decompress
-//        struct TestStructure {
-//            int a = 0;
-//            float b = 0.F;
-//            char c[32] = { '\0' };
-//        };
-//
-//        // Create a buffer and load it with test data
-//        Buffer buffer(sizeof(TestStructure));
-//        BufferView bView(buffer);
-//        constexpr TestStructure testData{ 1234, 567.890F,"QWEQWEQWEQWEQWEQWEQWEQWEQWEQWE\0" };
-//        bView.in_type(testData);
-//
-//        // Attempt to compress the buffer view
-//        const auto compressedBuffer = bView.compress();
-//        // Attempt to decompress the compressed buffer view
-//        const BufferView compressedBView(compressedBuffer);
-//        const auto decompressedBuffer = compressedBView.decompress();
-//        // Dump buffer data back into test structure
-//        TestStructure decompressedData;
-//        const BufferView decomrpessedBView(decompressedBuffer);
-//        decomrpessedBView.out_type(decompressedData);
-//
-//        // Ensure data matches
-//        if (testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0) {
-//            std::cout << "Buffer-View Compression/Decompression Test - Success\n";
-//            return true; // Success
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//    std::cout << "Buffer-View Compression/Decompression Test - Failure\n";
-//    return false; // Failure
-//}
-//
-//static bool BufferView_DiffTest()
-//{
-//    try {
-//        struct Foo {
-//            int a = 0;
-//            float b = 0.0F;
-//            char c[28] = { '\0' };
-//        } dataA{ 1234, 567.890F, "This is a sample sentence.\0" };
-//        struct Bar {
-//            char a[32] = { '\0' };
-//            float b = 0.0F;
-//            int c = 0;
-//        } dataB{ "Not even a sample sentence.\0", 890.567F, 4321 };
-//        Buffer bufferA(sizeof(Foo));
-//        Buffer bufferB(sizeof(Bar));
-//        BufferView viewA(bufferA);
-//        BufferView viewB(bufferB);
-//        viewA.in_type(dataA);
-//        viewB.in_type(dataB);
-//
-//        // Ensure we've generated an instruction set
-//        const auto diffBuffer = viewA.diff(viewB, 8);
-//        // Check that we've actually converted from A to B
-//        const BufferView diffView(diffBuffer);
-//        const auto patchedBuffer = viewA.patch(diffView);
-//        const BufferView patchedView(patchedBuffer);
-//        Bar dataC;
-//        patchedView.out_type(dataC);
-//        if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
-//            std::cout << "Buffer-View Diff/Patch Test - Success\n";
-//            return true; // Success
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//    std::cout << "Buffer-View Diff/Patch Test - Failure\n";
-//    return false; // Failure
-//}
-//
+static bool BufferView_ConstructionTest()
+{
+    try {
+        // Ensure we can make empty buffer views
+        Buffer buffer;
+        BufferView bView(buffer);
+        if (bView.empty()) {
+            // Ensure we can make a large buffer view with a manual size
+            Buffer largeBuffer(1234ULL);
+            BufferView largeBView(largeBuffer.size(), largeBuffer.bytes());
+            if (largeBView.hasData()) {
+                // Ensure move constructor works
+                BufferView moveBView(BufferView(largeBuffer.size(), largeBuffer.bytes()));
+                if (moveBView.size() == 1234ULL) {
+                    // Ensure copy constructor works
+                    largeBView[0] = static_cast<std::byte>(255U);
+                    const BufferView& copyBView(largeBView);
+                    if (copyBView[0] == largeBView[0]) {
+                        std::cout << "Buffer-View Construction Test - Success\n";
+                        return true; // Success
+                    }
+                }
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Buffer-View Construction Test - Failure\n";
+    return false; // Failure
+}
+
+static bool BufferView_AssignmentTest()
+{
+    try {
+        Buffer bufferA(1234ULL);
+        Buffer bufferB(123456789ULL);
+        BufferView viewA(bufferA);
+        BufferView viewB(bufferB);
+        viewA[0] = static_cast<std::byte>(255U);
+        viewB[0] = static_cast<std::byte>(126U);
+
+        // Ensure views are equal
+        viewA = viewB;
+        if (viewA[0] == viewB[0]) {
+            Buffer bufferC(456);
+            BufferView viewC(bufferC);
+            viewC[0] = static_cast<std::byte>(64U);
+            viewA = viewC;
+            // Ensure viewC is fully moved over to viewA
+            if (viewA[0] == static_cast<std::byte>(64U)) {
+                std::cout << "Buffer-View Assignment Test - Success\n";
+                return true; // Success
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Buffer-View Assignment Test - Failure\n";
+    return false; // Failure
+}
+
+static bool BufferView_MethodTest()
+{
+    try {
+        Buffer buffer;
+        BufferView bView(buffer);
+        // Ensure the view is empty
+        if (bView.empty()) {
+            buffer.resize(1234ULL);
+            // Ensure we can reassign the buffer view
+            bView = BufferView(buffer);
+            if (bView.hasData()) {
+                // Ensure the size is 1234
+                if (bView.size() == 1234ULL) {
+                    // Ensure we can hash the buffer view
+                    if (const auto hash = bView.hash(); hash != 0ULL && hash != 1234567890ULL) {
+                        // Ensure we can return a char array
+                        if (const auto cArray = bView.charArray(); cArray != nullptr) {
+                            // Ensure we can return a byte array
+                            if (const auto bytes = bView.bytes(); bytes != nullptr) {
+                                // Ensure both char array and byte array are the same underlying pointer
+                                if (static_cast<const void*>(cArray) == static_cast<const void*>(bytes)) {
+                                    std::cout << "Buffer-View Method Test - Success\n";
+                                    return true; // Success
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Buffer-View Method Test - Failure\n";
+    return false; // Failure
+}
+
+static bool BufferView_IOTest()
+{
+    try {
+        // Ensure object IO is correct
+        Buffer buffer(sizeof(int));
+        BufferView bView(buffer);
+        constexpr int in_int(64);
+        bView.in_type(in_int);
+        int out_int(0);
+        bView.out_type(out_int);
+        if (in_int == out_int) {
+            // Ensure raw pointer IO is correct
+            const char word[28] = ("This is a sample sentence.\0");
+            constexpr auto sentenceSize = sizeof(char) * 28;
+            buffer.resize(sentenceSize + sizeof(int));
+            bView = BufferView(buffer);
+            bView.in_raw(&word, sentenceSize, sizeof(int));
+
+            struct TestStructure {
+                int a;
+                char b[28];
+            } combinedOutput{};
+            bView.out_raw(&combinedOutput, sizeof(TestStructure));
+
+            if (combinedOutput.a == in_int && std::string(combinedOutput.b) == word) {
+                std::cout << "Buffer-View IO Test - Success\n";
+                return true; // Success
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Buffer-View IO Test - Failure\n";
+    return false; // Failure
+}
+
+static bool BufferView_CompressionTest()
+{
+    try {
+        // The structure we'll compress and decompress
+        struct TestStructure {
+            int a = 0;
+            float b = 0.F;
+            char c[32] = { '\0' };
+        };
+
+        // Create a buffer and load it with test data
+        Buffer buffer(sizeof(TestStructure));
+        BufferView bView(buffer);
+        constexpr TestStructure testData{ 1234, 567.890F,"QWEQWEQWEQWEQWEQWEQWEQWEQWEQWE\0" };
+        bView.in_type(testData);
+
+        // Attempt to compress the buffer view
+        const auto compressedBuffer = bView.compress();
+        // Attempt to decompress the compressed buffer view
+        const BufferView compressedBView(compressedBuffer);
+        const auto decompressedBuffer = compressedBView.decompress();
+        // Dump buffer data back into test structure
+        TestStructure decompressedData;
+        const BufferView decomrpessedBView(decompressedBuffer);
+        decomrpessedBView.out_type(decompressedData);
+
+        // Ensure data matches
+        if (testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0) {
+            std::cout << "Buffer-View Compression/Decompression Test - Success\n";
+            return true; // Success
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+    std::cout << "Buffer-View Compression/Decompression Test - Failure\n";
+    return false; // Failure
+}
+
+static bool BufferView_DiffTest()
+{
+    try {
+        struct Foo {
+            int a = 0;
+            float b = 0.0F;
+            char c[28] = { '\0' };
+        } dataA{ 1234, 567.890F, "This is a sample sentence.\0" };
+        struct Bar {
+            char a[32] = { '\0' };
+            float b = 0.0F;
+            int c = 0;
+        } dataB{ "Not even a sample sentence.\0", 890.567F, 4321 };
+        Buffer bufferA(sizeof(Foo));
+        Buffer bufferB(sizeof(Bar));
+        BufferView viewA(bufferA);
+        BufferView viewB(bufferB);
+        viewA.in_type(dataA);
+        viewB.in_type(dataB);
+
+        // Ensure we've generated an instruction set
+        const auto diffBuffer = viewA.diff(viewB, 8);
+        // Check that we've actually converted from A to B
+        const BufferView diffView(diffBuffer);
+        const auto patchedBuffer = viewA.patch(diffView);
+        const BufferView patchedView(patchedBuffer);
+        Bar dataC;
+        patchedView.out_type(dataC);
+        if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
+            std::cout << "Buffer-View Diff/Patch Test - Success\n";
+            return true; // Success
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+    std::cout << "Buffer-View Diff/Patch Test - Failure\n";
+    return false; // Failure
+}
+
 //static bool MemoryRange_ConstructionTest()
 //{
 //    try {
