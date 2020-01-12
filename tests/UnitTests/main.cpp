@@ -653,20 +653,20 @@ static bool Directory_ConstructionTest()
         // Ensure we can make an empty directory
         Directory directory;
         if (directory.empty()) {
-            //// Ensure we can virtualize directories
-            //Directory dirA(Directory::GetRunningDirectory() + "\\old");
-            //if (dirA.hasFiles()) {
-            //    // Ensure move constructor works
-            //    Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "\\old");
-            //    if (moveDirectory.fileCount() == dirA.fileCount()) {
-            //        // Ensure copy constructor works
-            //        const Directory& copyDir(moveDirectory);
-            //        if (copyDir.fileSize() == moveDirectory.fileSize()) {
+            // Ensure we can virtualize directories
+            Directory dirA(Directory::GetRunningDirectory() + "\\old");
+            if (dirA.hasFiles()) {
+                // Ensure move constructor works
+                Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "\\old");
+                if (moveDirectory.fileCount() == dirA.fileCount()) {
+                    // Ensure copy constructor works
+                    const Directory& copyDir(moveDirectory);
+                    if (copyDir.fileSize() == moveDirectory.fileSize()) {
                         std::cout << "Directory Construction Test - Success\n";
                         return true; // Success                
-            //        }
-            //    }
-            //}
+                    }
+                }
+            }
         }
     }
     catch (const std::exception & e) {
