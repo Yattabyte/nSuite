@@ -649,7 +649,7 @@ static bool MemoryRange_IOTest()
 
 static bool Directory_ConstructionTest()
 {
-    const auto test = Directory::GetRunningDirectory();
+    const auto test = Directory(Directory::GetRunningDirectory());
     return true;
     //try {
     //    // Ensure we can make an empty directory
