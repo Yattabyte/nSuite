@@ -26,7 +26,7 @@ static bool MemoryRange_ConstructionTest();
 static bool MemoryRange_AssignmentTest();
 static bool MemoryRange_MethodTest();
 static bool MemoryRange_IOTest();
-//static bool Directory_ConstructionTest();
+static bool Directory_ConstructionTest();
 //static bool Directory_MethodTest();
 
 
@@ -64,9 +64,9 @@ int main()
         MemoryRange_ConstructionTest,
         MemoryRange_AssignmentTest,
         MemoryRange_MethodTest,
-        MemoryRange_IOTest/*,
+        MemoryRange_IOTest,
 
-        Directory_ConstructionTest,
+        Directory_ConstructionTest/*,
         Directory_MethodTest*/
     ) ? 0 : 1;
 }
@@ -647,36 +647,36 @@ static bool MemoryRange_IOTest()
     return false; // Failure
 }
 
-//static bool Directory_ConstructionTest()
-//{
-//    try {
-//        // Ensure we can make an empty directory
-//        Directory directory;
-//        if (directory.empty()) {
-//            // Ensure we can virtualize directories
-//            Directory dirA(Directory::GetRunningDirectory() + "\\old");
-//            if (dirA.hasFiles()) {
-//                // Ensure move constructor works
-//                Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "\\old");
-//                if (moveDirectory.fileCount() == dirA.fileCount()) {
-//                    // Ensure copy constructor works
-//                    const Directory& copyDir(moveDirectory);
-//                    if (copyDir.fileSize() == moveDirectory.fileSize()) {
-//                        std::cout << "Directory Construction Test - Success\n";
-//                        return true; // Success                
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    catch (const std::exception & e) {
-//        std::cout << e.what() << "\n";
-//    }
-//
-//    std::cout << "Directory Construction Test - Failure\n";
-//    return false; // Failure
-//}
-//
+static bool Directory_ConstructionTest()
+{
+    try {
+        // Ensure we can make an empty directory
+        Directory directory;
+        if (directory.empty()) {
+            // Ensure we can virtualize directories
+            Directory dirA(Directory::GetRunningDirectory() + "\\old");
+            if (dirA.hasFiles()) {
+                // Ensure move constructor works
+                Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "\\old");
+                if (moveDirectory.fileCount() == dirA.fileCount()) {
+                    // Ensure copy constructor works
+                    const Directory& copyDir(moveDirectory);
+                    if (copyDir.fileSize() == moveDirectory.fileSize()) {
+                        std::cout << "Directory Construction Test - Success\n";
+                        return true; // Success                
+                    }
+                }
+            }
+        }
+    }
+    catch (const std::exception & e) {
+        std::cout << e.what() << "\n";
+    }
+
+    std::cout << "Directory Construction Test - Failure\n";
+    return false; // Failure
+}
+
 //static bool Directory_MethodTest()
 //{
 //    try {
