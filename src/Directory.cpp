@@ -16,7 +16,7 @@ Directory::Directory(const std::filesystem::path& path, const std::vector<std::s
 
 void Directory::in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
 {
-    constexpr auto get_file_paths = [](const std::filesystem::path& directory, const std::vector<std::string>&) {
+    constexpr auto get_file_paths = [](const std::filesystem::path& , const std::vector<std::string>&) {
         //constexpr auto check_exclusion = [](const std::filesystem::path& path, const std::vector<std::string>& exclusions) {
         //    const auto extension = path.extension();
         //    for (const auto& excl : exclusions) {
@@ -32,7 +32,7 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
         //    return true;
         //};
         std::vector<std::filesystem::directory_entry> paths;
-        if (std::filesystem::is_directory(directory)) {}
+       // if (std::filesystem::is_directory(directory)) {}
             /*for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
                 if (entry.is_regular_file()) {
                     auto path = entry.path().string();
