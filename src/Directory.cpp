@@ -32,14 +32,14 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
         //    return true;
         //};
         std::vector<std::filesystem::directory_entry> paths;
-        if (std::filesystem::is_directory(directory))
-            for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+        if (std::filesystem::is_directory(directory)) {}
+            /*for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
                 if (entry.is_regular_file()) {
                     auto path = entry.path().string();
                     path = path.substr(directory.string().size(), path.size() - directory.string().size());
                     //if (check_exclusion(path, exclusions))
                         paths.emplace_back(entry);
-                }
+                }*/
         return paths;
     };
     for (const auto& entry : get_file_paths(path, exclusions)) {
