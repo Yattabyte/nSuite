@@ -43,9 +43,9 @@ add_subdirectory(src)
 option(UNIT_TESTS "Build Unit Tests" TRUE)
 if(UNIT_TESTS)
 	enable_testing()
-	add_subdirectory( tests/UnitTests )
+	add_subdirectory(tests/UnitTests)
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
-	add_test(Test UnitTests ${PROJECT_SOURCE_DIR}/app/)
+	add_test(Test UnitTests COMMAND UnitTests WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/app/)
 endif(UNIT_TESTS)
 
 
