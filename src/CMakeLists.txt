@@ -28,12 +28,13 @@ target_include_directories(${Module}
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Add library dependencies
 target_compile_features(${Module} PRIVATE cxx_std_17)
 target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_link_libraries(${PROJECT_NAME} PRIVATE coverage c++experimental)
+	target_link_libraries(${Module} PRIVATE coverage c++experimental)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
+	target_link_libraries(${Module} PRIVATE stdc++fs)
 endif()
 
 # Set all project settings
