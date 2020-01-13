@@ -3,8 +3,8 @@
 #include "Threader.hpp"
 #include "lz4/lz4.h"
 #include <algorithm>
-#include <cstring>
 #include <climits>
+#include <cstring>
 #include <numeric>
 #include <vector>
 
@@ -192,7 +192,7 @@ Buffer Buffer::compress(const Buffer& buffer)
 Buffer Buffer::compress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to compress
-    if (memoryRange.empty()) 
+    if (memoryRange.empty())
         throw std::runtime_error("Invalid Memory Range (null pointer)");
 
     // Create a larger buffer twice the size, plus a unique header
@@ -673,7 +673,7 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     // Create a buffer to contain all the diff instructions
     const auto size_patch = std::accumulate(
         instructions.cbegin(),
-        instructions.cend(), 
+        instructions.cend(),
         0ULL,
         [](const size_t& currentSum, const std::unique_ptr<Differential_Instruction>& instruction) noexcept {
             return currentSum + instruction->size();
@@ -704,7 +704,7 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     // Copy remaining data
     compressedPatchBufferWithHeader.in_raw(compressedPatchBuffer.bytes(), compressedPatchBuffer.size(), headerSize);
 
-    return compressedPatchBufferWithHeader; // Success    
+    return compressedPatchBufferWithHeader; // Success
 }
 
 Buffer Buffer::patch(const Buffer& diffBuffer) const

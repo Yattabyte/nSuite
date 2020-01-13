@@ -236,7 +236,6 @@ static bool Buffer_CompressionTest()
             std::cout << "Buffer Compression/Decompression Test - Success\n";
             return true; // Success
         }
-
     }
     catch (const std::exception & e) {
         std::cout << e.what() << "\n";
@@ -272,7 +271,7 @@ static bool Buffer_DiffTest()
         if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
             std::cout << "Buffer Diff/Patch Test - Success\n";
             return true; // Success
-        }         
+        }
     }
     catch (const std::exception & e) {
         std::cout << e.what() << "\n";
@@ -665,7 +664,7 @@ static bool Directory_ConstructionTest()
     //                const Directory& copyDir(moveDirectory);
     //                if (copyDir.fileSize() == moveDirectory.fileSize()) {
     //                    std::cout << "Directory Construction Test - Success\n";
-    //                    return true; // Success                
+    //                    return true; // Success
     //             }
     //            }
     //        }
@@ -694,11 +693,11 @@ static bool Directory_ConstructionTest()
 //                    // Ensure the total size is as expected
 //                    if (directory.fileSize() == 189747ULL) {
 //                        std::cout << "Directory Method Test - Success\n";
-//                        return true; // Success      
+//                        return true; // Success
 //                    }
 //                }
 //            }
-//        }          
+//        }
 //    }
 //    catch (const std::exception & e) {
 //        std::cout << e.what() << "\n";

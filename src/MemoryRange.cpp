@@ -35,18 +35,21 @@ size_t MemoryRange::hash() const
     // Ensure data is valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
-    else if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
-        // Use data 8-bytes at a time, until end of data or less than 8 bytes remains
+    if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
+        // Use data 8-bytes at a time, until end of data or less than 8 bytes
+        // remains
         size_t x(0ULL);
         const size_t max(m_range / 8ULL);
         for (; x < max; ++x)
             value = ((value << 5ULL) + value) + pointer[x]; // use 8 bytes
 
-        // If any bytes remain, switch technique to work byte-wise instead of 8-byte-wise
+          // If any bytes remain, switch technique to work byte-wise instead of
+          // 8-byte-wise
         if (const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr)) {
             x *= 8ULL;
             for (; x < m_range; ++x)
-                value = ((value << 5ULL) + value) + remainderPtr[x]; // use remaining bytes
+                value = ((value << 5ULL) + value) +
+                remainderPtr[x]; // use remaining bytes
         }
     }
 
@@ -89,7 +92,7 @@ void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const si
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
     if (dataPtr == nullptr)
-        throw std::runtime_error("Invalid argument (null pointer)");    
+        throw std::runtime_error("Invalid argument (null pointer)");
 
     // Ensure data won't exceed range
     if ((size + byteIndex) > m_range)

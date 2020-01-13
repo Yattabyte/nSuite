@@ -25,7 +25,7 @@ namespace yatta {
         Directory(const Directory& other) = default;
         /***/
         Directory(Directory&& other) noexcept = default;
-        
+
 
         //
         /***/
