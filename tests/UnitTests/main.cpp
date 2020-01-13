@@ -648,12 +648,10 @@ static bool MemoryRange_IOTest()
 
 static bool Directory_ConstructionTest()
 {
-    const auto test = Directory(Directory::GetRunningDirectory());
-    return true;
-    //try {
-    //    // Ensure we can make an empty directory
-    //    Directory directory;
-    //    if (directory.empty()) {
+    try {
+        // Ensure we can make an empty directory
+        Directory directory;
+        if (directory.empty()) {
     //        // Ensure we can virtualize directories
     //        Directory dirA(Directory::GetRunningDirectory() + "\\old");
     //        if (dirA.hasFiles()) {
@@ -663,19 +661,19 @@ static bool Directory_ConstructionTest()
     //                // Ensure copy constructor works
     //                const Directory& copyDir(moveDirectory);
     //                if (copyDir.fileSize() == moveDirectory.fileSize()) {
-    //                    std::cout << "Directory Construction Test - Success\n";
-    //                    return true; // Success
+                        std::cout << "Directory Construction Test - Success\n";
+                        return true; // Success
     //             }
     //            }
     //        }
-    //    }
-    //}
-    //catch (const std::exception & e) {
-    //   std::cout << e.what() << "\n";
-    //}
+        }
+    }
+    catch (const std::exception & e) {
+       std::cout << e.what() << "\n";
+    }
 
-    //std::cout << "Directory Construction Test - Failure\n";
-    //return false; // Failure
+    std::cout << "Directory Construction Test - Failure\n";
+    return false; // Failure
 }
 
 //static bool Directory_MethodTest()

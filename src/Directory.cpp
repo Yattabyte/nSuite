@@ -44,7 +44,7 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
     };
     for (const auto& entry : get_file_paths(path, exclusions)) {
         if (entry.is_regular_file()) {
-            // Read the file data
+            /*// Read the file data
             Buffer fileBuffer(entry.file_size());
             const std::string path_string = entry.path().string();
             constexpr std::ios_base::openmode mode = std::ios_base::in | std::ios_base::binary;
@@ -55,7 +55,7 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
             fileOnDisk.read(fileBuffer.charArray(), static_cast<std::streamsize>(fileBuffer.size()));
             fileOnDisk.close();
 
-            m_files.emplace_back(VirtualFile{ (std::filesystem::relative(entry.path(), path)).string(), std::move(fileBuffer) });
+            m_files.emplace_back(VirtualFile{ (std::filesystem::relative(entry.path(), path)).string(), std::move(fileBuffer) });*/
         }
     }
 }
