@@ -29,8 +29,12 @@ target_include_directories(${Module}
 )
 
 target_compile_features(${Module} PRIVATE cxx_std_17)
-target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT} PRIVATE --coverage)
-target_link_libraries(${Module} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	target_link_libraries(${PROJECT_NAME} PRIVATE coverage c++experimental)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
+endif()
 
 # Set all project settings
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)

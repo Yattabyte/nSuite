@@ -32,41 +32,41 @@ elseif(CMAKE_COMPILER_IS_GNUCC)
         # No GCC specific options
     endif()
 endif()
-find_package (Threads REQUIRED)
+find_package(Threads REQUIRED)
 
 
 # Add our own source files
-add_subdirectory( src )
+add_subdirectory(src)
 
 
 # Optionally build unit tests
 option(UNIT_TESTS "Build Unit Tests" TRUE)
-if (UNIT_TESTS)
+if(UNIT_TESTS)
 	enable_testing()
 	add_subdirectory( tests/UnitTests )
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
 	add_test(Test UnitTests)
-endif (UNIT_TESTS)
+endif(UNIT_TESTS)
 
 
 # Optionally build examples
 option(EXAMPLES "Build Examples" FALSE)
-if (EXAMPLES)
+if(EXAMPLES)
 	#add_subdirectory( examples/Unpacker )
 	#add_subdirectory( examples/Updater )
 	#add_subdirectory( examples/Installer )
 	#add_subdirectory( examples/Uninstaller )
 	#add_subdirectory( examples/Wizard )
-endif (EXAMPLES)
+endif(EXAMPLES)
 
 
 #################
 # DOXYGEN CHECK #
 #################
 find_package(Doxygen QUIET)
-if (DOXYGEN_FOUND)
+if(DOXYGEN_FOUND)
 	option(GENERATE_DOCS "Generate documentation using Doxygen" true)
-	if (GENERATE_DOCS)		
+	if(GENERATE_DOCS)		
 		set(DOXYGEN_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/)
 		set(DOXYGEN_MARKDOWN_SUPPORT YES)
 		set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
@@ -74,5 +74,5 @@ if (DOXYGEN_FOUND)
 		set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
 		set(DOXYGEN_EXCLUDE ${PROJECT_SOURCE_DIR}/external/)
 		doxygen_add_docs(Documentation ${PROJECT_SOURCE_DIR} COMMENT "Generate docs")
-	endif (GENERATE_DOCS)
-endif (DOXYGEN_FOUND)
+	endif(GENERATE_DOCS)
+endif(DOXYGEN_FOUND)
