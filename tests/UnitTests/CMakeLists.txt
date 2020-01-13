@@ -10,8 +10,9 @@ set(FILES main.cpp)
 add_executable(${Module} ${FILES})
 
 # Add library dependencies
+add_dependencies(${Module} yatta)
 target_compile_features(${Module} PRIVATE cxx_std_17)
-target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT} yatta)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	target_link_libraries(${Module} PRIVATE coverage c++experimental)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
