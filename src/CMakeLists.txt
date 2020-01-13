@@ -32,7 +32,7 @@ target_include_directories(${Module}
 target_compile_features(${Module} PRIVATE cxx_std_17)
 target_link_libraries(${Module} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_link_libraries(${Module} PRIVATE c++experimental)
+	target_link_libraries(${Module} PRIVATE $<$<AND:$<CXX_COMPILER_ID:Clang>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:c++experimental >)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_link_libraries(${Module} PRIVATE stdc++fs)
 endif()
