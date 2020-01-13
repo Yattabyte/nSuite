@@ -654,6 +654,8 @@ static bool Directory_ConstructionTest()
         if (directory.empty()) {
             // Ensure we can virtualize directories
             Directory dirA(Directory::GetRunningDirectory() + "\\old");
+            for (const auto& a : std::filesystem::recursive_directory_iterator(Directory::GetRunningDirectory()))
+                std::cout << a.path() << "\n";
             if (dirA.hasFiles()) {
                 std::cout << "Directory has " << dirA.fileCount() << " files, totalling " << dirA.fileSize() << " bytes";
     //            // Ensure move constructor works
