@@ -10,7 +10,7 @@ using yatta::Directory;
 
 Directory::Directory(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
 {
-    if (std::filesystem::is_directory(path))
+    //if (std::filesystem::is_directory(path))
         in_folder(path, exclusions);
 }
 
