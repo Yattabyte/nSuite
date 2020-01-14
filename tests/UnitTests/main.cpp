@@ -653,7 +653,7 @@ static bool Directory_ConstructionTest()
         Directory directory;
         if (directory.empty()) {
             // Ensure we can virtualize directories
-            Directory dirA(Directory::GetRunningDirectory() + "\\old");
+            Directory dirA(Directory::GetRunningDirectory() + "/old");
             for (const auto& a : std::filesystem::recursive_directory_iterator(Directory::GetRunningDirectory()))
                 std::cout << a.path() << "\n";
             if (std::filesystem::is_directory(Directory::GetRunningDirectory() + "/old"))
@@ -663,7 +663,7 @@ static bool Directory_ConstructionTest()
             if (dirA.hasFiles()) {
                 std::cout << "Directory has " << dirA.fileCount() << " files, totalling " << dirA.fileSize() << " bytes";
     //            // Ensure move constructor works
-    //            Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "\\old");
+    //            Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
     //            if (moveDirectory.fileCount() == dirA.fileCount()) {
     //                // Ensure copy constructor works
     //                const Directory& copyDir(moveDirectory);
@@ -690,8 +690,8 @@ static bool Directory_ConstructionTest()
 //        Directory directory;
 //        if (directory.empty()) {
 //            // Verify that we can add another multiple folders
-//            directory.in_folder(Directory::GetRunningDirectory() + "\\old");
-//            directory.in_folder(Directory::GetRunningDirectory() + "\\new");
+//            directory.in_folder(Directory::GetRunningDirectory() + "/old");
+//            directory.in_folder(Directory::GetRunningDirectory() + "/new");
 //            if (directory.hasFiles()) {
 //                // Ensure we have 8 files all together
 //                if (directory.fileCount() == 8ULL) {
