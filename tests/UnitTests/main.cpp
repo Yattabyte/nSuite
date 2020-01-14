@@ -656,6 +656,10 @@ static bool Directory_ConstructionTest()
             Directory dirA(Directory::GetRunningDirectory() + "\\old");
             for (const auto& a : std::filesystem::recursive_directory_iterator(Directory::GetRunningDirectory()))
                 std::cout << a.path() << "\n";
+            if (std::filesystem::is_directory(Directory::GetRunningDirectory() + "\\old"))
+                std::cout << "found path\n";
+            else
+                std::cout << "didn't find path\n";
             if (dirA.hasFiles()) {
                 std::cout << "Directory has " << dirA.fileCount() << " files, totalling " << dirA.fileSize() << " bytes";
     //            // Ensure move constructor works
