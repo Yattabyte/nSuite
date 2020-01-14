@@ -108,7 +108,7 @@ install:
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
   - cmake --build .
-  - ctest
+  - ctest --verbose
   #- ctest --extra-verbose --output-on-failure
 
 after_success:
