@@ -7,5 +7,5 @@ configuration:
   - Release  
     
 build_script:
-- cmd: cmake -H. -B./build -DBUILD_SHARED_LIBS=0
+- cmd: cmake -D UNIT_TESTS:BOOL=TRUE -H. -B./build -DBUILD_SHARED_LIBS=0
 - cmd: ctest --verbose
