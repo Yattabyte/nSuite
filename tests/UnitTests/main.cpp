@@ -654,29 +654,22 @@ static bool Directory_ConstructionTest()
         if (directory.empty()) {
             // Ensure we can virtualize directories
             Directory dirA(Directory::GetRunningDirectory() + "/old");
-            for (const auto& a : std::filesystem::recursive_directory_iterator(Directory::GetRunningDirectory()))
-                std::cout << a.path() << "\n";
-            if (std::filesystem::is_directory(Directory::GetRunningDirectory() + "/old"))
-                std::cout << "found path\n";
-            else
-                std::cout << "didn't find path\n";
             if (dirA.hasFiles()) {
-                std::cout << "Directory has " << dirA.fileCount() << " files, totalling " << dirA.fileSize() << " bytes";
-    //            // Ensure move constructor works
-    //            Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
-    //            if (moveDirectory.fileCount() == dirA.fileCount()) {
-    //                // Ensure copy constructor works
-    //                const Directory& copyDir(moveDirectory);
-    //                if (copyDir.fileSize() == moveDirectory.fileSize()) {
+                // Ensure move constructor works
+                Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
+                if (moveDirectory.fileCount() == dirA.fileCount()) {
+                    // Ensure copy constructor works
+                    const Directory& copyDir(moveDirectory);
+                    if (copyDir.fileSize() == moveDirectory.fileSize()) {
                         std::cout << "Directory Construction Test - Success\n";
                         return true; // Success
-    //             }
-    //            }
+                    }
+                }
             }
         }
     }
     catch (const std::exception & e) {
-       std::cout << e.what() << "\n";
+        std::cout << e.what() << "\n";
     }
 
     std::cout << "Directory Construction Test - Failure\n";
