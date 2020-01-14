@@ -8,3 +8,4 @@ configuration:
     
 build_script:
 - cmd: cmake -H. -B./build -DBUILD_SHARED_LIBS=0
+- cmd: ctest --verbose
