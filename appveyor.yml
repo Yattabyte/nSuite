@@ -10,4 +10,3 @@ build_script:
 - cmd: cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
 - cmd: cmake --build .
 - cmd: ctest --verbose
-- cmd: ctest --verbose
