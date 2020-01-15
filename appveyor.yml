@@ -1,18 +1,13 @@
 environment:
   platform: x64
   
-  matrix:
-    - image: Visual Studio 2017
-      configuration: Debug
-    
-    - image: Visual Studio 2017
-      configuration: Release
-    
-    - image: Visual Studio 2019
-      configuration: Debug
-    
-    - image: Visual Studio 2019
-      configuration: Release
+image:
+  - Visual Studio 2017
+  - Visual Studio 2019
+
+configuration:
+    - Debug
+    - Release
     
 build_script:
 - cmd: cmake --config %configuration% -D CMAKE_GENERATOR_PLATFORM=x64 UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
