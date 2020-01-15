@@ -166,7 +166,6 @@ install:
   - mkdir -p $HOME/.cache
   
 script:
-  - mkdir -p build && cd build
   - cmake -DUNIT_TESTS:BOOL=TRUE -DENABLE_COVERAGE:BOOL=TRUE -DCMAKE_BUILD_TYPE=${CONFIG} . 
   - cmake --build . --config ${CONFIG} -j $(nproc)
   - ctest --verbose --output-on-failure -C ${CONFIG} -j $(nproc)
