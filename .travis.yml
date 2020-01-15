@@ -1,6 +1,6 @@
 language: cpp
-sudo: required
 dist: xenial
+os: linux
 
 cache: # see https://docs.travis-ci.com/user/caching/
 - directories:
@@ -10,18 +10,13 @@ addons:
   apt:
     packages: lcov
 
-env:
-  - CONFIG=Debug
-  - CONFIG=Release
-
-matrix:
+jobs:
   include:
     ################
     # CLANG BUILDS #
     # ver: 7-9     #
     ################
-    - os: linux
-      addons:
+    - addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -33,10 +28,23 @@ matrix:
             - libc++abi-7-dev
             - libstdc++-7-dev
       env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7 && CONFIG=Debug"
+
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-7
+          packages:
+            - clang-7
+            - g++-8
+            - libc++-7-dev
+            - libc++abi-7-dev
+            - libstdc++-7-dev
+      env:
+        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7 && CONFIG=Release"
     
-    - os: linux
-      addons:
+    - addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -48,10 +56,23 @@ matrix:
             - libc++abi-8-dev
             - libstdc++-8-dev
       env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8 && CONFIG=Debug"
     
-    - os: linux
-      addons:
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-8
+          packages:
+            - clang-8
+            - g++-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - libstdc++-8-dev
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8 && CONFIG=Release"
+  
+    - addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -64,14 +85,28 @@ matrix:
             - libc++abi-9-dev
             - libstdc++-9-dev
       env:
-        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9 && CONFIG=Debug"
+    
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-9
+            - g++-9      
+            - libc++-9-dev
+            - libc++abi-9-dev
+            - libstdc++-9-dev
+      env:
+        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9 && CONFIG=Release"
     
     ##############
     # GCC BUILDS #
     # ver: 8-9   #
-    ##############    
-    - os: linux
-      addons:
+    ############## 
+    - addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -80,26 +115,14 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
     
-    - os: linux
-      addons:
+    - addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-  
-    ######################
-    # NO WINDOWS SUPPORT #
-    # IN TRAVIS CI YET   #
-    ######################
-    
-    ###############
-    # OSX VERSION #
-    # TOO OLD     #
-    ###############
-    
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"    
   
 before_install:
     - eval "${MATRIX_EVAL}"
