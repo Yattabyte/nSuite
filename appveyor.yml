@@ -19,6 +19,6 @@ environment:
       config: Release
     
 build_script:
-- cmd: cmake -C config -D CMAKE_GENERATOR_PLATFORM=x64 UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
+- cmd: cmake -C %config% -D CMAKE_GENERATOR_PLATFORM=x64 UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
 - cmd: cmake --build .
 - cmd: ctest --verbose
