@@ -8,11 +8,11 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 # Status
 **Travis CI** [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite)  
   - OS: Linux
-  - Compilers: GCC 8/9, Clang 7/8/9  
+  - Compilers: GCC 8/9, Clang 7/8/9 (Debug/Release)
   
 **Appveyor** [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta)  
   - OS: Windows
-  - Compilers: Visual Studio 2017 MSVC, Visual Studio 2019 MSVC
+  - Compilers: Visual Studio 2017 MSVC, Visual Studio 2019 MSVC (Debug/Release)
 
 
 ## Library
