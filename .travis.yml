@@ -10,6 +10,10 @@ addons:
   apt:
     packages: lcov
 
+env:
+  - CONFIG=Debug
+  - CONFIG=Release
+
 matrix:
   include:
     ################
@@ -107,7 +111,7 @@ install:
   
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
-  - cmake --build .
+  - cmake --build . --config %CONFIG%
   - ctest --verbose
   #- ctest --extra-verbose --output-on-failure
 
