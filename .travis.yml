@@ -113,7 +113,25 @@ jobs:
           packages:
             - g++-8
       env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && CONFIG=Debug"
+    
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && CONFIG=Release"
+
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && CONFIG=Debug"   
     
     - addons:
         apt:
@@ -122,7 +140,7 @@ jobs:
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"    
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && CONFIG=Release"   
   
 before_install:
     - eval "${MATRIX_EVAL}"
