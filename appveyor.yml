@@ -6,15 +6,15 @@ environment:
       configuration: Debug
       config: Debug
     
-  - image: Visual Studio 2017
+    - image: Visual Studio 2017
       configuration: Release
       config: Release
     
-  - image: Visual Studio 2019
+    - image: Visual Studio 2019
       configuration: Debug
       config: Debug
     
-  - image: Visual Studio 2019
+    - image: Visual Studio 2019
       configuration: Release
       config: Release
     
