@@ -4,19 +4,19 @@ environment:
   matrix:
     - image: Visual Studio 2017
       configuration: Debug
-	  config: Debug
-	  
-	- image: Visual Studio 2017
+      config: Debug
+    
+  - image: Visual Studio 2017
       configuration: Release
-	  config: Release
-	  
-	- image: Visual Studio 2019
+      config: Release
+    
+  - image: Visual Studio 2019
       configuration: Debug
-	  config: Debug
-	  
-	- image: Visual Studio 2019
+      config: Debug
+    
+  - image: Visual Studio 2019
       configuration: Release
-	  config: Release
+      config: Release
     
 build_script:
 - cmd: cmake -C config -D CMAKE_GENERATOR_PLATFORM=x64 UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
