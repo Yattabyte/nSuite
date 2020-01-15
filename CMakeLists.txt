@@ -24,11 +24,13 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 elseif(CMAKE_COMPILER_IS_GNUCC)
 	option(ENABLE_COVERAGE "Enable code coverage reporting for gcc/clang" FALSE)
-    add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-O0 -g>" "$<$<CONFIG:RELEASE>:-O3>")
+    add_compile_options(
+		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-O0 -g>" "$<$<CONFIG:RELEASE>:-O3>" 
+		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" "-Wunused" 
+		"-Wno-system-headers"	"-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
+	)
 	if(ENABLE_COVERAGE)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -W -Wshadow -Wunused-variable \
-			-Wunused-parameter -Wunused-function -Wunused -Wno-system-headers \
-			-Wno-deprecated -Woverloaded-virtual -Wwrite-strings -fprofile-arcs -ftest-coverage")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -W -fprofile-arcs -ftest-coverage")
 		add_compile_options("$<$<CONFIG:DEBUG>:--coverage>")
 		add_link_options("$<$<CONFIG:DEBUG>:--coverage>")

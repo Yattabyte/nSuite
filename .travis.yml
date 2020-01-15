@@ -2,7 +2,7 @@ language: cpp
 dist: xenial
 os: linux
 
-cache: # see https://docs.travis-ci.com/user/caching/
+cache:
 - directories:
   - $HOME/.cache
 
@@ -166,12 +166,12 @@ install:
   - mkdir -p $HOME/.cache
   
 script:
-  - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
-  - cmake --build . --config ${CONFIG}
-  - ctest --verbose --output-on-failure -C ${CONFIG}
+  - mkdir -p build && cd build
+  - cmake -DUNIT_TESTS:BOOL=TRUE -DENABLE_COVERAGE:BOOL=TRUE DCMAKE_BUILD_TYPE=${CONFIG} . 
+  - cmake --build . --config ${CONFIG} -j $(nproc)
+  - ctest --verbose --output-on-failure -C ${CONFIG} -j $(nproc)
 
 after_success:
-  - cd ${TRAVIS_BUILD_DIR}
   - lcov --directory . --capture --output-file coverage.info
   - lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
   - lcov --list coverage.info
