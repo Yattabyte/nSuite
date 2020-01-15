@@ -162,8 +162,8 @@ install:
   
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
-  - cmake --build . --config "${CONFIG}"
-  - ctest --verbose --output-on-failure -C "${CONFIG}"
+  - cmake --build . --config $env:CONFIG
+  - ctest --verbose --output-on-failure -C $env:CONFIG
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
