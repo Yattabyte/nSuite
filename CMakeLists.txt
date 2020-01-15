@@ -45,6 +45,8 @@ add_subdirectory(src)
 # Optionally build unit tests
 option(UNIT_TESTS "Build Unit Tests" TRUE)
 if(UNIT_TESTS)
+	# Code Coverage Configuration
+	add_library(coverage_config INTERFACE)
 	enable_testing()
 	add_subdirectory(tests/UnitTests)
 	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)

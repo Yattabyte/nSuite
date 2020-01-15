@@ -159,12 +159,11 @@ jobs:
         - CONFIG=Release
   
 before_install:
-    - eval "${MATRIX_EVAL}"
+  - eval "${MATRIX_EVAL}"
+  - sudo pip install codecov
 
 install:
   - mkdir -p $HOME/.cache
-  - pip install --user coverage
-  - pip install --user codecov
   
 script:
   - cmake -D UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=TRUE . 
