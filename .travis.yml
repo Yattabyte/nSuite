@@ -44,21 +44,21 @@ jobs:
         # - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
         # - CONFIG=Release
     
-    # - addons:
-        # apt:
-          # sources:
-            # - ubuntu-toolchain-r-test
-            # - llvm-toolchain-xenial-8
-          # packages:
-            # - clang-8
-            # - g++-8
-            # - lcov
-            # - libc++-8-dev
-            # - libc++abi-8-dev
-            # - libstdc++-8-dev
-      # env:
-        # - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        # - CONFIG=Debug
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-8
+          packages:
+            - clang-8
+            - g++-8
+            - lcov
+            - libc++-8-dev
+            - libc++abi-8-dev
+            - libstdc++-8-dev
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - CONFIG=Debug
     
     # - addons:
         # apt:
@@ -76,22 +76,22 @@ jobs:
         # - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         # - CONFIG=Release
   
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-          packages:
-            - clang-9
-            - g++-9
-            - lcov
-            - libc++-9-dev
-            - libc++abi-9-dev
-            - libstdc++-9-dev
-      env:
-        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
-        - CONFIG=Debug
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+              # key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          # packages:
+            # - clang-9
+            # - g++-9
+            # - lcov
+            # - libc++-9-dev
+            # - libc++abi-9-dev
+            # - libstdc++-9-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        # - CONFIG=Debug
     
     # - addons:
         # apt:
@@ -182,7 +182,7 @@ script:
 
 after_success:
   - lcov --version
-  - lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-9
+  - lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-8
   - lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
   - lcov --list coverage.info
   - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
