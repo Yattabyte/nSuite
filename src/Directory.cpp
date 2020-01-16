@@ -116,3 +116,35 @@ std::string Directory::GetRunningDirectory() noexcept
         cCurrentPath[sizeof(cCurrentPath) - 1ULL] = char('\0');
     return std::string(cCurrentPath);
 }
+
+// Protected Methods
+
+std::vector<std::filesystem::directory_entry> Directory::get_file_paths(const std::filesystem::path& directory, const std::vector<std::string>& exclusions) 
+{    
+    std::vector<std::filesystem::directory_entry> paths;
+    if (std::filesystem::is_directory(directory))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+            if (entry.is_regular_file()) {
+                auto path = entry.path().string();
+                path = path.substr(directory.string().size(), path.size() - directory.string().size());
+                if (check_exclusion(path, exclusions))
+                    paths.emplace_back(entry);
+            }
+    return paths;
+}
+
+bool Directory::check_exclusion(const std::filesystem::path& path, const std::vector<std::string>& exclusions) 
+{
+    const auto extension = path.extension();
+    for (const auto& excl : exclusions) {
+        if (excl.empty())
+            continue;
+        // Compare Paths && Extensions
+        if (path == excl || extension == excl) {
+            // Don't use path
+            return false;
+        }
+    }
+    // Safe to use path
+    return true;
+}

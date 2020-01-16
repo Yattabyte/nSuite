@@ -52,6 +52,13 @@ namespace yatta {
 
 
     protected:
+        // Protected Methods
+        /***/
+        static std::vector<std::filesystem::directory_entry> get_file_paths(const std::filesystem::path& directory, const std::vector<std::string>& exclusions);
+        /***/
+        static bool check_exclusion(const std::filesystem::path& path, const std::vector<std::string>& exclusions);
+
+
         // Protected Attributes
         /***/
         struct VirtualFile {
