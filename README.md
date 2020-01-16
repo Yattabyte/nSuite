@@ -14,6 +14,8 @@ Example programs are provided which implement the packing, unpacking, diffing, a
   - OS: Windows
   - Compilers: Visual Studio 2017 MSVC, Visual Studio 2019 MSVC (Debug/Release)
 
+**Code Coverage** [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite)
+
 
 ## Library
 All classes and methods provided by this library are found within the NST namespace. The most important classes are:
