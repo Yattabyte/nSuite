@@ -30,7 +30,7 @@ if(MSVC)
 elseif(CMAKE_COMPILER_IS_GNUCC)
     add_compile_options(
 		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-g>" "$<$<CONFIG:DEBUG>:-O0>" "$<$<CONFIG:RELEASE>:-O3>" 
-		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" "-Wunused" 
+		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" 
 		"-Wno-system-headers" "-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
 	)
     #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
