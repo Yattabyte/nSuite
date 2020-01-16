@@ -25,22 +25,19 @@ jobs:
         # apt:
       # sources: *apt_sources
           # packages: ["clang-7", "g++-8", "libc++-7-dev", "libc++abi-7-dev", "libstdc++-7-dev"]
-      # env:
-        # - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+      # env: COMPILER_CXX=clang++-7 COMPILER_C=clang-7
     
     - addons: &clang8
         apt:
           sources: *apt_sources
           packages: ["clang-8", "g++-8", "libc++-8-dev", "libc++abi-8-dev", "libstdc++-8-dev"]
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      env: COMPILER_CXX=clang++-8 COMPILER_C=clang-8
   
     # - addons: &clang9
         # apt:
           # sources: *apt_sources
           # packages: ["clang-9", "g++-9", "libc++-9-dev", "libc++abi-9-dev", "libstdc++-9-dev"]
-      # env:
-        # - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+      # env: COMPILER_CXX=clang++-9 COMPILER_C=clang-9
     
     ##############
     # GCC BUILDS #
@@ -50,18 +47,13 @@ jobs:
         # apt:
           # sources: *apt_sources
           # packages: g++-8
-      # env:
-        # - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+      # env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8
   
     # - addons: &gcc9
         # apt:
           # sources: *apt_sources
           # packages: g++-9
-      # env:
-        # - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-  
-before_install:
-  - eval "${MATRIX_EVAL}"
+      # env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9
 
 install:
   - mkdir -p $HOME/.cache
@@ -74,6 +66,8 @@ install:
       make install
       export PATH=${DEPS_DIR}/lcov/bin:${PATH}
   - cd ${TRAVIS_BUILD_DIR}
+  - export CXX="${COMPILER_CXX}"
+  - export CC="${COMPILER_C}"
   
 script:
   - mkdir -p build && cd build
@@ -84,7 +78,7 @@ script:
   #######################
   # Code Coverage Build #
   #######################
-  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake -DCMAKE_CXX_COMPILER=${CXX} -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
   - cmake --build . --clean-first --config Debug -- -j $(nproc)
   - ctest --verbose --output-on-failure -C Debug -j $(nproc)
   - lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-8
@@ -95,13 +89,13 @@ script:
   ###############
   # Debug Build #
   ###############
-  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake -DCMAKE_CXX_COMPILER=${CXX} -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DCMAKE_BUILD_TYPE=Debug ..
   - cmake --build . --clean-first --config Debug -- -j $(nproc)
   - ctest --verbose --output-on-failure -C Debug -j $(nproc)
   
   #################
   # Release Build #
   #################
-  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Release ..
+  - cmake -DCMAKE_CXX_COMPILER=${CXX} -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DCMAKE_BUILD_TYPE=Release ..
   - cmake --build . --clean-first --config Release -- -j $(nproc)
   - ctest --verbose --output-on-failure -C Release -j $(nproc)
