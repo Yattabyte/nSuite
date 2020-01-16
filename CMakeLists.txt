@@ -29,14 +29,12 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 elseif(CMAKE_COMPILER_IS_GNUCC)
     add_compile_options(
-		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-O0 -g>" "$<$<CONFIG:RELEASE>:-O3>" 
+		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-g>" "$<$<CONFIG:DEBUG>:-O0>" "$<$<CONFIG:RELEASE>:-O3>" 
 		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" "-Wunused" 
 		"-Wno-system-headers" "-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
 	)
     #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        # No Clang specific options
     #else()
-        # No GCC specific options
     #endif()
 endif()
 find_package(Threads REQUIRED)
@@ -67,7 +65,7 @@ add_subdirectory(src)
 if(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests/UnitTests)
-endif(BUILD_TESTING)
+endif()
 
 
 # Optionally build examples
@@ -77,7 +75,7 @@ if(EXAMPLES)
 	#add_subdirectory( examples/Installer )
 	#add_subdirectory( examples/Uninstaller )
 	#add_subdirectory( examples/Wizard )
-endif(EXAMPLES)
+endif()
 
 
 #################
@@ -94,5 +92,5 @@ if(DOXYGEN_FOUND)
 		set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
 		set(DOXYGEN_EXCLUDE ${PROJECT_SOURCE_DIR}/external/)
 		doxygen_add_docs(Documentation ${PROJECT_SOURCE_DIR} COMMENT "Generate docs")
-	endif(GENERATE_DOCS)
-endif(DOXYGEN_FOUND)
+	endif()
+endif()
