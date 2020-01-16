@@ -36,8 +36,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_link_libraries(${Module} PRIVATE stdc++fs)
 endif()
-# Include code-coverage settings:
-target_link_libraries(${Module} PUBLIC coverage_config)
 
 # Set all project settings
 target_compile_Definitions(${Module} PRIVATE $<$<CONFIG:DEBUG>:DEBUG>)
