@@ -76,20 +76,32 @@ install:
   - cd ${TRAVIS_BUILD_DIR}
   
 script:
+  - mkdir -p build && cd build
+  - cmake --version
   - lcov --version
+  - gcov --version
+  
+  #######################
+  # Code Coverage Build #
+  #######################
+  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake --build . --clean-first --config Debug -- -j $(nproc)
+  - ctest --verbose --output-on-failure -C Debug -j $(nproc)
   - lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-8
   - lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
   - lcov --list coverage.info
   - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
-  # - mkdir -p build && cd build
-  # - cmake --version
-  # - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
-  # - cmake --build . --config Debug -- -j $(nproc)
-  # - ctest --verbose --output-on-failure -C Debug -j $(nproc)
 
-# after_success:
-  # - lcov --version
-  # - lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-8
-  # - lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
-  # - lcov --list coverage.info
-  # - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+  ###############
+  # Debug Build #
+  ###############
+  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
+  - cmake --build . --clean-first --config Debug -- -j $(nproc)
+  - ctest --verbose --output-on-failure -C Debug -j $(nproc)
+  
+  #################
+  # Release Build #
+  #################
+  - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build . --clean-first --config Release -- -j $(nproc)
+  - ctest --verbose --output-on-failure -C Release -j $(nproc)
