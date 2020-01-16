@@ -169,8 +169,8 @@ script:
   - mkdir -p build && cd build
   - cmake --version
   - cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug ..
-  - cmake --build . --config ${CONFIG} -- -j $(nproc)
-  - ctest --verbose --output-on-failure -C ${CONFIG} -j $(nproc)
+  - cmake --build . --config Debug -- -j $(nproc)
+  - ctest --verbose --output-on-failure -C Debug -j $(nproc)
 
 after_success:
   - lcov --directory . --capture --output-file coverage.info
