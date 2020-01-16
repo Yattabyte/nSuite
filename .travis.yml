@@ -6,10 +6,6 @@ cache:
 - directories:
   - $HOME/.cache
 
-addons:
-  apt:
-    packages: lcov
-
 jobs:
   include:
     ################
@@ -24,6 +20,7 @@ jobs:
           # packages:
             # - clang-7
             # - g++-8
+            # - lcov
             # - libc++-7-dev
             # - libc++abi-7-dev
             # - libstdc++-7-dev
@@ -39,6 +36,7 @@ jobs:
           # packages:
             # - clang-7
             # - g++-8
+            # - lcov
             # - libc++-7-dev
             # - libc++abi-7-dev
             # - libstdc++-7-dev
@@ -54,6 +52,7 @@ jobs:
           # packages:
             # - clang-8
             # - g++-8
+            # - lcov
             # - libc++-8-dev
             # - libc++abi-8-dev
             # - libstdc++-8-dev
@@ -69,6 +68,7 @@ jobs:
           # packages:
             # - clang-8
             # - g++-8
+            # - lcov
             # - libc++-8-dev
             # - libc++abi-8-dev
             # - libstdc++-8-dev
@@ -85,6 +85,7 @@ jobs:
           packages:
             - clang-9
             - g++-9
+            - lcov
             - libc++-9-dev
             - libc++abi-9-dev
             - libstdc++-9-dev
@@ -101,6 +102,7 @@ jobs:
           # packages:
             # - clang-9
             # - g++-9
+            # - lcov
             # - libc++-9-dev
             # - libc++abi-9-dev
             # - libstdc++-9-dev
@@ -118,6 +120,7 @@ jobs:
             # - ubuntu-toolchain-r-test
           # packages:
             # - g++-8
+            # - lcov
       # env:
         # - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         # - CONFIG=Debug
@@ -128,6 +131,7 @@ jobs:
             # - ubuntu-toolchain-r-test
           # packages:
             # - g++-8
+            # - lcov
       # env:
         # - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         # - CONFIG=Release
@@ -138,6 +142,7 @@ jobs:
             # - ubuntu-toolchain-r-test
           # packages:
             # - g++-9
+            # - lcov
       # env:
         # - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         # - CONFIG=Debug
@@ -148,6 +153,7 @@ jobs:
             # - ubuntu-toolchain-r-test
           # packages:
             # - g++-9
+            # - lcov
       # env:
         # - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
         # - CONFIG=Release
