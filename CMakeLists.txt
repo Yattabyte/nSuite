@@ -28,11 +28,10 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 elseif(CMAKE_COMPILER_IS_GNUCC)
-    add_compile_options(
-		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-g>" "$<$<CONFIG:DEBUG>:-O0>" "$<$<CONFIG:RELEASE>:-O3>" 
-		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" 
-		"-Wno-system-headers" "-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
-	)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wshadow -Wunused-variable -Wunused-parameter -Wunused-function"
+		"-Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     #else()
     #endif()
