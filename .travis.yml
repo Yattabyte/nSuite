@@ -12,10 +12,10 @@ addons:
 
 jobs:
   include:
-    #############
-    CLANG BUILDS #
-    ver: 7-9     #
-    #############
+    ################
+    # CLANG BUILDS #
+    # ver: 7-9     #
+    ################
     # - addons:
         # apt:
           # sources:
@@ -108,10 +108,10 @@ jobs:
         # - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         # - CONFIG=Release
     
-    #############
-    GCC BUILDS #
-    ver: 8-9   #
-    ############# 
+    ##############
+    # GCC BUILDS #
+    # ver: 8-9   #
+    ############## 
     # - addons:
         # apt:
           # sources:
