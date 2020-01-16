@@ -13,7 +13,7 @@ set(USE32BIT FALSE)
 set(CMAKE_TOOLCHAIN_FILE 64bit.toolchain)
 option(EXAMPLES "Build Examples" OFF)
 option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
-option(UNIT_TESTS "Build Unit Tests" ON)
+option(BUILD_TESTING "Build Unit Tests" ON)
 
 
 # Set compiler flags per-compiler
@@ -31,21 +31,32 @@ elseif(CMAKE_COMPILER_IS_GNUCC)
     add_compile_options(
 		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-O0 -g>" "$<$<CONFIG:RELEASE>:-O3>" 
 		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" "-Wunused" 
-		"-Wno-system-headers"	"-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
+		"-Wno-system-headers" "-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
 	)
-	if(CODE_COVERAGE)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -W -fprofile-arcs -ftest-coverage")
-		add_compile_options("$<$<CONFIG:DEBUG>:--coverage>")
-		add_link_options("$<$<CONFIG:DEBUG>:--coverage>")
-	endif()
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         # No Clang specific options
-    else()
+    #else()
         # No GCC specific options
-    endif()
+    #endif()
 endif()
 find_package(Threads REQUIRED)
+
+
+# Code Coverage Configuration
+add_library(coverage_config INTERFACE)
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+	# Add required flags (GCC & LLVM/Clang)
+	target_compile_options(coverage_config INTERFACE
+		-O0        # no optimization
+		-g         # generate debug info
+		--coverage # sets all required flags
+	)
+	if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+		target_link_options(coverage_config INTERFACE --coverage)
+	else()
+		target_link_libraries(coverage_config INTERFACE --coverage)
+	endif()
+endif()
 
 
 # Add our own source files
@@ -53,14 +64,10 @@ add_subdirectory(src)
 
 
 # Optionally build unit tests
-if(UNIT_TESTS)
-	# Code Coverage Configuration
-	add_library(coverage_config INTERFACE)
+if(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests/UnitTests)
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT UnitTests)
-	add_test(NAME UnitTests COMMAND UnitTests WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/app/)
-endif(UNIT_TESTS)
+endif(BUILD_TESTING)
 
 
 # Optionally build examples
