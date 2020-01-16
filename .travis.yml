@@ -23,11 +23,11 @@ jobs:
           # packages: ["clang-7", "g++-8", "libc++-7-dev", "libc++abi-7-dev", "libstdc++-7-dev"]
       # env: COMPILER_CXX=clang++-7 COMPILER_C=clang-7
     
-    - addons: &clang8
-        apt:
-          sources: *apt_sources
-          packages: ["clang-8", "g++-8", "libc++-8-dev", "libc++abi-8-dev", "libstdc++-8-dev"]
-      env: COMPILER_CXX=clang++-8 COMPILER_C=clang-8
+    # - addons: &clang8
+        # apt:
+          # sources: *apt_sources
+          # packages: ["clang-8", "g++-8", "libc++-8-dev", "libc++abi-8-dev", "libstdc++-8-dev"]
+      # env: COMPILER_CXX=clang++-8 COMPILER_C=clang-8
   
     # - addons: &clang9
         # apt:
@@ -39,11 +39,11 @@ jobs:
     # GCC BUILDS #
     # ver: 8-9   #
     ##############   
-    # - addons: &gcc8
-        # apt:
-          # sources: *apt_sources
-          # packages: g++-8
-      # env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8
+    - addons: &gcc8
+        apt:
+          sources: *apt_sources
+          packages: g++-8
+      env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8
   
     # - addons: &gcc9
         # apt:
@@ -52,7 +52,6 @@ jobs:
       # env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9
 
 install:
-  - mkdir -p $HOME/.cache
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
   - |
