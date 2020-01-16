@@ -161,7 +161,7 @@ install:
 script:
   - mkdir -p build && cd build
   - cmake --version
-  - cmake -DUNIT_TESTS:ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=${CONFIG} . 
+  - cmake -DUNIT_TESTS=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=${CONFIG} . 
   - cmake --build . --config ${CONFIG} -- -j $(nproc)
   - ctest --verbose --output-on-failure -C ${CONFIG} -j $(nproc)
 

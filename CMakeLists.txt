@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CXX_EXTENSIONS YES)
 set(USE32BIT FALSE)
 set(CMAKE_TOOLCHAIN_FILE 64bit.toolchain)
-option(EXAMPLES "Build Examples" FALSE)
+option(EXAMPLES "Build Examples" OFF)
 option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
 option(UNIT_TESTS "Build Unit Tests" ON)
 
