@@ -1,80 +1,80 @@
 language: cpp
-dist: xenial
 os: linux
+dist: xenial
 
 cache:
 - directories:
   - $HOME/.cache
 
+addons:
+  apt:
+    packages: lcov
+
 jobs:
   include:
-    ################
-    # CLANG BUILDS #
-    # ver: 7-9     #
-    ################
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7
-          packages:
-            - clang-7
-            - g++-8
-            - lcov
-            - libc++-7-dev
-            - libc++abi-7-dev
-            - libstdc++-7-dev
-      env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
-        - CONFIG=Debug
+    #############
+    CLANG BUILDS #
+    ver: 7-9     #
+    #############
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - llvm-toolchain-xenial-7
+          # packages:
+            # - clang-7
+            # - g++-8
+            # - libc++-7-dev
+            # - libc++abi-7-dev
+            # - libstdc++-7-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        # - CONFIG=Debug
 
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7
-          packages:
-            - clang-7
-            - g++-8
-            - lcov
-            - libc++-7-dev
-            - libc++abi-7-dev
-            - libstdc++-7-dev
-      env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
-        - CONFIG=Release
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - llvm-toolchain-xenial-7
+          # packages:
+            # - clang-7
+            # - g++-8
+            # - libc++-7-dev
+            # - libc++abi-7-dev
+            # - libstdc++-7-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        # - CONFIG=Release
     
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
-          packages:
-            - clang-8
-            - g++-8
-            - lcov
-            - libc++-8-dev
-            - libc++abi-8-dev
-            - libstdc++-8-dev
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - CONFIG=Debug
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - llvm-toolchain-xenial-8
+          # packages:
+            # - clang-8
+            # - g++-8
+            # - libc++-8-dev
+            # - libc++abi-8-dev
+            # - libstdc++-8-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        # - CONFIG=Debug
     
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-8
-          packages:
-            - clang-8
-            - g++-8
-            - lcov
-            - libc++-8-dev
-            - libc++abi-8-dev
-            - libstdc++-8-dev
-      env:
-        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - CONFIG=Release
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - llvm-toolchain-xenial-8
+          # packages:
+            # - clang-8
+            # - g++-8
+            # - libc++-8-dev
+            # - libc++abi-8-dev
+            # - libstdc++-8-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        # - CONFIG=Release
   
     - addons:
         apt:
@@ -84,8 +84,7 @@ jobs:
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
           packages:
             - clang-9
-            - g++-9      
-            - lcov
+            - g++-9
             - libc++-9-dev
             - libc++abi-9-dev
             - libstdc++-9-dev
@@ -93,81 +92,77 @@ jobs:
         - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
         - CONFIG=Debug
     
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-          packages:
-            - clang-9
-            - g++-9      
-            - lcov
-            - libc++-9-dev
-            - libc++abi-9-dev
-            - libstdc++-9-dev
-      env:
-        - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
-        - CONFIG=Release
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+            # - sourceline: 'deb https://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+              # key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          # packages:
+            # - clang-9
+            # - g++-9
+            # - libc++-9-dev
+            # - libc++abi-9-dev
+            # - libstdc++-9-dev
+      # env:
+        # - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        # - CONFIG=Release
     
-    ##############
-    # GCC BUILDS #
-    # ver: 8-9   #
-    ############## 
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-8
-            - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-        - CONFIG=Debug
+    #############
+    GCC BUILDS #
+    ver: 8-9   #
+    ############# 
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+          # packages:
+            # - g++-8
+      # env:
+        # - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        # - CONFIG=Debug
 
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-8
-            - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
-        - CONFIG=Release
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+          # packages:
+            # - g++-8
+      # env:
+        # - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        # - CONFIG=Release
 
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
-            - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - CONFIG=Debug
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+          # packages:
+            # - g++-9
+      # env:
+        # - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        # - CONFIG=Debug
     
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
-            - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - CONFIG=Release
+    # - addons:
+        # apt:
+          # sources:
+            # - ubuntu-toolchain-r-test
+          # packages:
+            # - g++-9
+      # env:
+        # - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        # - CONFIG=Release
   
 before_install:
   - eval "${MATRIX_EVAL}"
-  - sudo pip install codecov
 
 install:
   - mkdir -p $HOME/.cache
   
 script:
-  - cmake -DUNIT_TESTS:BOOL=TRUE -DENABLE_COVERAGE:BOOL=TRUE -DCMAKE_BUILD_TYPE=${CONFIG} . 
-  - cmake --build . --config ${CONFIG} -j $(nproc)
+  - mkdir -p build && cd build
+  - cmake --version
+  - cmake -DUNIT_TESTS:ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=${CONFIG} . 
+  - cmake --build . --config ${CONFIG} -- -j $(nproc)
   - ctest --verbose --output-on-failure -C ${CONFIG} -j $(nproc)
 
 after_success:

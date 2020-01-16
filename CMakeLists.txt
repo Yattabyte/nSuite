@@ -5,13 +5,18 @@ cmake_minimum_required(VERSION 3.9.2)
 project(Yatta VERSION 1.6.4  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
-
-# Set consistent compiler flags for our project and our dependencies
+# Set mandatory requirements
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CXX_EXTENSIONS YES)
 set(USE32BIT FALSE)
 set(CMAKE_TOOLCHAIN_FILE 64bit.toolchain)
+option(EXAMPLES "Build Examples" FALSE)
+option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
+option(UNIT_TESTS "Build Unit Tests" ON)
+
+
+# Set compiler flags per-compiler
 if(MSVC)
 	set(CMAKE_GENERATOR_PLATFORM x64)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Oi /Ot /GF /Qpar /std:c++17 /Zc:rvalueCast /W4 /WX /permissive-")
@@ -23,13 +28,12 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 elseif(CMAKE_COMPILER_IS_GNUCC)
-	option(ENABLE_COVERAGE "Enable code coverage reporting for gcc/clang" FALSE)
     add_compile_options(
 		"-Wall" "-Wextra" "-Werror" "$<$<CONFIG:DEBUG>:-O0 -g>" "$<$<CONFIG:RELEASE>:-O3>" 
 		"-Wshadow" "-Wunused-variable" "-Wunused-parameter" "-Wunused-function" "-Wunused" 
 		"-Wno-system-headers"	"-Wno-deprecated" "-Woverloaded-virtual" "-Wwrite-strings"
 	)
-	if(ENABLE_COVERAGE)
+	if(CODE_COVERAGE)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -W -fprofile-arcs -ftest-coverage")
 		add_compile_options("$<$<CONFIG:DEBUG>:--coverage>")
@@ -49,7 +53,6 @@ add_subdirectory(src)
 
 
 # Optionally build unit tests
-option(UNIT_TESTS "Build Unit Tests" TRUE)
 if(UNIT_TESTS)
 	# Code Coverage Configuration
 	add_library(coverage_config INTERFACE)
@@ -61,7 +64,6 @@ endif(UNIT_TESTS)
 
 
 # Optionally build examples
-option(EXAMPLES "Build Examples" FALSE)
 if(EXAMPLES)
 	#add_subdirectory( examples/Unpacker )
 	#add_subdirectory( examples/Updater )
