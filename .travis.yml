@@ -159,7 +159,6 @@ install:
   - mkdir -p $HOME/.cache
   
 script:
-  - set -euo pipefail
   - mkdir -p build && cd build
   - cmake --version
   - cmake -DUNIT_TESTS=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=${CONFIG} ..
