@@ -1,8 +1,4 @@
-#######################
-# Code Coverage Build #
-#######################
-
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ "${CODE_COVERAGE}" = "true" ]]; then
   lcov --version
