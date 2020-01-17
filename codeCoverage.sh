@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-if [[ "${CODE_COVERAGE}" = "true" ]]; then
+if [ ${CODE_COVERAGE} = true ]; then
   lcov --version
   gcov --version
   cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fprofile-arcs -ftest-coverage --coverage" . || exit 1
