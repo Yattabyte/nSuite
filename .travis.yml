@@ -99,10 +99,10 @@ install:
     fi
   - |
     if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
-	  # Download oclint
+    # Download oclint
       eval "$(curl -sL https://raw.githubusercontent.com/ryuichis/oclint-cpp-travis-ci-examples/master/oclint-ci-install.sh)"
-	  # Download valgrind
-	  VALGRIND_URL="https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2"
+    # Download valgrind
+    VALGRIND_URL="https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2"
       mkdir valgrind && travis_retry wget --no-check-certificate -O - ${VALGRIND_URL} | tar --strip-components=1 -xz -C valgrind
       cd valgrind
       make install
