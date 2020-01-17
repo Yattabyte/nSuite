@@ -6,9 +6,27 @@ cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF 
 cmake --build . --clean-first -- -j $(nproc) || exit 1
   
 # Run Valgrind
-echo "Starting Valgrind"
+echo "Starting Memory Sanitizer using Valgrind"
 ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck . || exit 1
 echo "$(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)"
+
+# Address Sanitizers
+echo "Starting Address Sanitizer"
+cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=address" . || exit 1 
+cmake --build . --clean-first -- -j $(nproc) || exit 1
+ctest --verbose --output-on-failure -j $(nproc) . || exit 1
+
+# Undefined Behaviour Sanitizer
+echo "Starting U.B. Sanitizer"
+cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 fsanitize=undefined" . || exit 1 
+cmake --build . --clean-first -- -j $(nproc) || exit 1
+ctest --verbose --output-on-failure -j $(nproc) . || exit 1
+
+# Thread Sanitizer
+echo "Starting Thread Sanitizer"
+cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=thread" . || exit 1 
+cmake --build . --clean-first -- -j $(nproc) || exit 1
+ctest --verbose --output-on-failure -j $(nproc) . || exit 1 
   
 # Run OCLint
 echo "Starting OCLint"
