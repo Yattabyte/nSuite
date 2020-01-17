@@ -12,8 +12,9 @@ set(CXX_EXTENSIONS YES)
 set(USE32BIT FALSE)
 set(CMAKE_TOOLCHAIN_FILE 64bit.toolchain)
 option(EXAMPLES "Build Examples" OFF)
-option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
 option(BUILD_TESTING "Build Unit Tests" ON)
+option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
+option(STATIC_ANALYSIS "Enable static code analysis using gcc" OFF)
 
 
 # Set compiler flags per-compiler
@@ -46,6 +47,15 @@ add_subdirectory(src)
 if(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests/UnitTests)
+	
+	# Optionally perform static code analysis tests
+	if (STATIC_ANALYSIS)
+		include(CTest)
+		find_program(MEMORYCHECK_COMMAND valgrind)
+		if (CTEST_MEMORYCHECK_COMMAND)
+			set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
+		endif()
+	endif()	
 endif()
 
 
