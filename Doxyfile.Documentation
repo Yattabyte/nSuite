@@ -4,8 +4,8 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = Yatta
-PROJECT_NUMBER         = 1.4.4
-PROJECT_BRIEF          = "Directory and buffer compression & diffing tools."
+PROJECT_NUMBER         = 1.6.9
+PROJECT_BRIEF          = "Library for compressing and diffing buffers and files."
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = E:/Programming/Installer/docs/
 CREATE_SUBDIRS         = NO
