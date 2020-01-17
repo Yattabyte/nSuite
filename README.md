@@ -5,19 +5,19 @@ The code is written in C++17, and makes heavy use of [std::filesystem](https://e
 
 Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
 
-# CI Testing
+# Library Status
 
-| CI Environment   | Status |
-|------------------|-------:|
-| Travis CI        | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
-| Appveyor         | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
-| Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
+| CI Environment   | Tasks            |Status |
+|------------------|------------------|-------:|
+| Travis CI        | Build/Test/LCOV/ | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
+| Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
+| Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
 
 
-| Operating System | Compiler             |
-|------------------|:---------------------|
-| Linux            | GCC 8/9, Clang 7/8/9 |
-| Windows          | MSVC 2017, 2019      |
+| Operating System | Compiler             | Debug | Release |
+|------------------|:---------------------|:-----:|:-------:|
+| Linux            | GCC 8/9, Clang 7/8/9 |  YES  |   YES   |
+| Windows          | MSVC 2017, 2019      |  YES  |   YES   |
 
 
 ## Library
