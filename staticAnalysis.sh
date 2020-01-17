@@ -6,10 +6,10 @@ if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
   make clean && make -k -j $(nproc) || exit 1
   
   # Run normal tests
-  ctest -j $(nproc) --output-on-failure . || exit 1
+  ctest --verbose --output-on-failure -j $(nproc) . || exit 1
   
   # Run Valgrind
-  ctest -j $(nproc) --output-on-failure -D ExperimentalMemCheck . || exit 1
+  ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck . || exit 1
   
   # Run Oclint
   oclint-json-compilation-database -i include -i src
