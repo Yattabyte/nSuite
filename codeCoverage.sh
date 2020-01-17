@@ -1,6 +1,9 @@
 #######################
 # Code Coverage Build #
 #######################
+
+#!/bin/bash
+
 if [[ "${CODE_COVERAGE}" = "true" ]]; then
   lcov --version
   gcov --version
