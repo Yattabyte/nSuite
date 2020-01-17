@@ -17,7 +17,7 @@ option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
 option(STATIC_ANALYSIS "Enable static code analysis using gcc" OFF)
 
 
-# Set compiler flags per-compiler
+# Set compilation flags per-compiler
 if(MSVC)
 	set(CMAKE_GENERATOR_PLATFORM x64)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Oi /Ot /GF /Qpar /std:c++17 /Zc:rvalueCast /W4 /WX /permissive-")
@@ -43,6 +43,16 @@ find_package(Threads REQUIRED)
 add_subdirectory(src)
 
 
+# Optionally build examples
+if(EXAMPLES)
+	#add_subdirectory( examples/Unpacker )
+	#add_subdirectory( examples/Updater )
+	#add_subdirectory( examples/Installer )
+	#add_subdirectory( examples/Uninstaller )
+	#add_subdirectory( examples/Wizard )
+endif()
+
+
 # Optionally build unit tests
 if(BUILD_TESTING)
 	enable_testing()
@@ -56,16 +66,6 @@ if(BUILD_TESTING)
 			set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 		endif()
 	endif()	
-endif()
-
-
-# Optionally build examples
-if(EXAMPLES)
-	#add_subdirectory( examples/Unpacker )
-	#add_subdirectory( examples/Updater )
-	#add_subdirectory( examples/Installer )
-	#add_subdirectory( examples/Uninstaller )
-	#add_subdirectory( examples/Wizard )
 endif()
 
 

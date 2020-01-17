@@ -13,5 +13,5 @@ if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
   echo "$(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)"
   
   # Run Oclint
-  oclint-json-compilation-database -i include -i src -e src/lz4
+  oclint-json-compilation-database -i src -e src/lz4
 fi
