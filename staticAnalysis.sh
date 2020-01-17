@@ -16,4 +16,4 @@ oclint-json-compilation-database -i src -i tests  -e src/lz4
 
 # Run CPPCheck
 echo "Starting CPPCheck"
-cppcheck --project=compile_commands.json -isrc/lz4
+cppcheck src tests -isrc/lz4

@@ -1,5 +1,5 @@
 ---
-Checks:            '*, -*abseil*, -*fuchsia*, -*google*, -*no-array-decay*, -*magic-number*, -*overloaded-operator*, -*default-arguments*, -*array-to-pointer-decay*, -*avoid-c-arrays*, -*pointer-arithmetic*, -*use-trailing-return-type, -*braces-around-statements*'
+Checks:            '*, -*abseil*, -*fuchsia*, -*google*, -*no-array-decay*, -*magic-number*, -*reinterpret-cast*, -*overloaded-operator*, -*default-arguments*, -*array-to-pointer-decay*, -*avoid-c-arrays*, -*pointer-arithmetic*, -*use-trailing-return-type, -*braces-around-statements*'
 WarningsAsErrors:  ''
 HeaderFilterRegex: none
 FormatStyle:       'LLVM'
