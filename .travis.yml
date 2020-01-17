@@ -54,7 +54,7 @@ jobs:
     - addons: &gcc9
         apt:
           sources: *apt_sources
-          packages: ["g++-9" "cppcheck" "valgrind"]
+          packages: ["g++-9", "cppcheck", "valgrind"]
       env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9 STATIC_ANALYSIS=true
 
 
