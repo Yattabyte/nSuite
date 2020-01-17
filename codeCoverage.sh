@@ -7,7 +7,7 @@ if [ ${CODE_COVERAGE} = true ]; then
   cmake --build . -- -j $(nproc) || exit 1
   ctest --verbose --output-on-failure -j $(nproc) || exit 1
   lcov --directory . --capture --output-file coverage.info --gcov-tool gcov-8
-  lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' --output-file coverage.info
+  lcov --remove coverage.info '/usr/*' --output-file coverage.info
   lcov --list coverage.info
   bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports" exit
 fi

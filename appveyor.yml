@@ -4,12 +4,14 @@ platform:
 image:
   - Visual Studio 2017
   - Visual Studio 2019
-
-configuration:
-  - Debug
-  - Release
     
 build_script:
-- cmd: cmake -D CMAKE_GENERATOR_PLATFORM=x64 UNIT_TESTS:BOOL=TRUE ENABLE_COVERAGE:BOOL=FALSE BUILD_SHARED_LIBS=0 . 
-- cmd: cmake --build . --config %configuration% 
-- cmd: ctest --verbose --output-on-failure -C %configuration%
+- cmd: cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DBUILD_SHARED_LIBS=0 . 
+
+# Debug Build
+- cmd: cmake --build . --clean-first --config Debug -- -j2
+- cmd: ctest --verbose --output-on-failure -C Debug -j2
+
+# Release Build
+- cmd: cmake --build . --clean-first --config Release -- -j2
+- cmd: ctest --verbose --output-on-failure -C Release -j2
