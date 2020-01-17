@@ -28,21 +28,21 @@ jobs:
           # sources: *apt_sources
           # packages: ["clang-7", "g++-8", "libc++-7-dev", "libc++abi-7-dev", "libstdc++-7-dev"]
       # env: COMPILER_CXX=clang++-7 COMPILER_C=clang-7
-	  # script: bash ./build.sh
+      # script: bash ./build.sh
     
     # - addons: &clang8
         # apt:
           # sources: *apt_sources
           # packages: ["clang-8", "g++-8", "libc++-8-dev", "libc++abi-8-dev", "libstdc++-8-dev"]
       # env: COMPILER_CXX=clang++-8 COMPILER_C=clang-8
-	  # script: bash ./build.sh  
+      # script: bash ./build.sh  
   
     # - addons: &clang9
         # apt:
           # sources: *apt_sources
           # packages: ["clang-9", "g++-9", "libc++-9-dev", "libc++abi-9-dev", "libstdc++-9-dev"]
       # env: COMPILER_CXX=clang++-9 COMPILER_C=clang-9
-	  # script: bash ./build.sh  
+      # script: bash ./build.sh  
     
     ##############
     # GCC BUILDS #
@@ -53,31 +53,31 @@ jobs:
           # sources: *apt_sources
           # packages: g++-8
       # env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8
-	  # script: bash ./build.sh  
+      # script: bash ./build.sh  
   
     # - addons: &gcc9
         # apt:
           # sources: *apt_sources
           # packages: ["g++-9", "cppcheck", "valgrind"]
       # env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9
-	  # script: bash ./build.sh  
-	
-	##############
+      # script: bash ./build.sh  
+  
+  ##############
     # Misc Tasks #
     ############## 
-	# - addons: &code_coverage
+  # - addons: &code_coverage
         # apt:
           # sources: *apt_sources
           # packages: g++-8
       # env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8 CODE_COVERAGE=true
-	  # script: bash ./codeCoverage.sh  
+      # script: bash ./codeCoverage.sh  
   
     - addons: &static_analysis
         apt:
           sources: *apt_sources
           packages: ["clang-9", "clang-tidy-9", "g++-9", "libc++-9-dev", "libc++abi-9-dev", "libstdc++-9-dev", "cppcheck", "valgrind"]
       env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9 STATIC_ANALYSIS=true
-	  script: bash ./staticAnalysis.sh
+      script: bash ./staticAnalysis.sh
 
 
 install:
