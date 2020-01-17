@@ -5,11 +5,13 @@
 using yatta::Buffer;
 using yatta::Directory;
 using filepath = std::filesystem::path;
+using directory_itt = std::filesystem::directory_iterator;
+using directory_rec_itt = std::filesystem::recursive_directory_iterator;
 
 
 // Static Methods
 
-constexpr auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions)
+constexpr static auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions)
 {
     const auto extension = path.extension();
     for (const auto& excl : exclusions) {
@@ -25,11 +27,11 @@ constexpr auto check_exclusion = [](const filepath& path, const std::vector<std:
     return true;
 };
 
-constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions)
+constexpr static auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions)
 {
     std::vector<std::filesystem::directory_entry> paths;
     if (std::filesystem::is_directory(directory))
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+        for (const auto& entry : directory_rec_itt(directory))
             if (entry.is_regular_file()) {
                 auto path = entry.path().string();
                 path = path.substr(
@@ -61,7 +63,10 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
             if (!fileOnDisk.is_open())
                 throw std::runtime_error("Cannot read the file" + entry.path().string());
 
-            fileOnDisk.read(fileBuffer.charArray(), static_cast<std::streamsize>(fileBuffer.size()));
+            fileOnDisk.read(
+                fileBuffer.charArray(), 
+                static_cast<std::streamsize>(fileBuffer.size())
+            );
             fileOnDisk.close();
 
             m_files.emplace_back(
@@ -80,10 +85,8 @@ void Directory::out_folder(const filepath& path)
         // Write-out the file
         const auto fullPath = path.string() + file.m_relativePath;
         std::filesystem::create_directories(filepath(fullPath).parent_path());
-        std::ofstream fileOnDisk = std::ofstream(
-            fullPath.c_str(), 
-            std::ofstream::binary | std::ofstream::out
-        );
+        constexpr std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary;
+        std::ofstream fileOnDisk = std::ofstream(fullPath.c_str(), mode);
         if (!fileOnDisk.is_open())
             throw std::runtime_error("Cannot write the file" + file.m_relativePath);
 
