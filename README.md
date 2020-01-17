@@ -11,11 +11,13 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 
 | CI Environment   | Tasks            | Status |
 |------------------|------------------|-------:|
-| Travis CI        | Build/Test/LCOV/ | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
+| Travis CI        | Build/Test/LCOV  | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
 | Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
 | Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
 | CodeFactor       | Code Review      | [![CodeFactor](https://www.codefactor.io/repository/github/yattabyte/nsuite/badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
 | Codacy           | Code Review      | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b38f4eaa90d4b238942d6daaf578655)](https://www.codacy.com/manual/Yattabyte/nSuite) |
+| LGTM             | Code Review      | [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/Yattabyte/nSuite.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Yattabyte/nSuite/context:cpp) |
+| CodeDocs         | Documentation    | [![CodeDocs Badge](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/) | 
 
 ***Table 2:** List of operating systems and compilers supported.*  
 
