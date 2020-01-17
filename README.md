@@ -7,17 +7,21 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 
 # Library Status
 
-| CI Environment   | Tasks            |Status |
+***Table 1:** Descriptions of continuous integration environments in use.*  
+
+| CI Environment   | Tasks            | Status |
 |------------------|------------------|-------:|
 | Travis CI        | Build/Test/LCOV/ | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
 | Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
 | Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
 
 
-| Operating System | Compiler             | Debug | Release |
-|------------------|:---------------------|:-----:|:-------:|
-| Linux            | GCC 8/9, Clang 7/8/9 |  YES  |   YES   |
-| Windows          | MSVC 2017, 2019      |  YES  |   YES   |
+***Table 2:** List of operating systems and compilers supported.*  
+
+| Operating System | Compiler             | Debug/Release |
+|------------------|:---------------------|:-------------:|
+| Linux (x64)      | GCC 8/9, Clang 7/8/9 |      BOTH     |
+| Windows (x64)    | MSVC 2017/2019       |      BOTH     |
 
 
 ## Library
