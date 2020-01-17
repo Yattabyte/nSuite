@@ -14,7 +14,7 @@ addons:
 
 
 env: 
-  global: CODE_COVERAGE=false
+  global: CODE_COVERAGE=false STATIC_ANALYSIS=false
 
 
 jobs:
@@ -54,8 +54,8 @@ jobs:
     - addons: &gcc9
         apt:
           sources: *apt_sources
-          packages: g++-9
-      env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9
+          packages: ["g++-9" "cppcheck" "valgrind"]
+      env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9 STATIC_ANALYSIS=true
 
 
 install:
@@ -75,6 +75,10 @@ install:
       make install
       export PATH=${DEPS_DIR}/lcov/bin:${PATH}
     fi
+  - |
+    if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
+      eval "$(curl -sL https://raw.githubusercontent.com/ryuichis/oclint-cpp-travis-ci-examples/master/oclint-ci-install.sh)"
+    fi
   
   - cd ${TRAVIS_BUILD_DIR}
 
@@ -84,5 +88,6 @@ script:
   - cmake ${CMAKE_OPTIONS_GLOBAL} ${CMAKE_OPTIONS} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} . || exit 1
   
   - bash ./codeCoverage.sh  
+  - bash ./staticAnalysis.sh  
   - bash ./buildDebug.sh  
   - bash ./buildRelease.sh  
