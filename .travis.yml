@@ -81,6 +81,11 @@ jobs:
       script: bash ./staticAnalysis.sh
 
 
+before_install:
+  - sudo apt-get install clang-tools-9
+  - sudo apt-get -q update
+ 
+
 install:
   # Export Environment Variables
   - export CXX="${COMPILER_CXX}"
