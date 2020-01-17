@@ -49,13 +49,13 @@ jobs:
         apt:
           sources: *apt_sources
           packages: g++-8
-      env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8
+      env: COMPILER_CXX=g++-8 COMPILER_C=gcc-8 CODE_COVERAGE=true
   
     - addons: &gcc9
         apt:
           sources: *apt_sources
           packages: g++-9
-      env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9 CODE_COVERAGE=true
+      env: COMPILER_CXX=g++-9 COMPILER_C=gcc-9
 
 
 install:
