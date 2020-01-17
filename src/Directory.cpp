@@ -4,17 +4,52 @@
 
 using yatta::Buffer;
 using yatta::Directory;
+using filepath = std::filesystem::path;
 
+
+// Static Methods
+
+constexpr auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions)
+{
+    const auto extension = path.extension();
+    for (const auto& excl : exclusions) {
+        if (excl.empty())
+            continue;
+        // Compare Paths && Extensions
+        if (path == excl || extension == excl) {
+            // Don't use path
+            return false;
+        }
+    }
+    // Safe to use path
+    return true;
+};
+
+constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions)
+{
+    std::vector<std::filesystem::directory_entry> paths;
+    if (std::filesystem::is_directory(directory))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+            if (entry.is_regular_file()) {
+                auto path = entry.path().string();
+                path = path.substr(
+                    directory.string().size(), path.size() - directory.string().size()
+                );
+                if (check_exclusion(path, exclusions))
+                    paths.emplace_back(entry);
+            }
+    return paths;
+};
 
 // Public (de)Constructors
 
-Directory::Directory(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
+Directory::Directory(const filepath& path, const std::vector<std::string>& exclusions)
 {
     if (std::filesystem::is_directory(path))
         in_folder(path, exclusions);
 }
 
-void Directory::in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
+void Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
     for (const auto& entry : get_file_paths(path, exclusions)) {
         if (entry.is_regular_file()) {
@@ -29,22 +64,33 @@ void Directory::in_folder(const std::filesystem::path& path, const std::vector<s
             fileOnDisk.read(fileBuffer.charArray(), static_cast<std::streamsize>(fileBuffer.size()));
             fileOnDisk.close();
 
-            m_files.emplace_back(VirtualFile{ (std::filesystem::relative(entry.path(), path)).string(), std::move(fileBuffer) });
+            m_files.emplace_back(
+                VirtualFile{ 
+                    (std::filesystem::relative(entry.path(), path)).string(),
+                    std::move(fileBuffer) 
+                }
+            );
         }
     }
 }
 
-void Directory::out_folder(const std::filesystem::path& path)
+void Directory::out_folder(const filepath& path)
 {
     for (auto& file : m_files) {
         // Write-out the file
         const auto fullPath = path.string() + file.m_relativePath;
-        std::filesystem::create_directories(std::filesystem::path(fullPath).parent_path());
-        std::ofstream fileOnDisk = std::ofstream(fullPath.c_str(), std::ofstream::binary | std::ofstream::out);
+        std::filesystem::create_directories(filepath(fullPath).parent_path());
+        std::ofstream fileOnDisk = std::ofstream(
+            fullPath.c_str(), 
+            std::ofstream::binary | std::ofstream::out
+        );
         if (!fileOnDisk.is_open())
             throw std::runtime_error("Cannot write the file" + file.m_relativePath);
 
-        fileOnDisk.write(file.m_data.charArray(), static_cast<std::streamsize>(file.m_data.size()));
+        fileOnDisk.write(
+            file.m_data.charArray(), 
+            static_cast<std::streamsize>(file.m_data.size())
+        );
         fileOnDisk.close();
     }
 }
@@ -89,36 +135,4 @@ std::string Directory::GetRunningDirectory() noexcept
     if (getcwd(cCurrentPath, sizeof(cCurrentPath)) != nullptr)
         cCurrentPath[sizeof(cCurrentPath) - 1ULL] = char('\0');
     return std::string(cCurrentPath);
-}
-
-// Protected Methods
-
-std::vector<std::filesystem::directory_entry> Directory::get_file_paths(const std::filesystem::path& directory, const std::vector<std::string>& exclusions)
-{
-    std::vector<std::filesystem::directory_entry> paths;
-    if (std::filesystem::is_directory(directory))
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
-            if (entry.is_regular_file()) {
-                auto path = entry.path().string();
-                path = path.substr(directory.string().size(), path.size() - directory.string().size());
-                if (check_exclusion(path, exclusions))
-                    paths.emplace_back(entry);
-            }
-    return paths;
-}
-
-bool Directory::check_exclusion(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
-{
-    const auto extension = path.extension();
-    for (const auto& excl : exclusions) {
-        if (excl.empty())
-            continue;
-        // Compare Paths && Extensions
-        if (path == excl || extension == excl) {
-            // Don't use path
-            return false;
-        }
-    }
-    // Safe to use path
-    return true;
 }
