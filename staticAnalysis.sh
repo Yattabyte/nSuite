@@ -10,6 +10,7 @@ if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
   
   # Run Valgrind
   ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck . || exit 1
+  < ${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChcker.1.log
   
   # Run Oclint
   oclint-json-compilation-database -i include -i src -e src/lz4
