@@ -104,7 +104,7 @@ install:
       # Download oclint
       eval "$(curl -sL https://raw.githubusercontent.com/ryuichis/oclint-cpp-travis-ci-examples/master/oclint-ci-install.sh)"   
     # Download latest valgrind
-      - wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
+      wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
     fi
   
   - cd ${TRAVIS_BUILD_DIR}
