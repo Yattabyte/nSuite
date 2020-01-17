@@ -14,6 +14,7 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 | Travis CI        | Build/Test/LCOV/ | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
 | Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
 | Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
+| CodeFactor       | Code Review      | [![CodeFactor](https://www.codefactor.io/repository/github/yattabyte/nsuite/badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
 
 
 ***Table 2:** List of operating systems and compilers supported.*  
