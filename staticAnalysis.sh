@@ -12,5 +12,5 @@ if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
   ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck . || exit 1
   
   # Run Oclint
-  oclint-json-compilation-database -i include -i src
+  oclint-json-compilation-database -i include -i src -e src/lz4
 fi
