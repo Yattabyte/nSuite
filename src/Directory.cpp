@@ -9,40 +9,6 @@ using directory_itt = std::filesystem::directory_iterator;
 using directory_rec_itt = std::filesystem::recursive_directory_iterator;
 
 
-// Static Methods
-
-constexpr static auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions)
-{
-    const auto extension = path.extension();
-    for (const auto& excl : exclusions) {
-        if (excl.empty())
-            continue;
-        // Compare Paths && Extensions
-        if (path == excl || extension == excl) {
-            // Don't use path
-            return false;
-        }
-    }
-    // Safe to use path
-    return true;
-};
-
-constexpr static auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions)
-{
-    std::vector<std::filesystem::directory_entry> paths;
-    if (std::filesystem::is_directory(directory))
-        for (const auto& entry : directory_rec_itt(directory))
-            if (entry.is_regular_file()) {
-                auto path = entry.path().string();
-                path = path.substr(
-                    directory.string().size(), path.size() - directory.string().size()
-                );
-                if (check_exclusion(path, exclusions))
-                    paths.emplace_back(entry);
-            }
-    return paths;
-};
-
 // Public (de)Constructors
 
 Directory::Directory(const filepath& path, const std::vector<std::string>& exclusions)
@@ -53,6 +19,35 @@ Directory::Directory(const filepath& path, const std::vector<std::string>& exclu
 
 void Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
+    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions) {
+        constexpr auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions) {
+            const auto extension = path.extension();
+            for (const auto& excl : exclusions) {
+                if (excl.empty())
+                    continue;
+                // Compare Paths && Extensions
+                if (path == excl || extension == excl) {
+                    // Don't use path
+                    return false;
+                }
+            }
+            // Safe to use path
+            return true;
+        };
+        std::vector<std::filesystem::directory_entry> paths;
+        if (std::filesystem::is_directory(directory))
+            for (const auto& entry : directory_rec_itt(directory))
+                if (entry.is_regular_file()) {
+                    auto path = entry.path().string();
+                    path = path.substr(
+                        directory.string().size(), path.size() - directory.string().size()
+                    );
+                    if (check_exclusion(path, exclusions))
+                        paths.emplace_back(entry);
+                }
+        return paths;
+    };
+
     for (const auto& entry : get_file_paths(path, exclusions)) {
         if (entry.is_regular_file()) {
             // Read the file data

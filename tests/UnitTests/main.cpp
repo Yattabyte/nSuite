@@ -183,7 +183,7 @@ static bool Buffer_IOTest()
         buffer.out_type(out_int);
         if (in_int == out_int) {
             // Ensure raw pointer IO is correct
-            const char word[28] = ("This is a sample sentence.\0");
+            const char word[28] = "This is a sample sentence.\0";
             constexpr auto sentenceSize = sizeof(char) * 28;
             buffer.resize(sentenceSize + sizeof(int));
             buffer.in_raw(&word, sentenceSize, sizeof(int));
@@ -396,7 +396,7 @@ static bool BufferView_IOTest()
         bView.out_type(out_int);
         if (in_int == out_int) {
             // Ensure raw pointer IO is correct
-            const char word[28] = ("This is a sample sentence.\0");
+            const char word[28] = "This is a sample sentence.\0";
             constexpr auto sentenceSize = sizeof(char) * 28;
             buffer.resize(sentenceSize + sizeof(int));
             bView = BufferView(buffer);
@@ -620,7 +620,7 @@ static bool MemoryRange_IOTest()
         memRange.out_type(out_int);
         if (in_int == out_int) {
             // Ensure raw pointer IO is correct
-            const char word[28] = ("This is a sample sentence.\0");
+            const char word[28] = "This is a sample sentence.\0";
             constexpr auto sentenceSize = sizeof(char) * 28;
             buffer.resize(sentenceSize + sizeof(int));
             memRange = MemoryRange(buffer.size(), buffer.bytes());
