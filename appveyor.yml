@@ -9,9 +9,9 @@ build_script:
 - cmd: cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DBUILD_SHARED_LIBS=0 . 
 
 # Debug Build
-- cmd: cmake --build . --clean-first --config Debug -- -j 2
-- cmd: ctest --verbose --output-on-failure -C Debug -j 2
+- cmd: cmake --build . --clean-first --config Debug
+- cmd: ctest --verbose --output-on-failure -C Debug
 
 # Release Build
-- cmd: cmake --build . --clean-first --config Release -- -j 2
-- cmd: ctest --verbose --output-on-failure -C Release -j 2
+- cmd: cmake --build . --clean-first --config Release
+- cmd: ctest --verbose --output-on-failure -C Release
