@@ -2,7 +2,6 @@
 
 # Run Clang-Tidy using cmake
 echo "Starting Clang-Tidy"
-valgrind --version
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
 cmake --build . --clean-first -- -j $(nproc) || exit 1
 
@@ -26,6 +25,7 @@ ctest --verbose --output-on-failure -j $(nproc) . || exit 1
 
 # Run Valgrind
 echo "Starting Memory Sanitizer using Valgrind"
+valgrind --version
 ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck . || exit 1
 echo "$(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)"
   

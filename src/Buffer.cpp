@@ -316,10 +316,14 @@ struct Copy_Instruction final : public Differential_Instruction {
         return sizeof(char) + (sizeof(size_t) * 3ULL);
     }
     void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
-        for (auto i = m_index, x = m_beginRead; i < bufferNew.size() && x < m_endRead && x < bufferOld.size(); ++i, ++x)
-            bufferNew[i] = bufferOld[x];
+        auto a = m_index, b = m_beginRead;
+        while (a < bufferNew.size() && b < m_endRead && b < bufferOld.size()) {
+            bufferNew[a] = bufferOld[b];
+            ++a;
+            ++b;
+        }
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -333,7 +337,7 @@ struct Copy_Instruction final : public Differential_Instruction {
         outputBuffer.in_type(m_endRead, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
     }
-    void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
+    void read(const Buffer& inputBuffer, size_t& byteIndex) final {
         // Type already read
         // Read Index
         inputBuffer.out_type(m_index, byteIndex);
@@ -366,7 +370,7 @@ struct Insert_Instruction final : public Differential_Instruction {
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < length; ++i, ++x)
             bufferNew[i] = m_newData[x];
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -418,7 +422,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
         for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
             bufferNew[i] = m_value;
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const noexcept final {
+    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
         outputBuffer.in_type(m_type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
@@ -432,7 +436,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
         outputBuffer.in_type(m_value, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
     }
-    void read(const Buffer& inputBuffer, size_t& byteIndex) noexcept final {
+    void read(const Buffer& inputBuffer, size_t& byteIndex) final {
         // Type already read
         // Read Index
         inputBuffer.out_type(m_index, byteIndex);
@@ -484,7 +488,7 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     size_t bytesUsed_new(0ULL);
     while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
         // Variables for this current chunk
-        auto windowSize = std::min<size_t>(m_amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
+        const auto windowSize = std::min<size_t>(m_amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
 
         // Find best matches for this chunk
         threader.addJob([&, windowSize, bytesUsed_old, bytesUsed_new]() {
@@ -605,8 +609,8 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
         continue;
 
     // Replace insertions with some repeat instructions
-    const size_t ORIGINALInstructionCount = instructions.size();
-    for (size_t i = 0; i < ORIGINALInstructionCount; ++i) {
+    const size_t startInstCount = instructions.size();
+    for (size_t i = 0; i < startInstCount; ++i) {
         if (auto inst = dynamic_cast<Insert_Instruction*>(instructions[i].get())) {
             threader.addJob([inst, &instructions, &instructionMutex]() {
                 // We only care about repeats larger than 36 bytes.
@@ -681,7 +685,7 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     );
     Buffer patchBuffer(size_patch);
 
-    // Write instruction data to the buffer
+    // Write the instruction data to a buffer
     size_t m_index(0ULL);
     for (const auto& instruction : instructions)
         instruction->write(patchBuffer, m_index);
@@ -690,21 +694,21 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     instructions.clear();
     instructions.shrink_to_fit();
 
-    // Try to compress the diff buffer
-    const auto compressedPatchBuffer = patchBuffer.compress();
-    patchBuffer.clear();
+    // Try to compress the patch buffer
+    patchBuffer = patchBuffer.compress();
+
     // Prepend header information
     constexpr auto headerSize = sizeof(DifferentialHeader);
-    Buffer compressedPatchBufferWithHeader(compressedPatchBuffer.size() + headerSize);
+    Buffer bufferWithHeader(patchBuffer.size() + headerSize);
     DifferentialHeader diffHeader{ "yatta diff", size_new };
 
     // Copy header data into new buffer at the beginning
-    compressedPatchBufferWithHeader.in_type(diffHeader);
+    bufferWithHeader.in_type(diffHeader);
 
     // Copy remaining data
-    compressedPatchBufferWithHeader.in_raw(compressedPatchBuffer.bytes(), compressedPatchBuffer.size(), headerSize);
+    bufferWithHeader.in_raw(patchBuffer.bytes(), patchBuffer.size(), headerSize);
 
-    return compressedPatchBufferWithHeader; // Success
+    return bufferWithHeader; // Success
 }
 
 Buffer Buffer::patch(const Buffer& diffBuffer) const
@@ -734,20 +738,21 @@ Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMem
         throw std::runtime_error("Header mismatch");
 
     // Try to decompress the diff buffer
-    const auto dataSize = diffMemory.size() - sizeof(DifferentialHeader);
-    const auto diffInstructionBuffer = BufferView{ dataSize, &diffMemory.bytes()[sizeof(DifferentialHeader)] }.decompress();
+    constexpr auto diffHeaderSize = sizeof(DifferentialHeader);
+    const auto dataSize = diffMemory.size() - diffHeaderSize;
+    const auto patchBuffer = BufferView{dataSize, &diffMemory.bytes()[diffHeaderSize]}.decompress();
     // Convert buffer into instructions
     Buffer bufferNew(header.m_targetSize);
     size_t bytesRead(0ULL);
     size_t byteIndex(0ULL);
-    while (bytesRead < diffInstructionBuffer.size()) {
+    while (bytesRead < patchBuffer.size()) {
         // Deduce the instruction type
         char type(0);
-        diffInstructionBuffer.out_type(type);
+        patchBuffer.out_type(type);
         byteIndex += static_cast<size_t>(sizeof(char));
 
         const auto executeInstruction = [&](auto instruction) {
-            instruction.read(diffInstructionBuffer, byteIndex);
+            instruction.read(patchBuffer, byteIndex);
 
             // Read the instruction size
             bytesRead += instruction.size();

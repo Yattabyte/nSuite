@@ -93,8 +93,8 @@ std::string Directory::GetRunningDirectory() noexcept
 
 // Protected Methods
 
-std::vector<std::filesystem::directory_entry> Directory::get_file_paths(const std::filesystem::path& directory, const std::vector<std::string>& exclusions) 
-{    
+std::vector<std::filesystem::directory_entry> Directory::get_file_paths(const std::filesystem::path& directory, const std::vector<std::string>& exclusions)
+{
     std::vector<std::filesystem::directory_entry> paths;
     if (std::filesystem::is_directory(directory))
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
@@ -107,7 +107,7 @@ std::vector<std::filesystem::directory_entry> Directory::get_file_paths(const st
     return paths;
 }
 
-bool Directory::check_exclusion(const std::filesystem::path& path, const std::vector<std::string>& exclusions) 
+bool Directory::check_exclusion(const std::filesystem::path& path, const std::vector<std::string>& exclusions)
 {
     const auto extension = path.extension();
     for (const auto& excl : exclusions) {
