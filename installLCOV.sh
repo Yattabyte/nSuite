@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
  
  if [ ${CODE_COVERAGE} = true ]; then
     LCOV_URL="https://github.com/linux-test-project/lcov/releases/download/v1.14/lcov-1.14.tar.gz"

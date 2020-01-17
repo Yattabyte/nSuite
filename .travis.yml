@@ -76,6 +76,6 @@ script:
   - cmake --version
   - cmake ${CMAKE_OPTIONS_GLOBAL} ${CMAKE_OPTIONS} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} . || exit 1
   
-  - sh ./codeCoverage.sh  
-  - sh ./buildDebug.sh  
-  - sh ./buildRelease.sh  
+  - bash ./codeCoverage.sh  
+  - bash ./buildDebug.sh  
+  - bash ./buildRelease.sh  
