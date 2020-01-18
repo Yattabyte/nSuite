@@ -5,19 +5,19 @@ The code is written in C++17, and makes heavy use of [std::filesystem](https://e
 
 Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
 
-# Library Status
+## Library Status
 
 ***Table 1:** Descriptions of continuous integration environments in use.*
 
-| CI Environment   | Tasks            | Status |
-|------------------|------------------|-------:|
-| Travis CI        | Build/Test/LCOV  | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite) |
-| Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta) |
-| Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite) |
-| CodeFactor       | Code Review      | [![CodeFactor](https://www.codefactor.io/repository/github/yattabyte/nsuite/badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
-| Codacy           | Code Review      | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b38f4eaa90d4b238942d6daaf578655)](https://www.codacy.com/manual/Yattabyte/nSuite) |
+| CI Environment   | Tasks            | Status                                                                                                                                                                    |
+|------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| Travis CI        | Build/Test/LCOV  | [![Travis CI Status](https://travis-ci.com/Yattabyte/nSuite.svg?branch=beta)](https://travis-ci.com/Yattabyte/nSuite)                                                     |
+| Appveyor         | Build/Test       | [![Build status](https://ci.appveyor.com/api/projects/status/7gheavgnj8cooyxx/branch/beta?svg=true)](https://ci.appveyor.com/project/Yattabyte/nsuite/branch/beta)        |
+| Codecov          | Code Coverage    | [![codecov](https://codecov.io/gh/Yattabyte/nSuite/branch/beta/graph/badge.svg)](https://codecov.io/gh/Yattabyte/nSuite)                                                  |
+| CodeFactor       | Code Review      | [![CodeFactor](https://www.codefactor.io/repository/github/yattabyte/nsuite/badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite)                         |
+| Codacy           | Code Review      | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b38f4eaa90d4b238942d6daaf578655)](https://www.codacy.com/manual/Yattabyte/nSuite)                            |
 | LGTM             | Code Review      | [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/Yattabyte/nSuite.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Yattabyte/nSuite/context:cpp) |
-| CodeDocs         | Documentation    | [![CodeDocs Badge](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/) |
+| CodeDocs         | Documentation    | [![CodeDocs Badge](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/)                                                                    |
 
 ***Table 2:** List of operating systems and compilers supported.*
 
@@ -31,10 +31,11 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 All classes and methods provided by this library are found within the NST namespace. The most important classes are:
   - NST::Buffer
     - A container class representing a contiguous, expandable, and manipulatable block of memory.
-	- Provides methods for compression/decompression and diffing/patching
+    - Provides methods for compression/decompression and diffing/patching
+
   - NST::Directory
     - A virtual folder, holding data sourced from disk or from our compressed format
-	- Provides methods for packing/unpacking, delta/update
+    - Provides methods for packing/unpacking, delta/update
 
 
 ## nSuite Wizard
@@ -43,19 +44,19 @@ The nSuite wizard is a stand-alone example program that can generate installers 
 
 ### Packaging
 The nSuite wizard can package directories in 3 ways (ordered by increasing complexity):
-- A .npack file
-  - Can be unpacked using the nSuite wizard
+  - A .npack file
+    - Can be unpacked using the nSuite wizard
 
-- A lightweight portable package/installer
-  - Extracts to a folder in the directory it runs from
-  - Runs in a terminal, no user input
-  - Doesn't modify registry - no uninstaller
-  - .npack file embedded within
+  - A lightweight portable package/installer
+    - Extracts to a folder in the directory it runs from
+    - Runs in a terminal, no user input
+    - Doesn't modify registry - no uninstaller
+    - .npack file embedded within
 
-- A fully-fledged installer with a GUI (Windows)
-  - Customizable by writing attributes into a manifest file
-  - Generates an uninstaller (adds it to the registry)
-  - .npack file embedded within
+  - A fully-fledged installer with a GUI (Windows)
+    - Customizable by writing attributes into a manifest file
+    - Generates an uninstaller (adds it to the registry)
+    - .npack file embedded within
 
 
 ### Diffing
@@ -64,10 +65,10 @@ All input directories are parsed into NST::Directory objects, so the "old" and/o
 
 
 # Dependencies/Requirements/Acknowledgements
- - C++17
- - 64-bit
- - Windows 7/8/10
- - Uses [CMake](https://cmake.org/)
- - Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
- - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
- - Using BSD-3-Clause license
+  - C++17
+  - 64-bit
+  - Windows 7/8/10
+  - Uses [CMake](https://cmake.org/)
+  - Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
+  - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
+  - Using BSD-3-Clause license
