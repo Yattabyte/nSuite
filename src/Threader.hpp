@@ -24,7 +24,6 @@ namespace yatta {
         @param	maxThreads		 the number of threads to spawn (up to std::thread::hardware_concurrency). */
         explicit Threader(const size_t& maxThreads = std::thread::hardware_concurrency()) noexcept {
             m_maxThreads = std::clamp<size_t>(maxThreads, 1ULL, static_cast<size_t>(std::thread::hardware_concurrency()));
-            m_threadsActive = m_maxThreads;
             m_threads.resize(m_maxThreads);
             for (auto& thread : m_threads) {
                 thread = std::thread([&]() {
@@ -44,7 +43,6 @@ namespace yatta {
                             }
                         }
                     }
-                    m_threadsActive--;
                     });
             }
         }
@@ -78,8 +76,6 @@ namespace yatta {
             for (auto& thread : m_threads)
                 if (thread.joinable())
                     thread.join();
-            while (m_threadsActive > 0ull)
-                continue;
             m_threads.clear();
         }
         /** Deleted copy-assignment operator. */
@@ -94,7 +90,7 @@ namespace yatta {
         std::atomic_bool m_alive = true, m_keepOpen = true;
         std::vector<std::thread> m_threads;
         std::deque<std::function<void()>> m_jobs;
-        std::atomic_size_t m_threadsActive = 0ull, m_jobsStarted = 0ull, m_jobsFinished = 0ull;
+        std::atomic_size_t m_jobsStarted = 0ull, m_jobsFinished = 0ull;
         size_t m_maxThreads = 0ull;
     };
 };
