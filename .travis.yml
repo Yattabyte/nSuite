@@ -75,7 +75,7 @@ jobs:
     - addons: &static_analysis
         apt:
           sources: *apt_sources
-          packages: ["clang-9", "clang-tidy-9", "g++-9", "g++-9-multilib", "libc6-dbg", "libc6-dbg:i386", "linux-libc-dev", "linux-libc-dev:i386", "libc++-9-dev", "libc++abi-9-dev", "libstdc++-9-dev", "cppcheck"]
+          packages: ["clang-9", "clang-tidy-9", "g++-9", "g++-9-multilib", "libc6-dbg", "libc6-dbg:i386", "linux-libc-dev", "linux-libc-dev:i386", "libc++-9-dev", "libc++abi-9-dev", "libstdc++-9-dev"]
           update: true
       env: COMPILER_CXX=clang++-9 COMPILER_C=clang-9 STATIC_ANALYSIS=true
       script: bash ./staticAnalysis.sh
@@ -105,6 +105,8 @@ install:
       eval "$(curl -sL https://raw.githubusercontent.com/ryuichis/oclint-cpp-travis-ci-examples/master/oclint-ci-install.sh)"   
       # Download latest valgrind
       wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
+      # Download latest cppcheck
+      wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xjf 1.90.tar.gz && cd cppcheck-1.90 && ./configure && make && sudo make install && cd ..
     fi
   
   - cd ${TRAVIS_BUILD_DIR}
