@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 
-# Run CPPCheck
-echo "
-**************************************************
-Starting CPPCheck
-**************************************************"
-cppcheck --version
-cppcheck src tests -isrc/lz4 --quiet
-
 # Run Clang-Tidy using cmake
 echo "
 **************************************************
@@ -58,3 +50,11 @@ echo "
 Starting OCLint
 **************************************************"
 oclint-json-compilation-database -i src -i tests  -e src/lz4
+
+# Run CPPCheck
+echo "
+**************************************************
+Starting CPPCheck
+**************************************************"
+cppcheck --version
+cppcheck src tests -isrc/lz4 --quiet
