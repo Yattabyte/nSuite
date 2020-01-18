@@ -46,7 +46,6 @@ namespace yatta {
                     }
                     m_threadsActive--;
                     });
-                thread.detach();
             }
         }
         /** Deleted copy-assignment constructor. */

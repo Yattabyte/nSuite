@@ -176,28 +176,36 @@ static bool Buffer_MethodTest()
 
 static bool Buffer_IOTest()
 {
-    // Ensure object IO is correct
-    Buffer buffer(sizeof(int));
-    constexpr int in_int(64);
-    buffer.in_type(in_int);
-    int out_int(0);
-    buffer.out_type(out_int);
-    if (in_int == out_int) {
-        // Ensure raw pointer IO is correct
-        const char word[28] = "This is a sample sentence.\0";
-        constexpr auto sentenceSize = sizeof(char) * 28;
-        buffer.resize(sentenceSize + sizeof(int));
-        buffer.in_raw(&word, sentenceSize, sizeof(int));
+    // Ensure we can't perform IO on an empty buffer
+    try {
+        Buffer buffer;
+        size_t largeValue(123456789ULL);
+        buffer.in_type(largeValue);
+    }
+    catch (std::runtime_error&) {
+        // Ensure object IO is correct
+        Buffer buffer(sizeof(std::byte));
+        constexpr std::byte in_byte(static_cast<std::byte>(64));
+        buffer.in_type(in_byte);
+        std::byte out_byte;
+        buffer.out_type(out_byte);
+        if (in_byte == out_byte) {
+            // Ensure raw pointer IO is correct
+            const char word[28] = "This is a sample sentence.\0";
+            constexpr auto sentenceSize = sizeof(char) * 28;
+            buffer.resize(sentenceSize + sizeof(std::byte));
+            buffer.in_raw(&word, sentenceSize, sizeof(std::byte));
 
-        struct TestStructure {
-            int a;
-            char b[28];
-        } combinedOutput{};
-        buffer.out_raw(&combinedOutput, sizeof(TestStructure));
+            struct TestStructure {
+                std::byte a;
+                char b[28];
+            } combinedOutput{};
+            buffer.out_raw(&combinedOutput, sizeof(TestStructure));
 
-        if (combinedOutput.a == in_int && std::string(combinedOutput.b) == word) {
-            std::cout << "Buffer IO Test - Success\n";
-            return true; // Success
+            if (combinedOutput.a == in_byte && std::string(combinedOutput.b) == word) {
+                std::cout << "Buffer IO Test - Success\n";
+                return true; // Success
+            }
         }
     }
 
@@ -219,10 +227,17 @@ static bool Buffer_CompressionTest()
         struct TestStructure {
             int a = 0;
             float b = 0.F;
-            char c[32] = { '\0' };
+            char c[256] = { '\0' };
         };// Create a buffer and load it with test data
         Buffer buffer(sizeof(TestStructure));
-        constexpr TestStructure testData{ 1234, 567.890F,"QWEQWEQWEQWEQWEQWEQWEQWEEEEEEE\0" };
+        constexpr TestStructure testData{
+            1234,
+            567.890F,
+            "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQWEQWEQWEQQWEQWEQWEEEEEE623785623"
+            "4652837444444443333333333333364637896463QWQWEQWEQWWEQWEQWEEEEEEE"
+            "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNOUNOUNOUNOU4EQWEQWEEEEEE623785623"
+            "4652837444444443333333333333364637896463QWQWEQWEQWWEQWEQWEEEEE\0"
+        };
         buffer.in_type(testData);
 
         // Attempt to compress the buffer
