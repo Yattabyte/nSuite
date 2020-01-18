@@ -77,8 +77,11 @@ namespace yatta {
             // Only reinterpret-cast if T is not std::byte
             if constexpr (std::is_same<T, std::byte>::value)
                 m_dataPtr[byteIndex] = dataObj;
-            else
-                *reinterpret_cast<T*>(&m_dataPtr[byteIndex]) = dataObj;
+            else {
+                // Instead of casting the buffer to type T, std::copy the range
+                const auto dataObjPtr = reinterpret_cast<const std::byte*>(&dataObj);
+                std::copy(dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
+            }
         }
         /** Copies raw data found in this buffer out to the specified pointer.
         @param	dataPtr				pointer to copy the data into.
@@ -103,8 +106,11 @@ namespace yatta {
             // Only reinterpret-cast if T is not std::byte
             if constexpr (std::is_same<T, std::byte>::value)
                 dataObj = m_dataPtr[byteIndex];
-            else
-                dataObj = *reinterpret_cast<T*>(&m_dataPtr[byteIndex]);
+            else {
+                // Instead of casting the buffer to type T, std::copy the range
+                const auto dataObjPtr = reinterpret_cast<std::byte*>(&dataObj);
+                std::copy(&m_dataPtr[byteIndex], &m_dataPtr[byteIndex] + sizeof(T), dataObjPtr);
+            }
         }
 
 
