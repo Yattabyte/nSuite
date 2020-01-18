@@ -2,7 +2,7 @@
 ### Yatta ###
 #############
 cmake_minimum_required(VERSION 3.9.2)
-project(Yatta VERSION 1.6.14  DESCRIPTION "Library for compressing and diffing buffers and files.")
+project(Yatta VERSION 1.6.15  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 # Set mandatory requirements
@@ -57,7 +57,7 @@ endif()
 if(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests/UnitTests)
-	
+
 	# Optionally perform static code analysis tests
 	if (STATIC_ANALYSIS)
 		include(CTest)
@@ -65,7 +65,7 @@ if(BUILD_TESTING)
 		if (CTEST_MEMORYCHECK_COMMAND)
 			set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 		endif()
-	endif()	
+	endif()
 endif()
 
 
@@ -75,7 +75,7 @@ endif()
 find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)
 	option(GENERATE_DOCS "Generate documentation using Doxygen" true)
-	if(GENERATE_DOCS)		
+	if(GENERATE_DOCS)
 		set(DOXYGEN_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/)
 		set(DOXYGEN_MARKDOWN_SUPPORT YES)
 		set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
