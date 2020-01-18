@@ -57,4 +57,4 @@ echo "
 Starting CPPCheck
 **************************************************"
 cppcheck --version
-cppcheck src tests -isrc/lz4 --quiet
+cppcheck src tests -isrc/lz4 --enable=all -j $(nproc)
