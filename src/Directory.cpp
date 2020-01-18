@@ -78,7 +78,7 @@ void Directory::out_folder(const filepath& path)
 {
     for (auto& file : m_files) {
         // Write-out the file
-        const auto fullPath = path.string() + file.m_relativePath;
+        const auto fullPath = path.string() + "/" + file.m_relativePath;
         std::filesystem::create_directories(filepath(fullPath).parent_path());
         constexpr std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary;
         std::ofstream fileOnDisk = std::ofstream(fullPath.c_str(), mode);
@@ -95,6 +95,11 @@ void Directory::out_folder(const filepath& path)
 
 
 // Public Inquiry Methods
+
+void Directory::clear() noexcept
+{
+    m_files.clear();
+}
 
 bool Directory::empty() const noexcept
 {
@@ -116,6 +121,20 @@ size_t Directory::fileSize() const noexcept
         0ULL,
         [](const size_t& currentSum, const VirtualFile& file) noexcept {
             return currentSum + file.m_data.size();
+        }
+    );
+}
+
+size_t Directory::hash() const noexcept
+{
+    // May overflow, but that's okay as long as the accumulation order is the same
+    // such that 2 copies of the same directory result in the same hash
+    return std::accumulate(
+        m_files.begin(),
+        m_files.end(),
+        yatta::ZeroHash,
+        [](const size_t& currentHash, const VirtualFile& file) noexcept {
+            return currentHash + file.m_data.hash();
         }
     );
 }

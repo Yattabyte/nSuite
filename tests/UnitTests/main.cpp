@@ -143,7 +143,7 @@ static bool Buffer_MethodTest()
                 // Ensure the capacity is doubled
                 if (buffer.capacity() == 2468ULL) {
                     // Ensure we can hash the buffer
-                    if (const auto hash = buffer.hash(); hash != 0ULL && hash != 1234567890ULL) {
+                    if (const auto hash = buffer.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                         // Ensure we can return a char array
                         if (const auto cArray = buffer.charArray(); cArray != nullptr) {
                             // Ensure we can return a byte array
@@ -368,7 +368,7 @@ static bool BufferView_MethodTest()
             // Ensure the size is 1234
             if (bView.size() == 1234ULL) {
                 // Ensure we can hash the buffer view
-                if (const auto hash = bView.hash(); hash != 0ULL && hash != 1234567890ULL) {
+                if (const auto hash = bView.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                     // Ensure we can return a char array
                     if (const auto cArray = bView.charArray(); cArray != nullptr) {
                         // Ensure we can return a byte array
@@ -564,7 +564,7 @@ static bool MemoryRange_MethodTest()
             // Ensure memory range size is the same as the buffer
             if (memRange.size() == 1234ULL) {
                 // Ensure we can hash the memory range
-                if (const auto hash = memRange.hash(); hash != 0ULL && hash != 1234567890ULL) {
+                if (const auto hash = memRange.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                     // Ensure we can return a char array
                     if (const auto cArray = memRange.charArray(); cArray != nullptr) {
                         // Ensure we can return a byte array
@@ -656,8 +656,24 @@ static bool Directory_MethodTest()
             if (directory.fileCount() == 8ULL) {
                 // Ensure the total size is as expected
                 if (directory.fileSize() == 189747ULL) {
-                    std::cout << "Directory Method Test - Success\n";
-                    return true; // Success
+                    // Ensure we can clear a directory
+                    directory.clear();
+                    if (directory.empty()) {
+                        // Ensure we can hash an empty directory
+                        if (directory.hash() == yatta::ZeroHash) {
+                            // Ensure we can hash an actual directory
+                            directory.in_folder(Directory::GetRunningDirectory() + "/old");
+                            if (const auto oldHash = directory.hash(); oldHash != yatta::ZeroHash) {
+                                // Overwrite the /old folder, make sure hashes match
+                                directory.out_folder(Directory::GetRunningDirectory() + "/old");
+                                Directory newOldDirectory(Directory::GetRunningDirectory() + "/old");
+                                if (const auto newHash = newOldDirectory.hash(); newHash != yatta::ZeroHash && newHash == oldHash) {
+                                    std::cout << "Directory Method Test - Success\n";
+                                    return true; // Success
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

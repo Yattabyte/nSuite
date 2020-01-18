@@ -91,7 +91,7 @@ size_t Buffer::capacity() const noexcept
     return m_capacity;
 }
 
-size_t Buffer::hash() const
+size_t Buffer::hash() const noexcept
 {
     return MemoryRange{ m_size, bytes() }.hash();
 }

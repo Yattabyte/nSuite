@@ -32,23 +32,28 @@ namespace yatta {
         void in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
         /***/
         void out_folder(const std::filesystem::path& path);
+        /** Clears out the contents of this virtual directory, freeing its memory. */
+        void clear() noexcept;
 
 
         // Public Inquiry Methods
         /** Check if this directory is empty - has no files.
         @return						true if no files exist in this directory, false otherwise. */
-        [[nodiscard]] bool empty() const noexcept;
+        bool empty() const noexcept;
         /** Retrieves whether or not this directory has files.
         @return						true if at least one file exists in this directory. */
-        [[nodiscard]] bool hasFiles() const noexcept;
+        bool hasFiles() const noexcept;
         /** Returns the number of files in this directory.
         @return						number of files in this directory. */
-        [[nodiscard]] size_t fileCount() const noexcept;
+        size_t fileCount() const noexcept;
         /** Returns the sum of all file sizes in this directory.
         @return						the total number of bytes of all files in this directory. */
-        [[nodiscard]] size_t fileSize() const noexcept;
+        size_t fileSize() const noexcept;
+        /** Generates a hash value derived from this directory's contents.
+        @return						hash value for this directory, derived from its buffers. */
+        size_t hash() const noexcept;
         /***/
-        [[nodiscard]] static std::string GetRunningDirectory() noexcept;
+        static std::string GetRunningDirectory() noexcept;
 
 
     protected:
@@ -59,7 +64,6 @@ namespace yatta {
             Buffer m_data;
         };
         std::vector<VirtualFile> m_files;
-        std::string m_name = "";
     };
 }
 #endif // DIRECTORY_H

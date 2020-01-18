@@ -54,26 +54,26 @@ namespace yatta {
         size_t capacity() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        size_t hash() const;
+        size_t hash() const noexcept;
 
 
         // Public Manipulation Methods
         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        [[nodiscard]] std::byte& operator[](const size_t& byteIndex);
+        std::byte& operator[](const size_t& byteIndex);
         /** Retrieves a const reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        [[nodiscard]] const std::byte& operator[](const size_t& byteIndex) const;
+        const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
-        [[nodiscard]] char* charArray() const noexcept;
+        char* charArray() const noexcept;
         /** Retrieves a raw pointer to this buffer's data.
         Does not copy underlying data.
         @return						pointer to this buffer's data. */
-        [[nodiscard]] std::byte* bytes() const noexcept;
+        std::byte* bytes() const noexcept;
         /** Changes the size of this buffer, expanding if need be.
         @note	won't ever reduce the capacity of the container.
         @note	will invalidate previous pointers when expanding.

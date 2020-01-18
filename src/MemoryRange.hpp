@@ -9,6 +9,8 @@
 
 
 namespace yatta {
+    constexpr size_t ZeroHash = 1234567890ULL;
+
     /** A range of pre-defined memory. */
     class MemoryRange {
     public:
@@ -22,35 +24,35 @@ namespace yatta {
         // Public Inquiry Methods
         /** Check if this buffer is empty - has no data allocated.
         @return						true if no memory has been allocated, false otherwise. */
-        [[nodiscard]] bool empty() const noexcept;
+        bool empty() const noexcept;
         /** Retrieves whether or not this buffer's size is greater than zero.
         @return						true if has memory allocated, false otherwise. */
-        [[nodiscard]] bool hasData() const noexcept;
+        bool hasData() const noexcept;
         /** Returns the size of memory allocated by this buffer.
         @return						number of bytes allocated. */
-        [[nodiscard]] size_t size() const noexcept;
+        size_t size() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        [[nodiscard]] size_t hash() const;
+        size_t hash() const noexcept;
 
 
         // Public Manipulation Methods
         /** Retrieves a reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        [[nodiscard]] std::byte& operator[](const size_t& byteIndex);
+        std::byte& operator[](const size_t& byteIndex);
         /** Retrieves a const reference to the data at the byte index specified.
         @param	byteIndex			how many bytes into this buffer to index at.
         @return						reference to data found at the byte index. */
-        [[nodiscard]] const std::byte& operator[](const size_t& byteIndex) const;
+        const std::byte& operator[](const size_t& byteIndex) const;
         /** Retrieves a char array pointer to this buffer's data.
         Does not copy underlying data.
         @return						data pointer cast to char *. */
-        [[nodiscard]] char* charArray() const noexcept;
+        char* charArray() const noexcept;
         /** Retrieves a raw pointer to this buffer's data.
         Does not copy underlying data.
         @return						pointer to this buffer's data. */
-        [[nodiscard]] std::byte* bytes() const noexcept;
+        std::byte* bytes() const noexcept;
 
 
         // Public IO Methods
