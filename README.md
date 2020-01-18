@@ -29,11 +29,11 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 
 ## Library
 All classes and methods provided by this library are found within the NST namespace. The most important classes are:
-  - NST::Buffer
+- NST::Buffer
     - A container class representing a contiguous, expandable, and manipulatable block of memory.
     - Provides methods for compression/decompression and diffing/patching
 
-  - NST::Directory
+- NST::Directory
     - A virtual folder, holding data sourced from disk or from our compressed format
     - Provides methods for packing/unpacking, delta/update
 
@@ -44,16 +44,16 @@ The nSuite wizard is a stand-alone example program that can generate installers 
 
 ### Packaging
 The nSuite wizard can package directories in 3 ways (ordered by increasing complexity):
-  - A .npack file
+- A .npack file
     - Can be unpacked using the nSuite wizard
 
-  - A lightweight portable package/installer
+- A lightweight portable package/installer
     - Extracts to a folder in the directory it runs from
     - Runs in a terminal, no user input
     - Doesn't modify registry - no uninstaller
     - .npack file embedded within
 
-  - A fully-fledged installer with a GUI (Windows)
+- A fully-fledged installer with a GUI (Windows)
     - Customizable by writing attributes into a manifest file
     - Generates an uninstaller (adds it to the registry)
     - .npack file embedded within
@@ -65,10 +65,10 @@ All input directories are parsed into NST::Directory objects, so the "old" and/o
 
 
 # Dependencies/Requirements/Acknowledgements
-  - C++17
-  - 64-bit
-  - Windows 7/8/10
-  - Uses [CMake](https://cmake.org/)
-  - Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
-  - Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
-  - Using BSD-3-Clause license
+- C++17
+- 64-bit
+- Windows 7/8/10
+- Uses [CMake](https://cmake.org/)
+- Documentation built using [Doxygen](http://www.doxygen.nl/index.html) (optional)
+- Requires the [LZ4 - Compression Library](https://github.com/lz4/lz4) to build, but **does not** come bundled with it
+- Using BSD-3-Clause license

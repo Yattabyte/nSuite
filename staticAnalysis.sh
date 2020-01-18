@@ -15,7 +15,7 @@ Starting Memory Sanitizer (valgrind)
 **************************************************"
 valgrind --version
 ctest --verbose --output-on-failure -j $(nproc) -D ExperimentalMemCheck .
-echo "$(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)"
+echo $(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)
 
 # Address Sanitizers
 echo "
