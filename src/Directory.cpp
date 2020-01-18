@@ -19,14 +19,14 @@ Directory::Directory(const filepath& path, const std::vector<std::string>& exclu
 
 void Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
-    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exclusions) {
-        constexpr auto check_exclusion = [](const filepath& path, const std::vector<std::string>& exclusions) {
-            const auto extension = path.extension();
-            for (const auto& excl : exclusions) {
+    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
+        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) {
+            const auto extension = p.extension();
+            for (const auto& excl : e) {
                 if (excl.empty())
                     continue;
                 // Compare Paths && Extensions
-                if (path == excl || extension == excl) {
+                if (p == excl || extension == excl) {
                     // Don't use path
                     return false;
                 }
@@ -42,7 +42,7 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
                     path = path.substr(
                         directory.string().size(), path.size() - directory.string().size()
                     );
-                    if (check_exclusion(path, exclusions))
+                    if (check_exclusion(path, exc))
                         paths.emplace_back(entry);
                 }
         return paths;
