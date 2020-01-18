@@ -59,15 +59,15 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
                 throw std::runtime_error("Cannot read the file" + entry.path().string());
 
             fileOnDisk.read(
-                fileBuffer.charArray(), 
+                fileBuffer.charArray(),
                 static_cast<std::streamsize>(fileBuffer.size())
             );
             fileOnDisk.close();
 
             m_files.emplace_back(
-                VirtualFile{ 
+                VirtualFile{
                     (std::filesystem::relative(entry.path(), path)).string(),
-                    std::move(fileBuffer) 
+                    std::move(fileBuffer)
                 }
             );
         }
@@ -86,7 +86,7 @@ void Directory::out_folder(const filepath& path)
             throw std::runtime_error("Cannot write the file" + file.m_relativePath);
 
         fileOnDisk.write(
-            file.m_data.charArray(), 
+            file.m_data.charArray(),
             static_cast<std::streamsize>(file.m_data.size())
         );
         fileOnDisk.close();

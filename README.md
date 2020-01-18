@@ -1,13 +1,13 @@
 # nSuite
 
-This library allows users to package, compress, and diff buffers & directories. 
+This library allows users to package, compress, and diff buffers & directories.
 The code is written in C++17, and makes heavy use of [std::filesystem](https://en.cppreference.com/w/cpp/header/filesystem).
 
 Example programs are provided which implement the packing, unpacking, diffing, and patching operations defined in this library.
 
 # Library Status
 
-***Table 1:** Descriptions of continuous integration environments in use.*  
+***Table 1:** Descriptions of continuous integration environments in use.*
 
 | CI Environment   | Tasks            | Status |
 |------------------|------------------|-------:|
@@ -17,9 +17,9 @@ Example programs are provided which implement the packing, unpacking, diffing, a
 | CodeFactor       | Code Review      | [![CodeFactor](https://www.codefactor.io/repository/github/yattabyte/nsuite/badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
 | Codacy           | Code Review      | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b38f4eaa90d4b238942d6daaf578655)](https://www.codacy.com/manual/Yattabyte/nSuite) |
 | LGTM             | Code Review      | [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/Yattabyte/nSuite.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Yattabyte/nSuite/context:cpp) |
-| CodeDocs         | Documentation    | [![CodeDocs Badge](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/) | 
+| CodeDocs         | Documentation    | [![CodeDocs Badge](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/) |
 
-***Table 2:** List of operating systems and compilers supported.*  
+***Table 2:** List of operating systems and compilers supported.*
 
 | Operating System | Compiler             | Debug/Release |
 |------------------|:---------------------|:-------------:|
@@ -56,10 +56,10 @@ The nSuite wizard can package directories in 3 ways (ordered by increasing compl
   - Customizable by writing attributes into a manifest file
   - Generates an uninstaller (adds it to the registry)
   - .npack file embedded within
-  
+
 
 ### Diffing
-The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.  
+The nSuite Wizard can also generate diff files, which can either be applied to another directory using the wizard, or by using the stand-alone example updater tool.
 All input directories are parsed into NST::Directory objects, so the "old" and/or "new" directories can be actual folders on disk, .npack files, or programs with packages embedded in them (e.g. installers made by nSuite)
 
 

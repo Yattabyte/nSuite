@@ -1,12 +1,12 @@
-platform: 
+platform:
   - x64
-  
+
 image:
   - Visual Studio 2017
   - Visual Studio 2019
-    
+
 build_script:
-- cmd: cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DBUILD_SHARED_LIBS=0 . 
+- cmd: cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DBUILD_SHARED_LIBS=0 .
 
 # Debug Build
 - cmd: cmake --build . --clean-first --config Debug

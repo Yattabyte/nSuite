@@ -740,7 +740,7 @@ Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMem
     // Try to decompress the diff buffer
     constexpr auto diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
-    const auto patchBuffer = BufferView{dataSize, &diffMemory.bytes()[diffHeaderSize]}.decompress();
+    const auto patchBuffer = BufferView{ dataSize, &diffMemory.bytes()[diffHeaderSize] }.decompress();
     // Convert buffer into instructions
     Buffer bufferNew(header.m_targetSize);
     size_t bytesRead(0ULL);
