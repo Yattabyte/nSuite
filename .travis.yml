@@ -91,12 +91,7 @@ install:
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
   
-  - |
-    # Update CMake
-    CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.16.2/cmake-3.16.2.tar.gz"
-    mkdir cmake && travis_retry wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-    export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-  
+  - |  
     if [ ${CODE_COVERAGE} = true ]; then
       # Download LCOV
       LCOV_URL="https://github.com/linux-test-project/lcov/releases/download/v1.14/lcov-1.14.tar.gz"
