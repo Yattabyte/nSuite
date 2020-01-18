@@ -109,7 +109,7 @@ install:
       wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90
       cmake -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} .
       cmake --build . --clean-first -- -j $(nproc)
-	  export PATH=${DEPS_DIR}/cppcheck-1.90/bin:${PATH}
+      export PATH=${DEPS_DIR}/cppcheck-1.90/bin:${PATH}
       cd ..
     fi
   
