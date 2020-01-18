@@ -107,8 +107,7 @@ install:
       #wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
       # Download latest cppcheck
       wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90
-      cmake -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} .
-      cmake --build . --clean-first -- -j $(nproc)
+	  sudo make install
       export PATH=${DEPS_DIR}/cppcheck-1.90/bin:${PATH}
       cd ..
     fi
