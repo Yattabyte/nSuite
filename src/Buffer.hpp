@@ -42,19 +42,19 @@ namespace yatta {
         // Public Inquiry Methods
         /** Check if this buffer is empty - has no data allocated.
         @return						true if no memory has been allocated, false otherwise. */
-        [[nodiscard]] bool empty() const noexcept;
+        bool empty() const noexcept;
         /** Retrieves whether or not this buffer's size is greater than zero.
         @return						true if has memory allocated, false otherwise. */
-        [[nodiscard]] bool hasData() const noexcept;
+        bool hasData() const noexcept;
         /** Returns the size of memory allocated by this buffer.
         @return						number of bytes allocated. */
-        [[nodiscard]] size_t size() const noexcept;
+        size_t size() const noexcept;
         /** Returns the total size + reserved capacity of memory allocated by this buffer.
         @return						actual number of bytes allocated. */
-        [[nodiscard]] size_t capacity() const noexcept;
+        size_t capacity() const noexcept;
         /** Generates a hash value derived from this buffer's contents.
         @return						hash value for this buffer. */
-        [[nodiscard]] size_t hash() const;
+        size_t hash() const;
 
 
         // Public Manipulation Methods

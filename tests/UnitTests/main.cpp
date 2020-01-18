@@ -99,7 +99,6 @@ static bool Buffer_ConstructionTest()
 
 static bool Buffer_AssignmentTest()
 {
-
     Buffer bufferA(1234ULL);
     Buffer bufferB(123456789ULL);
     bufferA[0] = static_cast<std::byte>(255U);
@@ -117,7 +116,8 @@ static bool Buffer_AssignmentTest()
             // Ensure we throw if going out of bounds
             try {
                 bufferA[1234] = static_cast<std::byte>(64U);
-                const auto constLookup = bufferA[1234];
+                const std::byte constLookup = bufferA[1234];
+                bufferA[0] = constLookup;
             }
             catch (const std::runtime_error&) {
                 std::cout << "Buffer Assignment Test - Success\n";
@@ -211,7 +211,8 @@ static bool Buffer_CompressionTest()
     try {
         Buffer buffer;
         const auto badResult1 = buffer.compress();
-        const auto badResult2 = buffer.decompress();
+        const auto badResult2 = badResult1.decompress();
+        badResult2.empty();
     }
     catch (const std::runtime_error&) {
         // The structure we'll compress and decompress
@@ -237,7 +238,6 @@ static bool Buffer_CompressionTest()
             std::cout << "Buffer Compression/Decompression Test - Success\n";
             return true; // Success
         }
-
     }
 
     std::cout << "Buffer Compression/Decompression Test - Failure\n";
@@ -250,7 +250,8 @@ static bool Buffer_DiffTest()
     try {
         Buffer bufferA, bufferB;
         const auto badResult1 = bufferA.diff(bufferB, 4);
-        const auto badResult2 = bufferA.patch(bufferB);
+        const auto badResult2 = badResult1.patch(bufferB);
+        badResult2.empty();
     }
     catch (const std::runtime_error&) {
         struct Foo {
@@ -278,7 +279,7 @@ static bool Buffer_DiffTest()
             std::cout << "Buffer Diff/Patch Test - Success\n";
             return true; // Success
         }
-    }   
+    }
 
     std::cout << "Buffer Diff/Patch Test - Failure\n";
     return false; // Failure
