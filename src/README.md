@@ -13,10 +13,10 @@ Provides data(), cArray(), and operator[]() methods to access underlying data. C
 
 
 ### Buffer Manipulation Methods
-  - compress
-  - decompress
-  - diff
-  - patch
+- compress
+- decompress
+- diff
+- patch
 
 
 ## Directory Overview
@@ -25,10 +25,10 @@ It contains a list of files and their attributes, as well as all their data for 
 
 
 ### Directory Manipulation Methods
-  - make_package
-  - apply_folder
-  - make_delta
-  - apply_delta
+- make_package
+- apply_folder
+- make_delta
+- apply_delta
 
 
 ## Code Examples

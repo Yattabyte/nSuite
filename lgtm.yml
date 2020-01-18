@@ -1,0 +1,8 @@
+path_classifiers:
+  test:
+    - src/
+    - tests/
+    - exclude:
+      - 'src/lz4/**'
+      - 'docs/**'
+      - 'deprecated/**'
