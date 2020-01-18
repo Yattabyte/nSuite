@@ -106,7 +106,7 @@ install:
       # Download latest valgrind
       #wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
       # Download latest cppcheck
-      wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && make && sudo make install && cd ..
+      wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && make & cd. .
     fi
   
   - cd ${TRAVIS_BUILD_DIR}
