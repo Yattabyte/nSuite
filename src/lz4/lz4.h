@@ -36,6 +36,7 @@
 extern "C" {
 #endif
 
+#pragma once
 #ifndef LZ4_H_2983827168210
 #define LZ4_H_2983827168210
 
