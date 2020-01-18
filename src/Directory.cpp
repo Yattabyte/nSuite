@@ -38,11 +38,11 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
         if (std::filesystem::is_directory(directory))
             for (const auto& entry : directory_rec_itt(directory))
                 if (entry.is_regular_file()) {
-                    auto path = entry.path().string();
-                    path = path.substr(
-                        directory.string().size(), path.size() - directory.string().size()
+                    auto subpath = entry.path().string();
+                    subpath = subpath.substr(
+                        directory.string().size(), subpath.size() - directory.string().size()
                     );
-                    if (check_exclusion(path, exc))
+                    if (check_exclusion(subpath, exc))
                         paths.emplace_back(entry);
                 }
         return paths;
