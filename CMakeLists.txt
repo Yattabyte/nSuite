@@ -2,7 +2,7 @@
 ### Yatta ###
 #############
 cmake_minimum_required(VERSION 3.9.2)
-project(Yatta VERSION 1.6.25  DESCRIPTION "Library for compressing and diffing buffers and files.")
+project(Yatta VERSION 1.6.26  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 # Set mandatory requirements
@@ -29,7 +29,7 @@ if(MSVC)
 	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 	set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER Other)
 elseif(CMAKE_COMPILER_IS_GNUCC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wshadow -Wunused-variable -Wunused-parameter -Wunused-function -Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wshadow -Wno-unused-value -Wunused-variable -Wunused-parameter -Wunused-function -Wno-system-headers -Wno-deprecated -Woverloaded-virtual -Wwrite-strings -Wno-invalid-token-paste -Wno-unknown-pragmas")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     #if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

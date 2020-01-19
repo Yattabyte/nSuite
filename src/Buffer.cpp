@@ -349,7 +349,7 @@ void Buffer::shrink()
 
     // Swap data containers
     m_capacity = m_size;
-    m_data = std::move(newData);
+    std::swap(m_data, newData);
 }
 
 void Buffer::clear() noexcept

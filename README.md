@@ -41,6 +41,5 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 | Build System         | [CMake](https://cmake.org/)                 | YES         |
 | External Libraries   | [LZ4](https://github.com/lz4/lz4)           | PRE-BUNDLED |
 | Documentation System | [Doxygen](http://www.doxygen.nl/index.html) | OPTIONAL    |
-| Documentation System | [Doxygen](http://www.doxygen.nl/index.html) | OPTIONAL    |
 
 ***This library is licensed under the BSD-3-Clause.***
