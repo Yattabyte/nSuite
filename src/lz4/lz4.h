@@ -673,7 +673,7 @@ extern "C" {
      *  Deprecated functions make the compiler generate a warning when invoked.
      *  This is meant to invite users to update their source code.
      *  Should deprecation warnings be a problem, it is generally possible to disable them,
-     *  typically with -Wno-deprecated-declarations for gcc
+     *  typically with -Wno-deprecated-declarations for GCC
      *  or _CRT_SECURE_NO_WARNINGS in Visual.
      *
      *  Another method is to define LZ4_DISABLE_DEPRECATE_WARNINGS

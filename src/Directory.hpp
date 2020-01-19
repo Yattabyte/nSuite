@@ -22,18 +22,22 @@ namespace yatta {
         @param	exclusions			(optional) list of filenames/types to skip. "string" matches relative path, ".ext" matches extension. */
         explicit Directory(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
         /***/
+        explicit Directory(const Buffer& packageBuffer);
+        /***/
         Directory(const Directory& other) = default;
         /***/
         Directory(Directory&& other) noexcept = default;
 
 
-        //
-        /***/
-        void in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
-        /***/
-        void out_folder(const std::filesystem::path& path);
-        /** Clears out the contents of this virtual directory, freeing its memory. */
-        void clear() noexcept;
+        // Public Assignment Operators
+        /** Copy-assignment operator.
+        @param	other				the directory to copy from.
+        @return						reference to this. */
+        Directory& operator=(const Directory& other) = default;
+        /** Move-assignment operator.
+        @param	other				the directory to move from.
+        @return						reference to this. */
+        Directory& operator=(Directory&& other) noexcept = default;
 
 
         // Public Inquiry Methods
@@ -54,6 +58,19 @@ namespace yatta {
         size_t hash() const noexcept;
         /***/
         static std::string GetRunningDirectory() noexcept;
+
+
+        // Public Manipulation Methods
+        /** Clears out the contents of this virtual directory, freeing its memory. */
+        void clear() noexcept;
+        /***/
+        void in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
+        /***/
+        void in_package(const Buffer& packageBuffer);
+        /***/
+        void out_folder(const std::filesystem::path& path) const;
+        /***/
+        Buffer out_package(const std::string& folderName) const;
 
 
     protected:

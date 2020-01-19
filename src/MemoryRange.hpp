@@ -85,6 +85,22 @@ namespace yatta {
                 std::copy(dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
             }
         }
+        template <>
+        void in_type(const std::string& dataObj, const size_t byteIndex) {
+            // Ensure pointers are valid
+            if (m_dataPtr == nullptr)
+                throw std::runtime_error("Invalid Memory Range (null pointer)");
+
+            // Ensure data won't exceed range
+            const auto stringSize = sizeof(char) * dataObj.size();
+            if ((sizeof(size_t) + stringSize + byteIndex) > m_range)
+                throw std::runtime_error("Memory Range index out of bounds");
+
+            // Copy in string size
+            in_type(dataObj.size(), byteIndex);
+            // Copy in char data
+            in_raw(dataObj.data(), stringSize, byteIndex + sizeof(size_t));
+        }
         /** Copies raw data found in this buffer out to the specified pointer.
         @param	dataPtr				pointer to copy the data into.
         @param	size				the number of bytes to copy.
@@ -113,6 +129,29 @@ namespace yatta {
                 const auto dataObjPtr = reinterpret_cast<std::byte*>(&dataObj);
                 std::copy(&m_dataPtr[byteIndex], &m_dataPtr[byteIndex] + sizeof(T), dataObjPtr);
             }
+        }
+        template <>
+        void out_type(std::string& dataObj, const size_t byteIndex) const {
+            // Ensure pointers are valid
+            if (m_dataPtr == nullptr)
+                throw std::runtime_error("Invalid Memory Range (null pointer)");
+
+            // Ensure data won't exceed range
+            if ((sizeof(size_t) + byteIndex) > m_range)
+                throw std::runtime_error("Memory Range index out of bounds");
+
+            // Copy out string size
+            size_t stringSize(0ULL);
+            out_type(stringSize, byteIndex);
+
+            // Ensure string won't exceed range
+            if ((sizeof(size_t) + (sizeof(char) * stringSize) + byteIndex) > m_range)
+                throw std::runtime_error("Memory Range index out of bounds");
+
+            // Copy out char data
+            const auto chars = std::make_unique<char[]>(stringSize);
+            out_raw(chars.get(), stringSize, byteIndex + sizeof(size_t));
+            dataObj = std::string(chars.get(), stringSize);
         }
 
 

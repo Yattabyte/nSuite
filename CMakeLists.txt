@@ -2,7 +2,7 @@
 ### Yatta ###
 #############
 cmake_minimum_required(VERSION 3.9.2)
-project(Yatta VERSION 1.6.23  DESCRIPTION "Library for compressing and diffing buffers and files.")
+project(Yatta VERSION 1.6.24  DESCRIPTION "Library for compressing and diffing buffers and files.")
 include(ExternalProject)
 
 # Set mandatory requirements
@@ -13,8 +13,8 @@ set(USE32BIT FALSE)
 set(CMAKE_TOOLCHAIN_FILE 64bit.toolchain)
 option(EXAMPLES "Build Examples" OFF)
 option(BUILD_TESTING "Build Unit Tests" ON)
-option(CODE_COVERAGE "Enable code coverage reporting for gcc/clang" OFF)
-option(STATIC_ANALYSIS "Enable static code analysis using gcc" OFF)
+option(CODE_COVERAGE "Enable code coverage reporting for GCC/Clang" OFF)
+option(STATIC_ANALYSIS "Enable static code analysis using GCC" OFF)
 
 
 # Set compilation flags per-compiler

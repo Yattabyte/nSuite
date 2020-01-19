@@ -28,23 +28,24 @@ static bool MemoryRange_MethodTest();
 static bool MemoryRange_IOTest();
 static bool Directory_ConstructionTest();
 static bool Directory_MethodTest();
+static bool Directory_IOTest();
 
 
 template <typename FirstFunc, typename ...RestFuncs>
-static bool RunTests(const FirstFunc& firstFunc, const RestFuncs&... restFuncs)
+static bool RunTests(const FirstFunc& firstFunc, const RestFuncs&... restFuncs) noexcept
 {
     auto result = firstFunc();
 
     // For each remaining member of the parameter pack, recursively call this function
     if constexpr (sizeof...(restFuncs) > 0) {
         const auto restResults = RunTests(restFuncs...);
-        result = bool(result && restResults);
+        result = result && restResults;
     }
 
     return result;
 }
 
-int main()
+int main() noexcept
 {
     return RunTests(
         Buffer_ConstructionTest,
@@ -67,7 +68,8 @@ int main()
         MemoryRange_IOTest,
 
         Directory_ConstructionTest,
-        Directory_MethodTest
+        Directory_MethodTest,
+        Directory_IOTest
     ) ? 0 : 1;
 }
 
@@ -145,9 +147,9 @@ static bool Buffer_MethodTest()
                     // Ensure we can hash the buffer
                     if (const auto hash = buffer.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                         // Ensure we can return a char array
-                        if (const auto cArray = buffer.charArray(); cArray != nullptr) {
+                        if (const char* const cArray = buffer.charArray(); cArray != nullptr) {
                             // Ensure we can return a byte array
-                            if (const auto bytes = buffer.bytes(); bytes != nullptr) {
+                            if (const std::byte* const bytes = buffer.bytes(); bytes != nullptr) {
                                 // Ensure both char array and byte array are the same underlying pointer
                                 if (static_cast<const void*>(cArray) == static_cast<const void*>(bytes)) {
                                     // Ensure we can shrink the buffer
@@ -179,7 +181,7 @@ static bool Buffer_IOTest()
     // Ensure we can't perform IO on an empty buffer
     try {
         Buffer buffer;
-        size_t largeValue(123456789ULL);
+        constexpr size_t largeValue(123456789ULL);
         buffer.in_type(largeValue);
     }
     catch (std::runtime_error&) {
@@ -304,14 +306,14 @@ static bool BufferView_ConstructionTest()
 {
     // Ensure we can make empty buffer views
     Buffer buffer;
-    BufferView bView(buffer);
+    const BufferView bView(buffer);
     if (bView.empty()) {
         // Ensure we can make a large buffer view with a manual size
         Buffer largeBuffer(1234ULL);
         BufferView largeBView(largeBuffer.size(), largeBuffer.bytes());
         if (largeBView.hasData()) {
             // Ensure move constructor works
-            BufferView moveBView(BufferView(largeBuffer.size(), largeBuffer.bytes()));
+            const BufferView moveBView(BufferView(largeBuffer.size(), largeBuffer.bytes()));
             if (moveBView.size() == 1234ULL) {
                 // Ensure copy constructor works
                 largeBView[0] = static_cast<std::byte>(255U);
@@ -370,9 +372,9 @@ static bool BufferView_MethodTest()
                 // Ensure we can hash the buffer view
                 if (const auto hash = bView.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                     // Ensure we can return a char array
-                    if (const auto cArray = bView.charArray(); cArray != nullptr) {
+                    if (const char* const cArray = bView.charArray(); cArray != nullptr) {
                         // Ensure we can return a byte array
-                        if (const auto bytes = bView.bytes(); bytes != nullptr) {
+                        if (const std::byte* const bytes = bView.bytes(); bytes != nullptr) {
                             // Ensure both char array and byte array are the same underlying pointer
                             if (static_cast<const void*>(cArray) == static_cast<const void*>(bytes)) {
                                 std::cout << "Buffer-View Method Test - Success\n";
@@ -497,14 +499,14 @@ static bool MemoryRange_ConstructionTest()
 {
     // Ensure we can make empty memory ranges
     Buffer buffer;
-    MemoryRange memRange(buffer.size(), buffer.bytes());
+    const MemoryRange memRange(buffer.size(), buffer.bytes());
     if (memRange.empty()) {
         // Ensure we can make a large memory range
         Buffer largeBuffer(1234ULL);
-        MemoryRange largeMemRange(largeBuffer.size(), largeBuffer.bytes());
+        const MemoryRange largeMemRange(largeBuffer.size(), largeBuffer.bytes());
         if (largeMemRange.hasData()) {
             // Ensure move constructor works
-            MemoryRange moveMemRange(MemoryRange(largeBuffer.size(), largeBuffer.bytes()));
+            const MemoryRange moveMemRange(MemoryRange(largeBuffer.size(), largeBuffer.bytes()));
             if (moveMemRange.size() == 1234ULL) {
                 // Ensure copy constructor works
                 largeBuffer[0] = static_cast<std::byte>(255U);
@@ -566,9 +568,9 @@ static bool MemoryRange_MethodTest()
                 // Ensure we can hash the memory range
                 if (const auto hash = memRange.hash(); hash != 0ULL && hash != yatta::ZeroHash) {
                     // Ensure we can return a char array
-                    if (const auto cArray = memRange.charArray(); cArray != nullptr) {
+                    if (const char* const cArray = memRange.charArray(); cArray != nullptr) {
                         // Ensure we can return a byte array
-                        if (const auto bytes = memRange.bytes(); bytes != nullptr) {
+                        if (const std::byte* const bytes = memRange.bytes(); bytes != nullptr) {
                             // Ensure both char array and byte array are the same underlying pointer
                             if (static_cast<const void*>(cArray) == static_cast<const void*>(bytes)) {
                                 std::cout << "Memory Range Method Test - Success\n";
@@ -648,27 +650,64 @@ static bool Directory_MethodTest()
     // Verify empty directories
     Directory directory;
     if (directory.empty()) {
-        // Verify that we can add another multiple folders
+        // Verify that we can input folders
+        directory.in_folder(Directory::GetRunningDirectory() + "/old");
+        if (directory.hasFiles()) {
+            // Ensure we have 4 files all together
+            if (directory.fileCount() == 4ULL) {
+                // Ensure the total size is as expected
+                if (directory.fileSize() == 147777ULL) {
+                    // Ensure we can hash an actual directory
+                    if (const auto hash = directory.hash(); hash != yatta::ZeroHash) {
+                        // Ensure we can clear a directory
+                        directory.clear();
+                        if (directory.empty()) {
+                            // Ensure we can hash an empty directory
+                            if (directory.hash() == yatta::ZeroHash) {
+                                std::cout << "Directory Method Test - Success\n";
+                                return true; // Success
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    std::cout << "Directory Method Test - Failure\n";
+    return false; // Failure
+}
+
+static bool Directory_IOTest()
+{
+    // Verify empty directories
+    Directory directory;
+    if (directory.empty()) {
+        // Verify that we can add multiple folders together
         directory.in_folder(Directory::GetRunningDirectory() + "/old");
         directory.in_folder(Directory::GetRunningDirectory() + "/new");
-        if (directory.hasFiles()) {
-            // Ensure we have 8 files all together
-            if (directory.fileCount() == 8ULL) {
-                // Ensure the total size is as expected
-                if (directory.fileSize() == 189747ULL) {
-                    // Ensure we can clear a directory
-                    directory.clear();
-                    if (directory.empty()) {
-                        // Ensure we can hash an empty directory
-                        if (directory.hash() == yatta::ZeroHash) {
-                            // Ensure we can hash an actual directory
-                            directory.in_folder(Directory::GetRunningDirectory() + "/old");
-                            if (const auto oldHash = directory.hash(); oldHash != yatta::ZeroHash) {
-                                // Overwrite the /old folder, make sure hashes match
-                                directory.out_folder(Directory::GetRunningDirectory() + "/old");
-                                Directory newOldDirectory(Directory::GetRunningDirectory() + "/old");
-                                if (const auto newHash = newOldDirectory.hash(); newHash != yatta::ZeroHash && newHash == oldHash) {
-                                    std::cout << "Directory Method Test - Success\n";
+        // Ensure we have 8 files all together
+        if (directory.fileCount() == 8ULL) {
+            // Ensure the total size is as expected
+            if (directory.fileSize() == 189747ULL) {
+                // Reset the directory to just the 'old' folder, hash it
+                directory = Directory(Directory::GetRunningDirectory() + "/old");
+                if (const auto oldHash = directory.hash(); oldHash != yatta::ZeroHash) {
+                    // Overwrite the /old folder, make sure hashes match
+                    directory.out_folder(Directory::GetRunningDirectory() + "/old");
+                    directory = Directory(Directory::GetRunningDirectory() + "/old");
+                    if (const auto newHash = directory.hash(); newHash != yatta::ZeroHash && newHash == oldHash) {
+                        // Ensure we can dump a directory as a package
+                        Buffer package = directory.out_package("package");
+                        if (package.hasData()) {
+                            // Ensure we can import a package
+                            directory.clear();
+                            directory.in_package(package);
+                            // Ensure this new directory matches the old one
+                            if (directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL) {
+                                // Ensure new hash matches
+                                if (const auto packHash = directory.hash(); newHash != yatta::ZeroHash && packHash == newHash) {
+                                    std::cout << "Directory IO Test - Success\n";
                                     return true; // Success
                                 }
                             }
@@ -679,6 +718,6 @@ static bool Directory_MethodTest()
         }
     }
 
-    std::cout << "Directory Method Test - Failure\n";
+    std::cout << "Directory IO Test - Failure\n";
     return false; // Failure
 }

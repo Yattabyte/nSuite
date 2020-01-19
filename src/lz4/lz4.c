@@ -137,7 +137,7 @@
 #endif /* LZ4_FORCE_INLINE */
 
      /* LZ4_FORCE_O2_GCC_PPC64LE and LZ4_FORCE_O2_INLINE_GCC_PPC64LE
-      * gcc on ppc64le generates an unrolled SIMDized loop for LZ4_wildCopy8,
+      * GCC on ppc64le generates an unrolled SIMDized loop for LZ4_wildCopy8,
       * together with a simple 8-byte copy loop as a fall-back path.
       * However, this optimization hurts the decompression speed by >30%,
       * because the execution does not go to the optimized loop
@@ -145,7 +145,7 @@
       * before going to the fall-back path become useless overhead.
       * This optimization happens only with the -O3 flag, and -O2 generates
       * a simple 8-byte copy loop.
-      * With gcc on ppc64le, all of the LZ4_decompress_* and LZ4_wildCopy8
+      * With GCC on ppc64le, all of the LZ4_decompress_* and LZ4_wildCopy8
       * functions are annotated with __attribute__((optimize("O2"))),
       * and also LZ4_wildCopy8 is forcibly inlined, so that the O2 attribute
       * of LZ4_wildCopy8 does not affect the compression speed.
@@ -297,7 +297,7 @@ static void LZ4_write32(void* memPtr, U32 value) { *(U32*)memPtr = value; }
 #elif defined(LZ4_FORCE_MEMORY_ACCESS) && (LZ4_FORCE_MEMORY_ACCESS==1)
 
 /* __pack instructions are safer, but compiler specific, hence potentially problematic for some compilers */
-/* currently only defined for gcc and icc */
+/* currently only defined for GCC and icc */
 typedef union { U16 u16; U32 u32; reg_t uArch; } __attribute__((packed)) unalign;
 
 static U16 LZ4_read16(const void* ptr) { return ((const unalign*)ptr)->u16; }
@@ -1284,7 +1284,7 @@ int LZ4_compress_default(const char* src, char* dst, int srcSize, int maxOutputS
 
 
 /* hidden debug function */
-/* strangely enough, gcc generates faster code when this function is uncommented, even if unused */
+/* strangely enough, GCC generates faster code when this function is uncommented, even if unused */
 int LZ4_compress_fast_force(const char* src, char* dst, int srcSize, int dstCapacity, int acceleration)
 {
     LZ4_stream_t ctx;

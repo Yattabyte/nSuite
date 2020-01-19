@@ -8,272 +8,18 @@
 #include <numeric>
 #include <vector>
 
+
+// Convenience definitions
 using yatta::Buffer;
 using yatta::BufferView;
 using yatta::MemoryRange;
 
-
-// Public (de)Constructors
-
-Buffer::Buffer(const size_t& size) :
-    m_size(size),
-    m_capacity(size * 2ULL),
-    m_data(std::make_unique<std::byte[]>(m_capacity))
-{
-}
-
-Buffer::Buffer(const Buffer& other) :
-    m_size(other.m_size),
-    m_capacity(other.m_capacity),
-    m_data(std::make_unique<std::byte[]>(other.m_capacity))
-{
-    std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
-}
-
-Buffer::Buffer(Buffer&& other) noexcept :
-    m_size(other.m_size),
-    m_capacity(other.m_capacity),
-    m_data(std::move(other.m_data))
-{
-    other.m_size = 0ULL;
-    other.m_capacity = 0ULL;
-    other.m_data = nullptr;
-}
-
-
-// Public Assignment Operators
-
-Buffer& Buffer::operator=(const Buffer& other)
-{
-    if (this != &other) {
-        m_size = other.m_size;
-        m_capacity = other.m_capacity;
-        m_data = std::make_unique<std::byte[]>(other.m_capacity);
-        std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
-    }
-    return *this;
-}
-
-Buffer& Buffer::operator=(Buffer&& other) noexcept
-{
-    if (this != &other) {
-        m_size = other.m_size;
-        m_capacity = other.m_capacity;
-        m_data = std::move(other.m_data);
-
-        other.m_size = 0ULL;
-        other.m_capacity = 0ULL;
-        other.m_data = nullptr;
-    }
-    return *this;
-}
-
-
-// Public Inquiry Methods
-
-bool Buffer::empty() const noexcept
-{
-    return m_data == nullptr || m_size == 0ULL || m_capacity == 0ULL;
-}
-
-bool Buffer::hasData() const noexcept
-{
-    return m_data != nullptr && m_size > 0ULL;
-}
-
-size_t Buffer::size() const noexcept
-{
-    return m_size;
-}
-
-size_t Buffer::capacity() const noexcept
-{
-    return m_capacity;
-}
-
-size_t Buffer::hash() const noexcept
-{
-    return MemoryRange{ m_size, bytes() }.hash();
-}
-
-
-// Public Manipulation Methods
-
-std::byte& Buffer::operator[](const size_t& byteIndex)
-{
-    if (byteIndex >= m_size)
-        throw std::runtime_error("Buffer index out of bounds");
-    return m_data[byteIndex];
-}
-
-const std::byte& Buffer::operator[](const size_t& byteIndex) const
-{
-    if (byteIndex >= m_size)
-        throw std::runtime_error("Buffer index out of bounds");
-    return m_data[byteIndex];
-}
-
-char* Buffer::charArray() const noexcept
-{
-    return reinterpret_cast<char*>(&m_data[0]);
-}
-
-std::byte* Buffer::bytes() const noexcept
-{
-    return m_data.get();
-}
-
-void Buffer::resize(const size_t& size)
-{
-    // Create the data container if it is missing
-    if (m_data == nullptr) {
-        m_capacity = size * 2ULL;
-        m_data = std::make_unique<std::byte[]>(size * 2ULL);
-    }
-
-    // Check if our previous buffer is too small
-    else if (size > m_capacity) {
-        // Allocate new container
-        auto newData = std::make_unique<std::byte[]>(size * 2ULL);
-        // Copy over old data
-        std::copy(m_data.get(), m_data.get() + m_size, newData.get());
-        // Swap data containers
-        m_capacity = size * 2ULL;
-        m_data = std::move(newData);
-    }
-
-    m_size = size;
-}
-
-void Buffer::shrink()
-{
-    // Ensure there is data to shrink
-    if (m_data == nullptr)
-        return;
-
-    // Allocate new container
-    auto newData = std::make_unique<std::byte[]>(m_size);
-
-    // Copy over old data
-    std::copy(m_data.get(), m_data.get() + m_size, newData.get());
-
-    // Swap data containers
-    m_capacity = m_size;
-    m_data = std::move(newData);
-}
-
-void Buffer::clear() noexcept
-{
-    m_data.release();
-    m_size = 0ULL;
-    m_capacity = 0ULL;
-    m_data = nullptr;
-}
-
-// Public Derivation Methods
-
-/** Data structure defining a compressed buffer. */
+/** Data structures for buffer compression headers. */
 struct CompressionHeader {
     char m_title[16ULL] = { '\0' };
     size_t m_uncompressedSize = 0ULL;
 };
-
-Buffer Buffer::compress() const
-{
-    return Buffer::compress(*this);
-}
-
-Buffer Buffer::compress(const Buffer& buffer)
-{
-    MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
-    return Buffer::compress(memoryRange);
-}
-
-Buffer Buffer::compress(const MemoryRange& memoryRange)
-{
-    // Ensure this buffer has some data to compress
-    if (memoryRange.empty())
-        throw std::runtime_error("Invalid Memory Range (null pointer)");
-
-    // Create a larger buffer twice the size, plus a unique header
-    const auto sourceSize = memoryRange.size();
-    const auto destinationSize = sourceSize * 2ULL;
-    constexpr auto headerSize = sizeof(CompressionHeader);
-    Buffer compressedBuffer(headerSize + destinationSize);
-    CompressionHeader compressionHeader{ "yatta compress", sourceSize };
-
-    // Copy header data into new buffer at the beginning
-    compressedBuffer.in_type(compressionHeader);
-
-    // Try to compress the source buffer
-    const auto compressedSize = LZ4_compress_default(
-        memoryRange.charArray(),
-        &compressedBuffer.charArray()[headerSize], // Offset by header's amount
-        int(sourceSize),
-        int(destinationSize)
-    );
-
-    // Ensure we have a non-zero sized buffer
-    if (compressedSize == 0ULL)
-        throw std::runtime_error("Compression Failure");
-
-    // We now know the actual compressed size, downsize our oversized buffer to the compressed size
-    compressedBuffer.resize(headerSize + compressedSize);
-    compressedBuffer.shrink();
-
-    // Success
-    return compressedBuffer;
-}
-
-Buffer Buffer::decompress() const
-{
-    return Buffer::decompress(*this);
-}
-
-Buffer yatta::Buffer::decompress(const Buffer& buffer)
-{
-    // Ensure this buffer has some data to compress
-    constexpr auto headerSize = sizeof(CompressionHeader);
-    if (buffer.size() < headerSize)
-        throw std::runtime_error("Invalid Buffer (corrupt)");
-
-    MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
-    return Buffer::decompress(memoryRange);
-}
-
-Buffer yatta::Buffer::decompress(const MemoryRange& memoryRange)
-{
-    // Ensure this buffer has some data to decompress
-    constexpr auto headerSize = sizeof(CompressionHeader);
-    if (memoryRange.size() < headerSize)
-        throw std::runtime_error("Invalid Memory Range (corrupt)");
-
-    // Read in header
-    CompressionHeader header;
-    memoryRange.out_type(header);
-
-    // Ensure header title matches
-    if (std::strcmp(header.m_title, "yatta compress") != 0)
-        throw std::runtime_error("Header Mismatch");
-
-    // Uncompress the remaining data
-    Buffer uncompressedBuffer(header.m_uncompressedSize);
-    const auto decompressionResult = LZ4_decompress_safe(
-        &memoryRange.charArray()[headerSize],
-        uncompressedBuffer.charArray(),
-        int(memoryRange.size() - headerSize),
-        int(uncompressedBuffer.size())
-    );
-
-    // Ensure we have a non-zero sized decompressed buffer
-    if (decompressionResult <= 0)
-        throw std::runtime_error("Decompression Failure");
-
-    // Success
-    return uncompressedBuffer;
-}
-
-/** Data structure defining a differential buffer. */
+/** Data structures for buffer differential headers. */
 struct DifferentialHeader {
     char m_title[16ULL] = { '\0' };
     size_t m_targetSize = 0ULL;
@@ -455,6 +201,261 @@ struct Repeat_Instruction final : public Differential_Instruction {
     std::byte m_value = static_cast<std::byte>(0);
 };
 
+
+// Public (de)Constructors
+
+Buffer::Buffer(const size_t& size) :
+    m_size(size),
+    m_capacity(size * 2ULL),
+    m_data(std::make_unique<std::byte[]>(m_capacity))
+{
+}
+
+Buffer::Buffer(const Buffer& other) :
+    m_size(other.m_size),
+    m_capacity(other.m_capacity),
+    m_data(std::make_unique<std::byte[]>(other.m_capacity))
+{
+    std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
+}
+
+Buffer::Buffer(Buffer&& other) noexcept :
+    m_size(other.m_size),
+    m_capacity(other.m_capacity),
+    m_data(std::move(other.m_data))
+{
+    other.m_size = 0ULL;
+    other.m_capacity = 0ULL;
+    other.m_data = nullptr;
+}
+
+
+// Public Assignment Operators
+
+Buffer& Buffer::operator=(const Buffer& other)
+{
+    if (this != &other) {
+        m_size = other.m_size;
+        m_capacity = other.m_capacity;
+        m_data = std::make_unique<std::byte[]>(other.m_capacity);
+        std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
+    }
+    return *this;
+}
+
+Buffer& Buffer::operator=(Buffer&& other) noexcept
+{
+    if (this != &other) {
+        m_size = other.m_size;
+        m_capacity = other.m_capacity;
+        m_data = std::move(other.m_data);
+
+        other.m_size = 0ULL;
+        other.m_capacity = 0ULL;
+        other.m_data = nullptr;
+    }
+    return *this;
+}
+
+
+// Public Inquiry Methods
+
+bool Buffer::empty() const noexcept
+{
+    return m_data == nullptr || m_size == 0ULL || m_capacity == 0ULL;
+}
+
+bool Buffer::hasData() const noexcept
+{
+    return m_data != nullptr && m_size > 0ULL;
+}
+
+size_t Buffer::size() const noexcept
+{
+    return m_size;
+}
+
+size_t Buffer::capacity() const noexcept
+{
+    return m_capacity;
+}
+
+size_t Buffer::hash() const noexcept
+{
+    return MemoryRange{ m_size, bytes() }.hash();
+}
+
+
+// Public Manipulation Methods
+
+std::byte& Buffer::operator[](const size_t& byteIndex)
+{
+    if (byteIndex >= m_size)
+        throw std::runtime_error("Buffer index out of bounds");
+    return m_data[byteIndex];
+}
+
+const std::byte& Buffer::operator[](const size_t& byteIndex) const
+{
+    if (byteIndex >= m_size)
+        throw std::runtime_error("Buffer index out of bounds");
+    return m_data[byteIndex];
+}
+
+char* Buffer::charArray() const noexcept
+{
+    return reinterpret_cast<char*>(&m_data[0]);
+}
+
+std::byte* Buffer::bytes() const noexcept
+{
+    return m_data.get();
+}
+
+void Buffer::resize(const size_t& size)
+{
+    // Create the data container if it is missing
+    if (m_data == nullptr) {
+        m_capacity = size * 2ULL;
+        m_data = std::make_unique<std::byte[]>(size * 2ULL);
+    }
+
+    // Check if our previous buffer is too small
+    else if (size > m_capacity) {
+        // Allocate new container
+        auto newData = std::make_unique<std::byte[]>(size * 2ULL);
+        // Copy over old data
+        std::copy(m_data.get(), m_data.get() + m_size, newData.get());
+        // Swap data containers
+        m_capacity = size * 2ULL;
+        m_data = std::move(newData);
+    }
+
+    m_size = size;
+}
+
+void Buffer::shrink()
+{
+    // Ensure there is data to shrink
+    if (m_data == nullptr)
+        return;
+
+    // Allocate new container
+    auto newData = std::make_unique<std::byte[]>(m_size);
+
+    // Copy over old data
+    std::copy(m_data.get(), m_data.get() + m_size, newData.get());
+
+    // Swap data containers
+    m_capacity = m_size;
+    m_data = std::move(newData);
+}
+
+void Buffer::clear() noexcept
+{
+    m_data.release();
+    m_size = 0ULL;
+    m_capacity = 0ULL;
+    m_data = nullptr;
+}
+
+// Public Derivation Methods
+
+Buffer Buffer::compress() const
+{
+    return Buffer::compress(*this);
+}
+
+Buffer Buffer::compress(const Buffer& buffer)
+{
+    const MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
+    return Buffer::compress(memoryRange);
+}
+
+Buffer Buffer::compress(const MemoryRange& memoryRange)
+{
+    // Ensure this buffer has some data to compress
+    if (memoryRange.empty())
+        throw std::runtime_error("Invalid Memory Range (null pointer)");
+
+    // Create a larger buffer twice the size, plus a unique header
+    const auto sourceSize = memoryRange.size();
+    const auto destinationSize = sourceSize * 2ULL;
+    constexpr auto headerSize = sizeof(CompressionHeader);
+    Buffer compressedBuffer(headerSize + destinationSize);
+    CompressionHeader compressionHeader{ "yatta compress", sourceSize };
+
+    // Copy header data into new buffer at the beginning
+    compressedBuffer.in_type(compressionHeader);
+
+    // Try to compress the source buffer
+    const auto compressedSize = LZ4_compress_default(
+        memoryRange.charArray(),
+        &compressedBuffer.charArray()[headerSize], // Offset by header's amount
+        int(sourceSize),
+        int(destinationSize)
+    );
+
+    // Ensure we have a non-zero sized buffer
+    if (compressedSize == 0ULL)
+        throw std::runtime_error("Compression Failure");
+
+    // We now know the actual compressed size, downsize our oversized buffer to the compressed size
+    compressedBuffer.resize(headerSize + compressedSize);
+    compressedBuffer.shrink();
+
+    // Success
+    return compressedBuffer;
+}
+
+Buffer Buffer::decompress() const
+{
+    return Buffer::decompress(*this);
+}
+
+Buffer Buffer::decompress(const Buffer& buffer)
+{
+    // Ensure this buffer has some data to compress
+    constexpr auto headerSize = sizeof(CompressionHeader);
+    if (buffer.size() < headerSize)
+        throw std::runtime_error("Invalid Buffer (corrupt)");
+
+    const MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
+    return Buffer::decompress(memoryRange);
+}
+
+Buffer Buffer::decompress(const MemoryRange& memoryRange)
+{
+    // Ensure this buffer has some data to decompress
+    constexpr auto headerSize = sizeof(CompressionHeader);
+    if (memoryRange.size() < headerSize)
+        throw std::runtime_error("Invalid Memory Range (corrupt)");
+
+    // Read in header
+    CompressionHeader header;
+    memoryRange.out_type(header);
+
+    // Ensure header title matches
+    if (std::strcmp(header.m_title, "yatta compress") != 0)
+        throw std::runtime_error("Header Mismatch");
+
+    // Uncompress the remaining data
+    Buffer uncompressedBuffer(header.m_uncompressedSize);
+    const auto decompressionResult = LZ4_decompress_safe(
+        &memoryRange.charArray()[headerSize],
+        uncompressedBuffer.charArray(),
+        int(memoryRange.size() - headerSize),
+        int(uncompressedBuffer.size())
+    );
+
+    // Ensure we have a non-zero sized decompressed buffer
+    if (decompressionResult <= 0)
+        throw std::runtime_error("Decompression Failure");
+
+    // Success
+    return uncompressedBuffer;
+}
+
 Buffer Buffer::diff(const Buffer& target, const size_t& maxThreads) const
 {
     return Buffer::diff(*this, target, maxThreads);
@@ -466,8 +467,8 @@ Buffer Buffer::diff(const Buffer& source, const Buffer& target, const size_t& ma
     if (source.empty() && target.empty())
         throw std::runtime_error("Invalid arguments, expected at least one non-empty buffer");
 
-    MemoryRange sourceRange{ source.size(), source.bytes() };
-    MemoryRange destinationRange{ target.size(), target.bytes() };
+    const MemoryRange sourceRange{ source.size(), source.bytes() };
+    const MemoryRange destinationRange{ target.size(), target.bytes() };
     return Buffer::diff(sourceRange, destinationRange, maxThreads);
 }
 
@@ -718,8 +719,8 @@ Buffer Buffer::patch(const Buffer& diffBuffer) const
 
 Buffer Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer)
 {
-    MemoryRange sourceRange{ sourceBuffer.size(), sourceBuffer.bytes() };
-    MemoryRange diffRange{ diffBuffer.size(), diffBuffer.bytes() };
+    const MemoryRange sourceRange{ sourceBuffer.size(), sourceBuffer.bytes() };
+    const MemoryRange diffRange{ diffBuffer.size(), diffBuffer.bytes() };
     return Buffer::patch(sourceRange, diffRange);
 }
 
