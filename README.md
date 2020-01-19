@@ -30,7 +30,7 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 | Operating System | Compiler             | Debug/Release |
 |:-----------------|:--------------------:|:-------------:|
 | Linux (x64)      | GCC 8/9, Clang 7/8/9 |      BOTH     |
-| Windows (x64)    | MSVC 2017/2019       |      BOTH     |
+| Windows (x64)    | MSVC 2017/2019, LLVM |      BOTH     |
 
 ***Table 3:** List of all other requirements and dependencies.*
 

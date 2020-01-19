@@ -62,7 +62,8 @@ struct Copy_Instruction final : public Differential_Instruction {
         return sizeof(char) + (sizeof(size_t) * 3ULL);
     }
     void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
-        auto a = m_index, b = m_beginRead;
+        auto a = m_index;
+        auto b = m_beginRead;
         while (a < bufferNew.size() && b < m_endRead && b < bufferOld.size()) {
             bufferNew[a] = bufferOld[b];
             ++a;

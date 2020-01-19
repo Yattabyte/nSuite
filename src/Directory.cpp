@@ -190,7 +190,7 @@ void Directory::in_package(const Buffer& packageBuffer)
         byteIndex += sizeof(size_t) + (sizeof(char) * file.m_relativePath.size());
 
         // Write the file size in bytes, into the archive
-        size_t bufferSize(0ull);
+        size_t bufferSize(0ULL);
         filebuffer.out_type(bufferSize, byteIndex);
         byteIndex += sizeof(size_t);
 
@@ -263,7 +263,7 @@ Buffer Directory::out_package(const std::string& folderName) const
 
     // Prepend header information
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
-    const auto packHeaderName = folderName;
+    const auto& packHeaderName = folderName;
     const auto headerSize = sizeof(packHeaderTitle) + sizeof(size_t) + (sizeof(char) * folderName.size());
     Buffer bufferWithHeader(filebuffer.size() + headerSize);
 

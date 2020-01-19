@@ -187,7 +187,7 @@ static bool Buffer_IOTest()
     catch (std::runtime_error&) {
         // Ensure object IO is correct
         Buffer buffer(sizeof(std::byte));
-        constexpr std::byte in_byte(static_cast<std::byte>(64));
+        constexpr auto in_byte(static_cast<std::byte>(64));
         buffer.in_type(in_byte);
         std::byte out_byte;
         buffer.out_type(out_byte);
@@ -265,7 +265,8 @@ static bool Buffer_DiffTest()
 {
     // Ensure we cannot diff or patch an empty or incorrect buffer
     try {
-        Buffer bufferA, bufferB;
+        Buffer bufferA;
+        Buffer bufferB;
         const auto badResult1 = bufferA.diff(bufferB, 4);
         const auto badResult2 = badResult1.patch(bufferB);
         badResult2.empty();
