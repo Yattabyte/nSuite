@@ -13,6 +13,7 @@
 using yatta::Buffer;
 using yatta::BufferView;
 using yatta::MemoryRange;
+using yatta::Threader;
 
 /** Data structures for buffer compression headers. */
 struct CompressionHeader {
@@ -59,7 +60,7 @@ struct Copy_Instruction final : public Differential_Instruction {
 
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
-        return sizeof(char) + (sizeof(size_t) * 3ULL);
+        return static_cast<size_t>(sizeof(char) + (sizeof(size_t) * 3ULL));
     }
     void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
         auto a = m_index;
@@ -109,12 +110,15 @@ struct Insert_Instruction final : public Differential_Instruction {
 
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
-        return sizeof(char) + (sizeof(size_t) * 2) +
-            (sizeof(char) * m_newData.size());
+        return static_cast<size_t>(
+            sizeof(char) + 
+            (sizeof(size_t) * 2ULL) + 
+            (sizeof(char) * m_newData.size())
+            );
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         const auto length = m_newData.size();
-        for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < length; ++i, ++x)
+        for (auto i = m_index, x = 0ULL; i < bufferNew.size() && x < length; ++i, ++x)
             bufferNew[i] = m_newData[x];
     }
     void write(Buffer& outputBuffer, size_t& byteIndex) const final {
@@ -131,7 +135,7 @@ struct Insert_Instruction final : public Differential_Instruction {
         if (length != 0U) {
             // Write Data
             outputBuffer.in_raw(m_newData.data(), length, byteIndex);
-            byteIndex += length;
+            byteIndex += static_cast<size_t>(sizeof(char)) * length;
         }
     }
     void read(const Buffer& inputBuffer, size_t& byteIndex) final {
@@ -147,7 +151,7 @@ struct Insert_Instruction final : public Differential_Instruction {
             // Read Data
             m_newData.resize(length);
             inputBuffer.out_raw(m_newData.data(), length, byteIndex);
-            byteIndex += length;
+            byteIndex += static_cast<size_t>(sizeof(char)) * length;
         }
     }
 
@@ -163,10 +167,10 @@ struct Repeat_Instruction final : public Differential_Instruction {
 
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
-        return sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char);
+        return static_cast<size_t>(sizeof(char) + (sizeof(size_t)* 2ULL) + sizeof(char));
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
-        for (auto i = m_index, x = static_cast<size_t>(0ULL); i < bufferNew.size() && x < m_amount; ++i, ++x)
+        for (auto i = m_index, x = 0ULL; i < bufferNew.size() && x < m_amount; ++i, ++x)
             bufferNew[i] = m_value;
     }
     void write(Buffer& outputBuffer, size_t& byteIndex) const final {
@@ -382,7 +386,7 @@ Buffer Buffer::compress(const MemoryRange& memoryRange)
     // Create a larger buffer twice the size, plus a unique header
     const auto sourceSize = memoryRange.size();
     const auto destinationSize = sourceSize * 2ULL;
-    constexpr auto headerSize = sizeof(CompressionHeader);
+    constexpr size_t headerSize = sizeof(CompressionHeader);
     Buffer compressedBuffer(headerSize + destinationSize);
     CompressionHeader compressionHeader{ "yatta compress", sourceSize };
 
@@ -417,7 +421,7 @@ Buffer Buffer::decompress() const
 Buffer Buffer::decompress(const Buffer& buffer)
 {
     // Ensure this buffer has some data to compress
-    constexpr auto headerSize = sizeof(CompressionHeader);
+    constexpr size_t headerSize = sizeof(CompressionHeader);
     if (buffer.size() < headerSize)
         throw std::runtime_error("Invalid Buffer (corrupt)");
 
@@ -428,7 +432,7 @@ Buffer Buffer::decompress(const Buffer& buffer)
 Buffer Buffer::decompress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to decompress
-    constexpr auto headerSize = sizeof(CompressionHeader);
+    constexpr size_t headerSize = sizeof(CompressionHeader);
     if (memoryRange.size() < headerSize)
         throw std::runtime_error("Invalid Memory Range (corrupt)");
 
@@ -457,12 +461,12 @@ Buffer Buffer::decompress(const MemoryRange& memoryRange)
     return uncompressedBuffer;
 }
 
-Buffer Buffer::diff(const Buffer& target, const size_t& maxThreads) const
+Buffer Buffer::diff(const Buffer& target) const
 {
-    return Buffer::diff(*this, target, maxThreads);
+    return Buffer::diff(*this, target);
 }
 
-Buffer Buffer::diff(const Buffer& source, const Buffer& target, const size_t& maxThreads)
+Buffer Buffer::diff(const Buffer& source, const Buffer& target)
 {
     // Ensure that at least ONE of the two source buffers exists
     if (source.empty() && target.empty())
@@ -470,138 +474,181 @@ Buffer Buffer::diff(const Buffer& source, const Buffer& target, const size_t& ma
 
     const MemoryRange sourceRange{ source.size(), source.bytes() };
     const MemoryRange destinationRange{ target.size(), target.bytes() };
-    return Buffer::diff(sourceRange, destinationRange, maxThreads);
+    return Buffer::diff(sourceRange, destinationRange);
 }
 
-Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory, const size_t& maxThreads)
+struct MatchInfo { size_t length = 0ull, start1 = 0ull, start2 = 0ull; };
+auto find_matching_regions(const MemoryRange& rangeA, const MemoryRange& rangeB)
+{
+    std::vector<MatchInfo> bestMatch;
+    size_t largestMatch(0ULL);
+
+    // Algorithm Overview
+    // For each element in Range A, compare from element index -> end
+    // against entire Range B
+    std::for_each(
+        rangeA.cbegin_t<size_t>(),
+        rangeA.cend_t<size_t>(),
+        [&](const size_t& elementA)
+        {
+            size_t matchCount(0ULL);
+            size_t sumMatches(0ULL);
+            std::vector<MatchInfo> matches;
+            const size_t index_8byte = &elementA - reinterpret_cast<const size_t*>(rangeA.cbegin());
+            const size_t index_byte = index_8byte * sizeof(size_t);
+            const auto subRangeA = rangeA.subrange(index_byte, rangeA.size() - index_byte);
+            const auto length = std::min<size_t>(subRangeA.size(), rangeB.size());
+
+            // Iterate through {subRangeA and rangeB} 8 bytes at a time
+            // Take note of matches >= 32 bytes in a row
+            for (size_t ind = 0ULL; ind < length; ind += 8ULL) {
+                const auto& a = *reinterpret_cast<const size_t*>(&subRangeA[ind]);
+                const auto& b = *reinterpret_cast<const size_t*>(&rangeB[ind]);
+                if (a == b)
+                    ++matchCount;
+                else {
+                    if (matchCount >= 4ULL) {
+                        const auto matchLength = matchCount * sizeof(size_t);
+                        matches.push_back(
+                            { 
+                                matchLength,
+                                ind + index_byte - matchLength, 
+                                ind - matchLength
+                            }
+                        );
+                        sumMatches += matchCount;
+                    }
+                    matchCount = 0ULL;
+                }
+            }
+
+            if (sumMatches > largestMatch) {
+                largestMatch = sumMatches;
+                bestMatch = matches;                
+            }
+        }
+    );    
+    return bestMatch;
+}
+
+struct WindowInfo { size_t windowSize = 0ULL, indexA = 0ULL, indexB = 0ULL; };
+auto split_and_match_ranges(const MemoryRange& rangeA, const MemoryRange& rangeB, size_t& indexA, size_t& indexB)
+{
+    Threader threader;
+    const auto sizeA = rangeA.size();
+    const auto sizeB = rangeB.size();
+    std::mutex matchMutex;
+    std::vector<std::pair<WindowInfo, std::vector<MatchInfo>>> matchingRegions;
+
+    while (indexA < sizeA && indexB < sizeB) {
+        const auto windowSize = std::min<size_t>(4096ULL, std::min<size_t>(sizeA - indexA, sizeB - indexB));
+
+        threader.addJob(
+            [&, windowSize, indexA, indexB]()
+            {
+                const auto windowA = rangeA.subrange(indexA, windowSize);
+                const auto windowB = rangeB.subrange(indexB, windowSize);
+                auto matches = find_matching_regions(windowA, windowB);
+                for (auto& matchInfo : matches) {
+                    matchInfo.start1 += indexA;
+                    matchInfo.start2 += indexB;
+                }
+
+                std::unique_lock<std::mutex> writeGuard(matchMutex);
+                matchingRegions.push_back({ WindowInfo{ windowSize, indexA, indexB }, matches });
+            }
+        );
+
+        // increment
+        indexA += windowSize;
+        indexB += windowSize;
+    }
+
+    // Wait for jobs to finish
+    while (!threader.isFinished())
+        continue;
+
+    return matchingRegions;
+}
+
+Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory)
 {
     // Ensure that at least ONE of the two source buffers exists
     if (sourceMemory.empty() && targetMemory.empty())
         throw std::runtime_error("Invalid arguments, expected at least one non-null memory range");
 
-    const auto size_old = sourceMemory.size();
-    const auto size_new = targetMemory.size();
-    std::vector<std::unique_ptr<Differential_Instruction>> instructions;
-    instructions.reserve(std::max<size_t>(size_old, size_new) / 8ULL);
+    // Convert matching regions into diff instructions
+    size_t indexA(0ULL);
+    size_t indexB(0ULL);
+    const auto sizeA = sourceMemory.size();
+    const auto sizeB = targetMemory.size();
+    const auto matchingRegions = split_and_match_ranges(sourceMemory, targetMemory, indexA, indexB);
     std::mutex instructionMutex;
-    Threader threader(maxThreads);
-    constexpr size_t m_amount(4096);
-    size_t bytesUsed_old(0ULL);
-    size_t bytesUsed_new(0ULL);
-    while (bytesUsed_old < size_old && bytesUsed_new < size_new) {
-        // Variables for this current chunk
-        const auto windowSize = std::min<size_t>(m_amount, std::min<size_t>(size_old - bytesUsed_old, size_new - bytesUsed_new));
-
-        // Find best matches for this chunk
-        threader.addJob([&, windowSize, bytesUsed_old, bytesUsed_new]() {
-            // Step 1: Find all regions that match
-            struct MatchInfo { size_t length = 0ull, start1 = 0ull, start2 = 0ull; };
-            size_t bestContinuous(0ull);
-            size_t bestMatchCount(windowSize);
-            std::vector<MatchInfo> bestSeries;
-            auto buffer_slice_old = &sourceMemory[bytesUsed_old];
-            auto buffer_slice_new = &targetMemory[bytesUsed_new];
-            for (size_t index1 = 0ull; index1 + 8ull < windowSize; index1 += 8ull) {
-                const size_t& OLD_FIRST8 = *reinterpret_cast<const size_t*>(&buffer_slice_old[index1]);
-                std::vector<MatchInfo> matches;
-                size_t largestContinuous(0ull);
-                for (size_t index2 = 0ull; index2 + 8ull < windowSize; index2 += 8ull) {
-                    const size_t& NEW_FIRST8 = *reinterpret_cast<const size_t*>(&buffer_slice_new[index2]);
-                    // Check if values match
-                    if (OLD_FIRST8 == NEW_FIRST8) {
-                        size_t offset = 8ull;
-                        // Restrict matches to be at least 32 bytes (minimum byte size of 1 instruction)
-                        if (buffer_slice_old[index1 + 32ull] == buffer_slice_new[index2 + 32ull]) {
-                            // Check how long this series of matches continues for
-                            for (; ((index1 + offset) < windowSize) && ((index2 + offset) < windowSize); ++offset)
-                                if (buffer_slice_old[index1 + offset] != buffer_slice_new[index2 + offset])
-                                    break;
-
-                            // Save series
-                            if (offset >= 32ull) {
-                                matches.emplace_back(MatchInfo{ offset, bytesUsed_old + index1, bytesUsed_new + index2 });
-                                if (offset > largestContinuous)
-                                    largestContinuous = offset;
-                            }
+    std::vector<std::unique_ptr<Differential_Instruction>> instructions;
+    Threader threader;
+    for (const auto& [windowInfo, matches] : matchingRegions) {
+        const auto& [windowSize, windowIndexA, windowIndexB] = windowInfo;
+        //threader.addJob(
+        //    [&, matches, windowSize, windowIndexA, windowIndexB]()
+            {
+                // INSERT entire window when no matches are found
+                if (matches.empty()) {
+                    auto inst = std::make_unique<Insert_Instruction>();
+                    inst->m_index = windowIndexB;
+                    inst->m_newData.resize(windowSize);
+                    const auto subRange = targetMemory.subrange(windowIndexB, windowSize);
+                    std::copy(subRange.cbegin(), subRange.cend(), inst->m_newData.begin());
+                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
+                    instructions.emplace_back(std::move(inst));
+                }
+                else {
+                    size_t lastMatchEnd(windowIndexB);
+                    for (auto& matchInfo : matches) {
+                        // INSERT data from end of the last match until the beginning of current match
+                        const auto newDataLength = matchInfo.start2 - lastMatchEnd;
+                        if (newDataLength > 0ULL) {
+                            auto inst = std::make_unique<Insert_Instruction>();
+                            inst->m_index = lastMatchEnd;
+                            inst->m_newData.resize(newDataLength);
+                            const auto subRange = targetMemory.subrange(lastMatchEnd, newDataLength);
+                            std::copy(subRange.cbegin(), subRange.cend(), inst->m_newData.begin());
+                            std::unique_lock<std::mutex> writeGuard(instructionMutex);
+                            instructions.emplace_back(std::move(inst));
                         }
 
-                        index2 += offset;
-                    }
-                }
-                // Check if the recently completed series saved the most continuous data
-                if (largestContinuous > bestContinuous&& matches.size() <= bestMatchCount) {
-                    // Save the series for later
-                    bestContinuous = largestContinuous;
-                    bestMatchCount = matches.size();
-                    bestSeries = matches;
-                }
-
-                // Break if the largest series is as big as the window
-                if (bestContinuous >= windowSize)
-                    break;
-            }
-
-            // Step 2: Generate instructions based on the matching-regions found
-            // Note:
-            //			data from [start1 -> +length] equals [start2 -> + length]
-            //			data before and after these ranges isn't equal
-            if (bestSeries.empty()) {
-                // NO MATCHES
-                // NEW INSERT_INSTRUCTION: use entire window
-                auto inst = std::make_unique<Insert_Instruction>();
-                inst->m_index = bytesUsed_new;
-                inst->m_newData.resize(windowSize);
-                std::copy(buffer_slice_new, buffer_slice_new + windowSize, inst->m_newData.data());
-                std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                instructions.emplace_back(std::move(inst));
-            }
-            else {
-                size_t lastMatchEnd(bytesUsed_new);
-                for (const auto& match : bestSeries) {
-                    const auto newDataLength = match.start2 - lastMatchEnd;
-                    if (newDataLength > 0ull) {
-                        // NEW INSERT_INSTRUCTION: Use data from end of last match until beginning of current match
-                        auto inst = std::make_unique<Insert_Instruction>();
-                        inst->m_index = lastMatchEnd;
-                        inst->m_newData.resize(newDataLength);
-                        std::copy(&targetMemory[lastMatchEnd], &targetMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
+                        // COPY data in matching region
+                        auto inst = std::make_unique<Copy_Instruction>();
+                        inst->m_index = matchInfo.start2;
+                        inst->m_beginRead = matchInfo.start1;
+                        inst->m_endRead = matchInfo.start1 + matchInfo.length;
+                        lastMatchEnd = matchInfo.start2 + matchInfo.length;
                         std::unique_lock<std::mutex> writeGuard(instructionMutex);
                         instructions.emplace_back(std::move(inst));
                     }
 
-                    // NEW COPY_INSTRUCTION: Use data from beginning of match until end of match
-                    auto inst = std::make_unique<Copy_Instruction>();
-                    inst->m_index = match.start2;
-                    inst->m_beginRead = match.start1;
-                    inst->m_endRead = match.start1 + match.length;
-                    lastMatchEnd = match.start2 + match.length;
-                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                    instructions.emplace_back(std::move(inst));
-                }
-
-                const auto newDataLength = (bytesUsed_new + windowSize) - lastMatchEnd;
-                if (newDataLength > 0ull) {
-                    // NEW INSERT_INSTRUCTION: Use data from end of last match until end of window
-                    auto inst = std::make_unique<Insert_Instruction>();
-                    inst->m_index = lastMatchEnd;
-                    inst->m_newData.resize(newDataLength);
-                    std::copy(&targetMemory[lastMatchEnd], &targetMemory[lastMatchEnd + newDataLength], inst->m_newData.data());
-                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                    instructions.emplace_back(std::move(inst));
+                    // INSERT data from end of the last match until the end of the current window
+                    const auto newDataLength = (windowIndexB + windowSize) - lastMatchEnd;
+                    if (newDataLength > 0ull) {
+                        auto inst = std::make_unique<Insert_Instruction>();
+                        inst->m_index = lastMatchEnd;
+                        inst->m_newData.resize(newDataLength);
+                        const auto subRange = targetMemory.subrange(lastMatchEnd, newDataLength);
+                        std::copy(subRange.cbegin(), subRange.cend(), inst->m_newData.begin());
+                        std::unique_lock<std::mutex> writeGuard(instructionMutex);
+                        instructions.emplace_back(std::move(inst));
+                    }
                 }
             }
-            });
-        // increment
-        bytesUsed_old += windowSize;
-        bytesUsed_new += windowSize;
+        //);
     }
 
-    if (bytesUsed_new < size_new) {
-        // NEW INSERT_INSTRUCTION: Use data from end of last block until end-of-file
+    // INSERT data from end of the last window until the end of the buffer range
+    if (indexB < sizeB) {
         auto inst = std::make_unique<Insert_Instruction>();
-        inst->m_index = bytesUsed_new;
-        inst->m_newData.resize(size_new - bytesUsed_new);
-        std::copy(&targetMemory[bytesUsed_new], &targetMemory[bytesUsed_new + (size_new - bytesUsed_new) - 1], inst->m_newData.data());
+        inst->m_index = indexB;
+        inst->m_newData.resize(sizeB - indexB);
+        const auto subRange = targetMemory.subrange(indexB, sizeB - indexB);
+        std::copy(subRange.cbegin(), subRange.cend(), inst->m_newData.begin());
         std::unique_lock<std::mutex> writeGuard(instructionMutex);
         instructions.emplace_back(std::move(inst));
     }
@@ -700,9 +747,9 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     patchBuffer = patchBuffer.compress();
 
     // Prepend header information
-    constexpr auto headerSize = sizeof(DifferentialHeader);
+    constexpr size_t headerSize = sizeof(DifferentialHeader);
     Buffer bufferWithHeader(patchBuffer.size() + headerSize);
-    DifferentialHeader diffHeader{ "yatta diff", size_new };
+    DifferentialHeader diffHeader{ "yatta diff", sizeB };
 
     // Copy header data into new buffer at the beginning
     bufferWithHeader.in_type(diffHeader);
@@ -740,24 +787,23 @@ Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMem
         throw std::runtime_error("Header mismatch");
 
     // Try to decompress the diff buffer
-    constexpr auto diffHeaderSize = sizeof(DifferentialHeader);
+    constexpr size_t diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
     const auto patchBuffer = BufferView{ dataSize, &diffMemory.bytes()[diffHeaderSize] }.decompress();
+    const auto patchBufferSize = patchBuffer.size();
+
     // Convert buffer into instructions
     Buffer bufferNew(header.m_targetSize);
-    size_t bytesRead(0ULL);
     size_t byteIndex(0ULL);
-    while (bytesRead < patchBuffer.size()) {
+    while (byteIndex < patchBufferSize) {
         // Deduce the instruction type
         char type(0);
-        patchBuffer.out_type(type);
+        patchBuffer.out_type(type, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
 
         const auto executeInstruction = [&](auto instruction) {
+            // Read the instruction
             instruction.read(patchBuffer, byteIndex);
-
-            // Read the instruction size
-            bytesRead += instruction.size();
 
             // Execute the instruction
             instruction.execute(bufferNew, sourceMemory);

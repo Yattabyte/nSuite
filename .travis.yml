@@ -81,7 +81,6 @@ jobs:
       script: bash ./staticAnalysis.sh
 
 
-
 install:
   # Export Environment Variables
   - export CXX="${COMPILER_CXX}"

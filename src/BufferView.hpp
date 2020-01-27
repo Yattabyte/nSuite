@@ -33,13 +33,12 @@ namespace yatta {
         [[nodiscard]] Buffer decompress() const;
         /** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
         @param	target				the newer of the 2 buffers.
-        @param	maxThreads			the number of threads to use in accelerating the operation.
         @return						a pointer to the diff buffer on diff success, empty otherwise.
         Buffer format:
         -----------------------------------------------------------------------------------
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
-        [[nodiscard]] Buffer diff(const BufferView& target, const size_t& maxThreads) const;
+        [[nodiscard]] Buffer diff(const BufferView& target) const;
         /** Generates a patched version of this buffer, using data found in the supplied diff buffer.
         @param	diffBuffer			the diff buffer to patch with.
         @return						a pointer to the patched buffer on patch success, empty otherwise. */

@@ -4,6 +4,7 @@
 
 #include "MemoryRange.hpp"
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 
@@ -155,33 +156,30 @@ namespace yatta {
         [[nodiscard]] static Buffer decompress(const MemoryRange& memoryRange);
         /** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
         @param	target				the newer of the 2 buffers.
-        @param	maxThreads			the number of threads to use in accelerating the operation.
         @return						a pointer to the diff buffer on diff success, empty otherwise.
         Buffer format:
         -----------------------------------------------------------------------------------
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
-        [[nodiscard]] Buffer diff(const Buffer& target, const size_t& maxThreads) const;
+        [[nodiscard]] Buffer diff(const Buffer& target) const;
         /** Generates a differential buffer containing patch instructions to get from SOURCE ->to-> TARGET.
         @param	source				the older of the 2 buffers.
         @param	target				the newer of the 2 buffers.
-        @param	maxThreads			the number of threads to use in accelerating the operation.
         @return						a pointer to the diff buffer on diff success, empty otherwise.
         Buffer format:
         -----------------------------------------------------------------------------------
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
-        [[nodiscard]] static Buffer diff(const Buffer& source, const Buffer& target, const size_t& maxThreads);
+        [[nodiscard]] static Buffer diff(const Buffer& source, const Buffer& target);
         /** Generates a differential buffer containing patch instructions to get from SOURCEMEMORY ->to-> TARGETMEMORY.
         @param	sourceMemory		the older of the 2 memory ranges.
         @param	targetMemory    	the newer of the 2 memory ranges.
-        @param	maxThreads			the number of threads to use in accelerating the operation.
         @return						a pointer to the diff buffer on diff success, empty otherwise.
         Buffer format:
         -----------------------------------------------------------------------------------
         | header: identifier title, final target file size | compressed instruction data  |
         ----------------------------------------------------------------------------------- */
-        [[nodiscard]] static Buffer diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory, const size_t& maxThreads);
+        [[nodiscard]] static Buffer diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory);
         /** Generates a patched version of this buffer, using data found in the supplied diff buffer.
         @param	diffBuffer			the diff buffer to patch with.
         @return						a pointer to the patched buffer on patch success, empty otherwise. */

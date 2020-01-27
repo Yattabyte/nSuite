@@ -28,7 +28,7 @@ static bool MemoryRange_MethodTest();
 static bool MemoryRange_IOTest();
 static bool Directory_ConstructionTest();
 static bool Directory_MethodTest();
-static bool Directory_IOTest();
+static bool Directory_ManipulationTest();
 
 
 template <typename FirstFunc, typename ...RestFuncs>
@@ -69,7 +69,7 @@ int main() noexcept
 
         Directory_ConstructionTest,
         Directory_MethodTest,
-        Directory_IOTest
+        Directory_ManipulationTest
     ) ? 0 : 1;
 }
 
@@ -194,7 +194,7 @@ static bool Buffer_IOTest()
         if (in_byte == out_byte) {
             // Ensure raw pointer IO is correct
             const char word[28] = "This is a sample sentence.\0";
-            constexpr auto sentenceSize = sizeof(char) * 28;
+            constexpr size_t sentenceSize = sizeof(char) * 28ULL;
             buffer.resize(sentenceSize + sizeof(std::byte));
             buffer.in_raw(&word, sentenceSize, sizeof(std::byte));
 
@@ -267,7 +267,7 @@ static bool Buffer_DiffTest()
     try {
         Buffer bufferA;
         Buffer bufferB;
-        const auto badResult1 = bufferA.diff(bufferB, 4);
+        const auto badResult1 = bufferA.diff(bufferB);
         const auto badResult2 = badResult1.patch(bufferB);
         badResult2.empty();
     }
@@ -275,25 +275,25 @@ static bool Buffer_DiffTest()
         struct Foo {
             int a = 0;
             float b = 0.0F;
-            char c[28] = { '\0' };
-        } dataA{ 1234, 567.890F, "This is a sample sentence.\0" };
+            char c[128] = { '\0' };
+        } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo.\0" };
         struct Bar {
-            char a[32] = { '\0' };
             float b = 0.0F;
             int c = 0;
-        } dataB{ "Not even a sample sentence.\0", 890.567F, 4321 };
+            char a[128] = { '\0' };
+        } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar.\0", };
         Buffer bufferA(sizeof(Foo));
         Buffer bufferB(sizeof(Bar));
         bufferA.in_type(dataA);
         bufferB.in_type(dataB);
 
         // Ensure we've generated an instruction set
-        const auto diffBuffer = bufferA.diff(bufferB, 8);
+        const auto diffBuffer = bufferA.diff(bufferB);
         // Check that we've actually converted from A to B
         const auto patchedBuffer = bufferA.patch(diffBuffer);
         Bar dataC;
         patchedBuffer.out_type(dataC);
-        if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
+        if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedBuffer.hash() == bufferB.hash()) {
             std::cout << "Buffer Diff/Patch Test - Success\n";
             return true; // Success
         }
@@ -404,7 +404,7 @@ static bool BufferView_IOTest()
     if (in_int == out_int) {
         // Ensure raw pointer IO is correct
         const char word[28] = "This is a sample sentence.\0";
-        constexpr auto sentenceSize = sizeof(char) * 28;
+        constexpr size_t sentenceSize = sizeof(char) * 28ULL;
         buffer.resize(sentenceSize + sizeof(int));
         bView = BufferView(buffer);
         bView.in_raw(&word, sentenceSize, sizeof(int));
@@ -480,14 +480,14 @@ static bool BufferView_DiffTest()
     viewB.in_type(dataB);
 
     // Ensure we've generated an instruction set
-    const auto diffBuffer = viewA.diff(viewB, 8);
+    const auto diffBuffer = viewA.diff(viewB);
     // Check that we've actually converted from A to B
     const BufferView diffView(diffBuffer);
     const auto patchedBuffer = viewA.patch(diffView);
     const BufferView patchedView(patchedBuffer);
     Bar dataC;
     patchedView.out_type(dataC);
-    if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c) {
+    if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedView.hash() == viewB.hash()) {
         std::cout << "Buffer-View Diff/Patch Test - Success\n";
         return true; // Success
     }
@@ -600,7 +600,7 @@ static bool MemoryRange_IOTest()
     if (in_int == out_int) {
         // Ensure raw pointer IO is correct
         const char word[28] = "This is a sample sentence.\0";
-        constexpr auto sentenceSize = sizeof(char) * 28;
+        constexpr size_t sentenceSize = sizeof(char) * 28ULL;
         buffer.resize(sentenceSize + sizeof(int));
         memRange = MemoryRange(buffer.size(), buffer.bytes());
         memRange.in_raw(&word, sentenceSize, sizeof(int));
@@ -679,7 +679,7 @@ static bool Directory_MethodTest()
     return false; // Failure
 }
 
-static bool Directory_IOTest()
+static bool Directory_ManipulationTest()
 {
     // Verify empty directories
     Directory directory;
@@ -708,8 +708,23 @@ static bool Directory_IOTest()
                             if (directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL) {
                                 // Ensure new hash matches
                                 if (const auto packHash = directory.hash(); newHash != yatta::ZeroHash && packHash == newHash) {
-                                    std::cout << "Directory IO Test - Success\n";
-                                    return true; // Success
+                                    // Try to diff the old and new directories
+                                    Directory newDirectory(Directory::GetRunningDirectory() + "/new");
+                                    if (const auto deltaBuffer = directory.out_delta(newDirectory)) {
+                                        // Try to patch the old directory into the new directory
+                                        if (directory.in_delta(*deltaBuffer)) {
+                                            // Ensure the hashes match
+                                            if (directory.hash() == newDirectory.hash()) {
+                                                // Overwrite the /new folder, make sure the hashes match
+                                                directory.out_folder(Directory::GetRunningDirectory() + "/new");
+                                                directory = Directory(Directory::GetRunningDirectory() + "/new");
+                                                if (directory.hash() == newDirectory.hash()) {
+                                                    std::cout << "Directory IO Test - Success\n";
+                                                    return true; // Success
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

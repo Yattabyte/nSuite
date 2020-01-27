@@ -68,9 +68,13 @@ namespace yatta {
         /***/
         void in_package(const Buffer& packageBuffer);
         /***/
+        bool in_delta(const Buffer& deltaBuffer);
+        /***/
         void out_folder(const std::filesystem::path& path) const;
         /***/
         Buffer out_package(const std::string& folderName) const;
+        /***/
+        std::optional<Buffer> out_delta(const Directory& targetDirectory) const;
 
 
     protected:

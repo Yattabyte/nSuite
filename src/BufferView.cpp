@@ -30,9 +30,9 @@ Buffer BufferView::decompress() const
     return Buffer::decompress(*this);
 }
 
-Buffer BufferView::diff(const BufferView& target, const size_t& maxThreads) const
+Buffer BufferView::diff(const BufferView& target) const
 {
-    return Buffer::diff(*this, target, maxThreads);
+    return Buffer::diff(*this, target);
 }
 
 Buffer BufferView::patch(const BufferView& diffBuffer) const

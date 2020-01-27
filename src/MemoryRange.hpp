@@ -53,6 +53,38 @@ namespace yatta {
         Does not copy underlying data.
         @return						pointer to this buffer's data. */
         std::byte* bytes() const noexcept;
+        /***/
+        MemoryRange subrange(const size_t& offset, const size_t& length) const;
+        /***/
+        std::byte* begin() noexcept;
+        /***/
+        const std::byte* cbegin() const noexcept;
+        /***/
+        template <typename T> 
+        T* begin_t() noexcept {
+            return reinterpret_cast<T*>(&m_dataPtr[0]);
+        }
+        /***/
+        template <typename T>
+        const T* cbegin_t() const {
+            return reinterpret_cast<T*>(&m_dataPtr[0]);
+        }
+        /***/
+        std::byte* end() noexcept;
+        /***/
+        const std::byte* cend() const noexcept;
+        /***/
+        template <typename T>
+        T* end_t() noexcept {
+            const auto lastFullElement = static_cast<size_t>(m_range / sizeof(T)) * sizeof(T);
+            return reinterpret_cast<T*>(&m_dataPtr[lastFullElement]);
+        }
+        /***/
+        template <typename T>
+        const T* cend_t() const {
+            const auto lastFullElement = static_cast<size_t>(m_range / sizeof(T)) * sizeof(T);
+            return reinterpret_cast<T*>(&m_dataPtr[lastFullElement]);
+        }
 
 
         // Public IO Methods
@@ -135,7 +167,7 @@ namespace yatta {
             throw std::runtime_error("Invalid Memory Range (null pointer)");
 
         // Ensure data won't exceed range
-        const auto stringSize = sizeof(char) * dataObj.size();
+        const auto stringSize = static_cast<size_t>(sizeof(char)) * dataObj.size();
         if ((sizeof(size_t) + stringSize + byteIndex) > m_range)
             throw std::runtime_error("Memory Range index out of bounds");
 

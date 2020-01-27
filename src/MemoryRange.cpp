@@ -83,6 +83,40 @@ std::byte* MemoryRange::bytes() const noexcept
     return m_dataPtr;
 }
 
+MemoryRange MemoryRange::subrange(const size_t& offset, const size_t& length) const
+{
+    // Ensure pointers are valid
+    if (m_dataPtr == nullptr)
+        throw std::runtime_error("Invalid Memory Range (null pointer)");
+
+    // Ensure data won't exceed range
+    if ((offset + length) > m_range)
+        throw std::runtime_error("Memory Range index out of bounds");
+
+    // Return a sub-range
+    return MemoryRange{ length, &m_dataPtr[offset] };
+}
+
+std::byte* MemoryRange::begin() noexcept
+{
+    return &m_dataPtr[0];
+}
+
+const std::byte* MemoryRange::cbegin() const noexcept
+{
+    return &m_dataPtr[0];
+}
+
+std::byte* MemoryRange::end() noexcept
+{
+    return &m_dataPtr[m_range];
+}
+
+const std::byte* MemoryRange::cend() const noexcept
+{
+    return &m_dataPtr[m_range];
+}
+
 
 // Public IO Methods
 
