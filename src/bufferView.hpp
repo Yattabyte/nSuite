@@ -2,7 +2,7 @@
 #ifndef YATTA_BUFFERVIEW_H
 #define YATTA_BUFFERVIEW_H
 
-#include "Buffer.hpp"
+#include "buffer.hpp"
 
 
 namespace yatta {

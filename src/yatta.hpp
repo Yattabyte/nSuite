@@ -2,11 +2,11 @@
 #ifndef YATTA_H
 #define YATTA_H
 
-#include "Buffer.hpp"
-#include "BufferView.hpp"
-#include "Directory.hpp"
-#include "MemoryRange.hpp"
-#include "Threader.hpp"
+#include "buffer.hpp"
+#include "bufferView.hpp"
+#include "directory.hpp"
+#include "memoryRange.hpp"
+#include "threader.hpp"
 
 
 /** This namespace encompasses all yatta classes and methods. */

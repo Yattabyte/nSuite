@@ -1,5 +1,5 @@
-#include "Directory.hpp"
-#include "BufferView.hpp"
+#include "directory.hpp"
+#include "bufferView.hpp"
 #include <algorithm>
 #include <fstream>
 #include <numeric>

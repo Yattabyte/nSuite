@@ -1,4 +1,4 @@
-#include "BufferView.hpp"
+#include "bufferView.hpp"
 
 using yatta::Buffer;
 using yatta::BufferView;

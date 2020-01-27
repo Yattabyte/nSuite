@@ -6,19 +6,19 @@ set(Module yatta)
 # Configure and acquire files
 set(FILES
 	# Header files
-	Buffer.hpp
-	BufferView.hpp
-	MemoryRange.hpp
-	Directory.hpp
-	Threader.hpp
+	buffer.hpp
+	bufferView.hpp
+	memoryRange.hpp
+	directory.hpp
+	threader.hpp
 	yatta.hpp
 	lz4/lz4.h
 
 	# Source files
-	Buffer.cpp
-	BufferView.cpp
-	MemoryRange.cpp
-	Directory.cpp
+	buffer.cpp
+	bufferView.cpp
+	memoryRange.cpp
+	directory.cpp
 	lz4/lz4.c
 )
 

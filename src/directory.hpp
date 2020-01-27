@@ -2,7 +2,7 @@
 #ifndef DIRECTORY_H
 #define DIRECTORY_H
 
-#include "Buffer.hpp"
+#include "buffer.hpp"
 #include <filesystem>
 #include <string>
 #include <vector>

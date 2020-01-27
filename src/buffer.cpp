@@ -1,6 +1,6 @@
-#include "Buffer.hpp"
-#include "BufferView.hpp"
-#include "Threader.hpp"
+#include "buffer.hpp"
+#include "bufferView.hpp"
+#include "threader.hpp"
 #include "lz4/lz4.h"
 #include <algorithm>
 #include <climits>

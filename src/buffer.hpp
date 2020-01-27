@@ -2,7 +2,7 @@
 #ifndef YATTA_BUFFER_H
 #define YATTA_BUFFER_H
 
-#include "MemoryRange.hpp"
+#include "memoryRange.hpp"
 #include <memory>
 #include <optional>
 #include <type_traits>
