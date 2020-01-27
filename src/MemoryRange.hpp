@@ -60,7 +60,7 @@ namespace yatta {
         /***/
         const std::byte* cbegin() const noexcept;
         /***/
-        template <typename T> 
+        template <typename T>
         T* begin_t() noexcept {
             return reinterpret_cast<T*>(&m_dataPtr[0]);
         }
@@ -167,7 +167,7 @@ namespace yatta {
             throw std::runtime_error("Invalid Memory Range (null pointer)");
 
         // Ensure data won't exceed range
-        const auto stringSize = static_cast<size_t>(sizeof(char)) * dataObj.size();
+        const auto stringSize = static_cast<size_t>(sizeof(char))* dataObj.size();
         if ((sizeof(size_t) + stringSize + byteIndex) > m_range)
             throw std::runtime_error("Memory Range index out of bounds");
 

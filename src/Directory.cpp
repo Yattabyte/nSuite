@@ -198,7 +198,7 @@ void Directory::in_package(const Buffer& packageBuffer)
         // Copy the file data
         file.m_data.resize(bufferSize);
         filebuffer.out_raw(file.m_data.bytes(), file.m_data.size(), byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(std::byte)) * file.m_data.size();
+        byteIndex += static_cast<size_t>(sizeof(std::byte))* file.m_data.size();
         ++fileIndex;
     }
 }
@@ -430,7 +430,7 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
 
     // Find all common and new files first
     using PathList = std::vector<VirtualFile>;
-    typedef std::vector<std::pair<VirtualFile, VirtualFile>> PathPairList;
+    using PathPairList = std::vector<std::pair<VirtualFile, VirtualFile>>;
     static constexpr auto getFileLists = [](
         const Directory& oldDirectory,
         const Directory& newDirectory,
