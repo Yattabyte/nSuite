@@ -63,13 +63,8 @@ struct Copy_Instruction final : public Differential_Instruction {
         return static_cast<size_t>(sizeof(char) + (sizeof(size_t) * 3ULL));
     }
     void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const final {
-        auto a = m_index;
-        auto b = m_beginRead;
-        while (a < bufferNew.size() && b < m_endRead && b < bufferOld.size()) {
-            bufferNew[a] = bufferOld[b];
-            ++a;
-            ++b;
-        }
+        const auto old_subRange = bufferOld.subrange(m_beginRead, m_endRead - m_beginRead);
+        std::copy(old_subRange.cbegin(), old_subRange.cend(), &bufferNew[m_index]);
     }
     void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
@@ -117,9 +112,7 @@ struct Insert_Instruction final : public Differential_Instruction {
             );
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
-        const auto length = m_newData.size();
-        for (auto i = m_index, x = 0ULL; i < bufferNew.size() && x < length; ++i, ++x)
-            bufferNew[i] = m_newData[x];
+        std::copy(m_newData.cbegin(), m_newData.cend(), &bufferNew[m_index]);
     }
     void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
@@ -170,8 +163,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
         return static_cast<size_t>(sizeof(char) + (sizeof(size_t)* 2ULL) + sizeof(char));
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
-        for (auto i = m_index, x = 0ULL; i < bufferNew.size() && x < m_amount; ++i, ++x)
-            bufferNew[i] = m_value;
+        std::fill(&bufferNew[0], &bufferNew[std::min(m_amount, bufferNew.size())], m_value);
     }
     void write(Buffer& outputBuffer, size_t& byteIndex) const final {
         // Write Type
