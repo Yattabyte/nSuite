@@ -572,8 +572,6 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     // Convert matching regions into diff instructions
     size_t indexA(0ULL);
     size_t indexB(0ULL);
-    const auto sizeA = sourceMemory.size();
-    const auto sizeB = targetMemory.size();
     const auto matchingRegions = split_and_match_ranges(sourceMemory, targetMemory, indexA, indexB);
     std::mutex instructionMutex;
     std::vector<std::unique_ptr<Differential_Instruction>> instructions;
@@ -635,6 +633,7 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     }
 
     // INSERT data from end of the last window until the end of the buffer range
+    const auto sizeB = targetMemory.size();
     if (indexB < sizeB) {
         auto inst = std::make_unique<Insert_Instruction>();
         inst->m_index = indexB;
