@@ -90,7 +90,7 @@ MemoryRange MemoryRange::subrange(const size_t& offset, const size_t& length) co
         throw std::runtime_error("Invalid Memory Range (null pointer)");
 
     // Ensure data won't exceed range
-    if ((offset + length) > m_range)
+    else if ((offset + length) > m_range)
         throw std::runtime_error("Memory Range index out of bounds");
 
     // Return a sub-range
@@ -125,15 +125,15 @@ void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const si
     // Ensure pointers are valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
-    if (dataPtr == nullptr)
+    else if (dataPtr == nullptr)
         throw std::runtime_error("Invalid argument (null pointer)");
 
     // Ensure data won't exceed range
-    if ((size + byteIndex) > m_range)
+    else if ((size + byteIndex) > m_range)
         throw std::runtime_error("Memory Range index out of bounds");
 
     // Copy Data
-    std::memcpy(&bytes()[byteIndex], dataPtr, size);
+    std::memcpy(&this->operator[](byteIndex), dataPtr, size);
 }
 
 void MemoryRange::out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex) const
@@ -141,13 +141,13 @@ void MemoryRange::out_raw(void* const dataPtr, const size_t& size, const size_t 
     // Ensure pointers are valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
-    if (dataPtr == nullptr)
+    else if (dataPtr == nullptr)
         throw std::runtime_error("Invalid argument (null pointer)");
 
     // Ensure data won't exceed range
-    if ((size + byteIndex) > m_range)
+    else if ((size + byteIndex) > m_range)
         throw std::runtime_error("Memory Range index out of bounds");
 
     // Copy Data
-    std::memcpy(dataPtr, &bytes()[byteIndex], size);
+    std::memcpy(dataPtr, &this->operator[](byteIndex), size);
 }

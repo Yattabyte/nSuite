@@ -354,20 +354,18 @@ static bool Buffer_IOTest()
 static bool Buffer_CompressionTest()
 {
     // Ensure we cannot compress or decompress an empty or incorrect buffer
-    try {
-        Buffer buffer;
-        const auto badResult1 = buffer.compress();
-        const auto badResult2 = badResult1.decompress();
-        badResult2.empty();
-    }
-    catch (const std::runtime_error&) {
+    Buffer buffer;
+    const auto badResult1 = buffer.compress();
+    const auto badResult2 = badResult1->decompress();
+    if (!badResult1 && !badResult2) {
         // The structure we'll compress and decompress
         struct TestStructure {
             int a = 0;
             float b = 0.F;
             char c[256] = { '\0' };
-        };// Create a buffer and load it with test data
-        Buffer buffer(sizeof(TestStructure));
+        };
+        // Create a buffer and load it with test data
+        buffer.resize(sizeof(TestStructure));
         constexpr TestStructure testData{
             1234,
             567.890F,
@@ -379,19 +377,21 @@ static bool Buffer_CompressionTest()
         buffer.in_type(testData);
 
         // Attempt to compress the buffer
-        const auto compressedBuffer = buffer.compress();
-        // Attempt to decompress the compressed buffer
-        const auto decompressedBuffer = compressedBuffer.decompress();
-        // Dump buffer data back into test structure
-        TestStructure decompressedData;
-        decompressedBuffer.out_type(decompressedData);
+        if (const auto compressedBuffer = buffer.compress()) {
+            // Attempt to decompress the compressed buffer
+            if (const auto decompressedBuffer = compressedBuffer->decompress()) {
+                // Dump buffer data back into test structure
+                TestStructure decompressedData;
+                decompressedBuffer->out_type(decompressedData);
 
-        // Ensure data matches
-        if (testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0) {
-            std::cout << "Buffer Compression/Decompression Test - Success\n";
-            return true; // Success
+                // Ensure data matches
+                if (testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0) {
+                    std::cout << "Buffer Compression/Decompression Test - Success\n";
+                    return true; // Success
+                }
+            }
         }
-    }
+    }   
 
     std::cout << "Buffer Compression/Decompression Test - Failure\n";
     return false; // Failure
@@ -400,14 +400,11 @@ static bool Buffer_CompressionTest()
 static bool Buffer_DiffTest()
 {
     // Ensure we cannot diff or patch an empty or incorrect buffer
-    try {
-        Buffer bufferA;
-        Buffer bufferB;
-        const auto badResult1 = bufferA.diff(bufferB);
-        const auto badResult2 = badResult1.patch(bufferB);
-        badResult2.empty();
-    }
-    catch (const std::runtime_error&) {
+    Buffer bufferA;
+    Buffer bufferB;
+    const auto badResult1 = bufferA.diff(bufferB);
+    const auto badResult2 = badResult1->patch(bufferB);
+    if (!badResult1 && !badResult2) {
         struct Foo {
             int a = 0;
             float b = 0.0F;
@@ -418,20 +415,22 @@ static bool Buffer_DiffTest()
             int c = 0;
             char a[128] = { '\0' };
         } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar.\0", };
-        Buffer bufferA(sizeof(Foo));
-        Buffer bufferB(sizeof(Bar));
+        bufferA.resize(sizeof(Foo));
+        bufferB.resize(sizeof(Bar));
         bufferA.in_type(dataA);
         bufferB.in_type(dataB);
 
         // Ensure we've generated an instruction set
-        const auto diffBuffer = bufferA.diff(bufferB);
-        // Check that we've actually converted from A to B
-        const auto patchedBuffer = bufferA.patch(diffBuffer);
-        Bar dataC;
-        patchedBuffer.out_type(dataC);
-        if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedBuffer.hash() == bufferB.hash()) {
-            std::cout << "Buffer Diff/Patch Test - Success\n";
-            return true; // Success
+        if (const auto diffBuffer = bufferA.diff(bufferB)) {
+            // Check that we've actually converted from A to B
+            if (const auto patchedBuffer = bufferA.patch(*diffBuffer)) {
+                Bar dataC;
+                patchedBuffer->out_type(dataC);
+                if (std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedBuffer->hash() == bufferB.hash()) {
+                    std::cout << "Buffer Diff/Patch Test - Success\n";
+                    return true; // Success
+                }
+            }
         }
     }
 
@@ -492,28 +491,29 @@ static bool Directory_ManipulationTest()
                     directory = Directory(Directory::GetRunningDirectory() + "/old");
                     if (const auto newHash = directory.hash(); newHash != yatta::ZeroHash && newHash == oldHash) {
                         // Ensure we can dump a directory as a package
-                        Buffer package = directory.out_package("package");
-                        if (package.hasData()) {
-                            // Ensure we can import a package
-                            directory.clear();
-                            directory.in_package(package);
-                            // Ensure this new directory matches the old one
-                            if (directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL) {
-                                // Ensure new hash matches
-                                if (const auto packHash = directory.hash(); newHash != yatta::ZeroHash && packHash == newHash) {
-                                    // Try to diff the old and new directories
-                                    Directory newDirectory(Directory::GetRunningDirectory() + "/new");
-                                    if (const auto deltaBuffer = directory.out_delta(newDirectory)) {
-                                        // Try to patch the old directory into the new directory
-                                        if (directory.in_delta(*deltaBuffer)) {
-                                            // Ensure the hashes match
-                                            if (directory.hash() == newDirectory.hash()) {
-                                                // Overwrite the /new folder, make sure the hashes match
-                                                directory.out_folder(Directory::GetRunningDirectory() + "/new");
-                                                directory = Directory(Directory::GetRunningDirectory() + "/new");
+                        if (const auto package = directory.out_package("package")) {
+                            if (package->hasData()) {
+                                // Ensure we can import a package
+                                directory.clear();
+                                directory.in_package(*package);
+                                // Ensure this new directory matches the old one
+                                if (directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL) {
+                                    // Ensure new hash matches
+                                    if (const auto packHash = directory.hash(); newHash != yatta::ZeroHash && packHash == newHash) {
+                                        // Try to diff the old and new directories
+                                        Directory newDirectory(Directory::GetRunningDirectory() + "/new");
+                                        if (const auto deltaBuffer = directory.out_delta(newDirectory)) {
+                                            // Try to patch the old directory into the new directory
+                                            if (directory.in_delta(*deltaBuffer)) {
+                                                // Ensure the hashes match
                                                 if (directory.hash() == newDirectory.hash()) {
-                                                    std::cout << "Directory IO Test - Success\n";
-                                                    return true; // Success
+                                                    // Overwrite the /new folder, make sure the hashes match
+                                                    directory.out_folder(Directory::GetRunningDirectory() + "/new");
+                                                    directory = Directory(Directory::GetRunningDirectory() + "/new");
+                                                    if (directory.hash() == newDirectory.hash()) {
+                                                        std::cout << "Directory IO Test - Success\n";
+                                                        return true; // Success
+                                                    }
                                                 }
                                             }
                                         }

@@ -199,11 +199,6 @@ struct Repeat_Instruction final : public Differential_Instruction {
 
 // Public (de)Constructors
 
-Buffer::Buffer() :
-    MemoryRange(0, nullptr)
-{
-}
-
 Buffer::Buffer(const size_t& size) :
     MemoryRange(size, nullptr),
     m_capacity(size * 2ULL),
@@ -332,27 +327,26 @@ void Buffer::clear() noexcept
 
 // Public Derivation Methods
 
-Buffer Buffer::compress() const
+std::optional<Buffer> Buffer::compress() const
 {
     return Buffer::compress(*this);
 }
 
-Buffer Buffer::compress(const Buffer& buffer)
-{
-    const MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
-    return Buffer::compress(memoryRange);
+std::optional<Buffer> Buffer::compress(const Buffer& buffer)
+{    
+    return Buffer::compress(Buffer::MemoryRange(buffer));
 }
 
-Buffer Buffer::compress(const MemoryRange& memoryRange)
+std::optional<Buffer> Buffer::compress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to compress
     if (memoryRange.empty())
-        throw std::runtime_error("Invalid Memory Range (null pointer)");
+        return {}; // Failure
 
     // Create a larger buffer twice the size, plus a unique header
     const auto sourceSize = memoryRange.size();
     const auto destinationSize = sourceSize * 2ULL;
-    constexpr size_t headerSize = sizeof(CompressionHeader);
+    constexpr auto headerSize = sizeof(CompressionHeader);
     Buffer compressedBuffer(headerSize + destinationSize);
     CompressionHeader compressionHeader{ "yatta compress", sourceSize };
 
@@ -363,13 +357,13 @@ Buffer Buffer::compress(const MemoryRange& memoryRange)
     const auto compressedSize = LZ4_compress_default(
         memoryRange.charArray(),
         &compressedBuffer.charArray()[headerSize], // Offset by header's amount
-        int(sourceSize),
-        int(destinationSize)
+        static_cast<int>(sourceSize),
+        static_cast<int>(destinationSize)
     );
 
     // Ensure we have a non-zero sized buffer
     if (compressedSize == 0ULL)
-        throw std::runtime_error("Compression Failure");
+        return {}; // Failure
 
     // We now know the actual compressed size, downsize our oversized buffer to the compressed size
     compressedBuffer.resize(headerSize + compressedSize);
@@ -379,28 +373,22 @@ Buffer Buffer::compress(const MemoryRange& memoryRange)
     return compressedBuffer;
 }
 
-Buffer Buffer::decompress() const
+std::optional<Buffer> Buffer::decompress() const
 {
     return Buffer::decompress(*this);
 }
 
-Buffer Buffer::decompress(const Buffer& buffer)
+std::optional<Buffer> Buffer::decompress(const Buffer& buffer)
 {
-    // Ensure this buffer has some data to compress
-    constexpr size_t headerSize = sizeof(CompressionHeader);
-    if (buffer.size() < headerSize)
-        throw std::runtime_error("Invalid Buffer (corrupt)");
-
-    const MemoryRange memoryRange{ buffer.size(), buffer.bytes() };
-    return Buffer::decompress(memoryRange);
+    return Buffer::decompress(Buffer::MemoryRange(buffer));
 }
 
-Buffer Buffer::decompress(const MemoryRange& memoryRange)
+std::optional<Buffer> Buffer::decompress(const MemoryRange& memoryRange)
 {
     // Ensure this buffer has some data to decompress
-    constexpr size_t headerSize = sizeof(CompressionHeader);
+    constexpr auto headerSize = sizeof(CompressionHeader);
     if (memoryRange.size() < headerSize)
-        throw std::runtime_error("Invalid Memory Range (corrupt)");
+        return {}; // Failure
 
     // Read in header
     CompressionHeader header;
@@ -408,39 +396,33 @@ Buffer Buffer::decompress(const MemoryRange& memoryRange)
 
     // Ensure header title matches
     if (std::strcmp(header.m_title, "yatta compress") != 0)
-        throw std::runtime_error("Header Mismatch");
+        return {}; // Failure
 
     // Uncompress the remaining data
     Buffer uncompressedBuffer(header.m_uncompressedSize);
     const auto decompressionResult = LZ4_decompress_safe(
         &memoryRange.charArray()[headerSize],
         uncompressedBuffer.charArray(),
-        int(memoryRange.size() - headerSize),
-        int(uncompressedBuffer.size())
+        static_cast<int>(memoryRange.size() - headerSize),
+        static_cast<int>(uncompressedBuffer.size())
     );
 
     // Ensure we have a non-zero sized decompressed buffer
     if (decompressionResult <= 0)
-        throw std::runtime_error("Decompression Failure");
+        return {}; // Failure
 
     // Success
     return uncompressedBuffer;
 }
 
-Buffer Buffer::diff(const Buffer& target) const
+std::optional<Buffer> Buffer::diff(const Buffer& target) const
 {
     return Buffer::diff(*this, target);
 }
 
-Buffer Buffer::diff(const Buffer& source, const Buffer& target)
+std::optional<Buffer> Buffer::diff(const Buffer& source, const Buffer& target)
 {
-    // Ensure that at least ONE of the two source buffers exists
-    if (source.empty() && target.empty())
-        throw std::runtime_error("Invalid arguments, expected at least one non-empty buffer");
-
-    const MemoryRange sourceRange{ source.size(), source.bytes() };
-    const MemoryRange destinationRange{ target.size(), target.bytes() };
-    return Buffer::diff(sourceRange, destinationRange);
+    return Buffer::diff(Buffer::MemoryRange(source), Buffer::MemoryRange(target));
 }
 
 struct MatchInfo {
@@ -540,11 +522,11 @@ auto split_and_match_ranges(const MemoryRange& rangeA, const MemoryRange& rangeB
     return matchingRegions;
 }
 
-Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory)
+std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory)
 {
     // Ensure that at least ONE of the two source buffers exists
     if (sourceMemory.empty() && targetMemory.empty())
-        throw std::runtime_error("Invalid arguments, expected at least one non-null memory range");
+        return {}; // Failure
 
     // Convert matching regions into diff instructions
     size_t indexA(0ULL);
@@ -714,7 +696,10 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     instructions.shrink_to_fit();
 
     // Try to compress the patch buffer
-    patchBuffer = patchBuffer.compress();
+    if (auto compressionResult = patchBuffer.compress())
+        std::swap(patchBuffer, *compressionResult);
+    else
+        return {}; // Failure
 
     // Prepend header information
     constexpr size_t headerSize = sizeof(DifferentialHeader);
@@ -730,23 +715,21 @@ Buffer Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMe
     return bufferWithHeader; // Success
 }
 
-Buffer Buffer::patch(const Buffer& diffBuffer) const
+std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 {
     return Buffer::patch(*this, diffBuffer);
 }
 
-Buffer Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer)
+std::optional<Buffer> Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer)
 {
-    const MemoryRange sourceRange{ sourceBuffer.size(), sourceBuffer.bytes() };
-    const MemoryRange diffRange{ diffBuffer.size(), diffBuffer.bytes() };
-    return Buffer::patch(sourceRange, diffRange);
+    return Buffer::patch(Buffer::MemoryRange(sourceBuffer), Buffer::MemoryRange(diffBuffer));
 }
 
-Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory)
+std::optional<Buffer> Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory)
 {
     // Ensure diff buffer at least *exists* (ignore source buffer, when empty we treat instruction as a brand new file)
     if (diffMemory.empty())
-        throw std::runtime_error("Invalid arguments, expected non-null diff memory range");
+        return {}; // Failure
 
     // Read in header
     DifferentialHeader header;
@@ -754,12 +737,16 @@ Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMem
 
     // Ensure header title matches
     if (std::strcmp(header.m_title, "yatta diff") != 0)
-        throw std::runtime_error("Header mismatch");
+        return {}; // Failure
 
     // Try to decompress the diff buffer
     constexpr size_t diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
-    const auto patchBuffer = decompress(diffMemory.subrange(diffHeaderSize, dataSize));    
+    Buffer patchBuffer;
+    if (auto decompressionResult = decompress(diffMemory.subrange(diffHeaderSize, dataSize)))
+        std::swap(patchBuffer, *decompressionResult);
+    else
+        return {}; // Failure
     const auto patchBufferSize = patchBuffer.size();
 
     // Convert buffer into instructions

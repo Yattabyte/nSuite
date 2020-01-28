@@ -93,10 +93,10 @@ void Directory::clear() noexcept
     m_files.clear();
 }
 
-void Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
+bool Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
-    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
-        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) {
+    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) noexcept {
+        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) noexcept {
             const auto extension = p.extension();
             for (const auto& excl : e) {
                 if (excl.empty())
@@ -132,7 +132,7 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
             constexpr std::ios_base::openmode mode = std::ios_base::in | std::ios_base::binary;
             std::ifstream fileOnDisk = std::ifstream(path_string, mode);
             if (!fileOnDisk.is_open())
-                throw std::runtime_error("Cannot read the file" + entry.path().string());
+                return false; // Error
 
             fileOnDisk.read(
                 fileBuffer.charArray(),
@@ -148,13 +148,15 @@ void Directory::in_folder(const filepath& path, const std::vector<std::string>& 
             );
         }
     }
+
+    return true; // Success
 }
 
-void Directory::in_package(const Buffer& packageBuffer)
+bool Directory::in_package(const Buffer& packageBuffer)
 {
     // Ensure the package buffer exists
     if (packageBuffer.empty())
-        throw std::runtime_error("Invalid arguments, the package buffer is empty");
+        return false; // Failure
 
     // Read in header
     char packHeaderTitle[16ULL] = { '\0' };
@@ -166,10 +168,14 @@ void Directory::in_package(const Buffer& packageBuffer)
 
     // Ensure header title matches
     if (std::strcmp(packHeaderTitle, "yatta pack") != 0)
-        throw std::runtime_error("Header mismatch");
+        return false; // Failure
 
-    // Try to decompress the archive buffer    
-    const auto filebuffer = Buffer::decompress(packageBuffer.subrange(byteIndex, packageBuffer.size() - byteIndex));
+    // Try to decompress the archive buffer
+    Buffer filebuffer;
+    if (auto decompressionResult = Buffer::decompress(packageBuffer.subrange(byteIndex, packageBuffer.size() - byteIndex)))
+        std::swap(filebuffer, *decompressionResult);
+    else
+        return false; // Failure
     byteIndex = 0ULL; // reset byte index
 
     // Find the file count
@@ -199,6 +205,8 @@ void Directory::in_package(const Buffer& packageBuffer)
         byteIndex += static_cast<size_t>(sizeof(std::byte))* file.m_data.size();
         ++fileIndex;
     }
+
+    return true; // Success
 }
 
 bool Directory::in_delta(const Buffer& deltaBuffer)
@@ -220,7 +228,11 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
         return false; // Failure
 
     // Try to decompress the instruction buffer
-    auto instructionBuffer = Buffer::decompress(deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex));
+    Buffer instructionBuffer;
+    if (auto decompressionResult = Buffer::decompress(deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex)))
+        std::swap(instructionBuffer, *decompressionResult);
+    else
+        return false; // Failure
     byteIndex = 0ULL; // reset byte index
 
     // Start reading diff file
@@ -287,18 +299,22 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
             }
         );
         if (storedFile == m_files.end())
-            continue; // Error
+            continue; // Soft Error
 
         // Ensure hashes match
         if (storedFile->m_data.hash() != inst.diff_oldHash)
-            continue; // Error
+            continue; // Soft Error
 
         // Attempt Patching Process
-        auto newBuffer = storedFile->m_data.patch(inst.instructionBuffer);
+        Buffer newBuffer;
+        if (auto patchResult = storedFile->m_data.patch(inst.instructionBuffer))
+            std::swap(newBuffer, *patchResult);
+        else
+            continue; // Soft Error
 
         // Confirm new hashes match
         if (newBuffer.hash() != inst.diff_newHash)
-            continue; // Error
+            continue; // Soft Error
 
         // Update virtualized folder
         std::swap(storedFile->m_data, newBuffer);
@@ -308,9 +324,15 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
     // Add new files
     for (FileInstruction& inst : addedFiles) {
         // Convert the instruction into a virtual file
-        auto newBuffer = Buffer().patch(inst.instructionBuffer);
+        Buffer newBuffer;
+        if (auto patchResult = Buffer().patch(inst.instructionBuffer))
+            std::swap(newBuffer, *patchResult);
+        else
+            continue; // Soft Error
+
+        // Confirm new hashes match
         if (newBuffer.hash() != inst.diff_newHash)
-            continue;
+            continue; // Soft Error
 
         // Erase any instances of this file
         m_files.erase(std::find_if(
@@ -345,7 +367,7 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
     return true;
 }
 
-void Directory::out_folder(const filepath& path) const
+bool Directory::out_folder(const filepath& path) const
 {
     for (auto& file : m_files) {
         // Write-out the file
@@ -354,7 +376,7 @@ void Directory::out_folder(const filepath& path) const
         constexpr std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary;
         std::ofstream fileOnDisk = std::ofstream(fullPath.c_str(), mode);
         if (!fileOnDisk.is_open())
-            throw std::runtime_error("Cannot write the file" + file.m_relativePath);
+            return false; // Failure
 
         fileOnDisk.write(
             file.m_data.charArray(),
@@ -362,9 +384,11 @@ void Directory::out_folder(const filepath& path) const
         );
         fileOnDisk.close();
     }
+
+    return true; // Success
 }
 
-Buffer Directory::out_package(const std::string& folderName) const
+std::optional<Buffer> Directory::out_package(const std::string& folderName) const
 {
     // Create a buffer large enough to hold all the files
     Buffer filebuffer(
@@ -402,7 +426,10 @@ Buffer Directory::out_package(const std::string& folderName) const
     }
 
     // Try to compress the archive buffer
-    filebuffer = filebuffer.compress();
+    if (auto compressionResult = filebuffer.compress())
+        std::swap(filebuffer, *compressionResult);
+    else
+        return {}; // Failure
 
     // Prepend header information
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
@@ -520,7 +547,11 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         const auto newHash = newBuffer.hash();
         // Check if a common file has changed
         if (oldHash != newHash) {
-            const auto diffBuffer = oldBuffer.diff(newBuffer);
+            Buffer diffBuffer;
+            if (auto diffResult = oldBuffer.diff(newBuffer))
+                std::swap(diffBuffer, *diffResult);
+            else
+                continue; // Soft Error
             writeInstructions(oldFile.m_relativePath, oldHash, newHash, diffBuffer, 'U', instructionBuffer);
             fileCount++;
         }
@@ -531,7 +562,11 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
     for (const auto& nFile : addedFiles) {
         const auto& newBuffer = nFile.m_data;
         const auto newHash = newBuffer.hash();
-        auto diffBuffer = Buffer().diff(newBuffer);
+        Buffer diffBuffer;
+        if (auto diffResult = Buffer().diff(newBuffer))
+            std::swap(diffBuffer, *diffResult);
+        else
+            continue; // Soft Error
         writeInstructions(nFile.m_relativePath, 0ULL, newHash, diffBuffer, 'N', instructionBuffer);
         fileCount++;
     }
@@ -547,7 +582,10 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
     removedFiles.clear();
 
     // Try to compress the instruction buffer
-    instructionBuffer = instructionBuffer.compress();
+    if (auto compressionResult = instructionBuffer.compress())
+        std::swap(instructionBuffer, *compressionResult);
+    else
+        return {}; // Failure
 
     // Prepend header information
     constexpr char deltaHeaderTitle[16ULL] = "yatta delta";

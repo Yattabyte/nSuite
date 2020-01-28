@@ -64,15 +64,15 @@ namespace yatta {
         /** Clears out the contents of this virtual directory, freeing its memory. */
         void clear() noexcept;
         /***/
-        void in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
+        bool in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
         /***/
-        void in_package(const Buffer& packageBuffer);
+        bool in_package(const Buffer& packageBuffer);
         /***/
         bool in_delta(const Buffer& deltaBuffer);
         /***/
-        void out_folder(const std::filesystem::path& path) const;
+        bool out_folder(const std::filesystem::path& path) const;
         /***/
-        Buffer out_package(const std::string& folderName) const;
+        std::optional<Buffer> out_package(const std::string& folderName) const;
         /***/
         std::optional<Buffer> out_delta(const Directory& targetDirectory) const;
 

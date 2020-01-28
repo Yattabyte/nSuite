@@ -18,7 +18,7 @@ namespace yatta {
         /** Construct a memory range from the specified pointer and size.
         @param	size				the number of bytes in the range.
         @param	dataPtr			    pointer to some data source. */
-        MemoryRange(const size_t& size, std::byte* dataPtr) noexcept;
+        explicit MemoryRange(const size_t& size = 0ULL, std::byte* dataPtr = nullptr) noexcept;
 
 
         // Public Inquiry Methods
