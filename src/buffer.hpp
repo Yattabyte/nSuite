@@ -55,6 +55,8 @@ namespace yatta {
         @note	will invalidate previous pointers when expanding.
         @param	size				the new size to use. */
         void resize(const size_t& size);
+        /***/
+        void reserve(const size_t& capacity);
         /** Reduces the capacity of this buffer down to its size. */
         void shrink();
         /** Clear the size and capacity of this buffer, freeing its memory. */
@@ -62,10 +64,38 @@ namespace yatta {
 
 
         // Public IO Methods
-        // push_type
-        // push_raw
-        // pop_type
-        // pop_raw
+        /***/
+        void push_raw(const void* const dataPtr, const size_t& size);
+        /***/
+        template <typename T>
+        void push_type(const T& dataObj) {
+            const auto byteIndex = m_range;
+            resize(m_range + sizeof(T));
+            // Only reinterpret-cast if T is not std::byte
+            if constexpr (std::is_same<T, std::byte>::value)
+                m_dataPtr[byteIndex] = dataObj;
+            else {
+                // Instead of casting the buffer to type T, std::copy the range
+                const auto dataObjPtr = reinterpret_cast<const std::byte*>(&dataObj);
+                std::copy(dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
+            }
+        }
+        /***/
+        void pop_raw(void* const dataPtr, const size_t& size);
+        /***/
+        template <typename T>
+        void pop_type(T& dataObj) {
+            const auto byteIndex = m_range - sizeof(T);
+            resize(m_range - sizeof(T));
+            // Only reinterpret-cast if T is not std::byte
+            if constexpr (std::is_same<T, std::byte>::value)
+                dataObj = m_dataPtr[byteIndex];
+            else {
+                // Instead of casting the buffer to type T, std::copy the range
+                auto dataObjPtr = reinterpret_cast<std::byte*>(&dataObj);
+                std::copy(&m_dataPtr[byteIndex], &m_dataPtr[byteIndex + sizeof(T)], dataObjPtr);
+            }
+        }
 
 
         // Public Derivation Methods
@@ -152,6 +182,27 @@ namespace yatta {
         /** Underlying data pointer. */
         std::unique_ptr<std::byte[]> m_data = nullptr;
     };
+    template <>
+    inline void Buffer::push_type(const std::string& dataObj) {
+        // Copy in string size
+        push_type(dataObj.size());
+        // Copy in char data
+        const auto stringSize = static_cast<size_t>(sizeof(char)) * dataObj.size();
+        push_raw(dataObj.data(), stringSize);
+    }
+    /** Copies data found in this buffer out to a data object.
+    @param	dataObj				reference to some object to copy into.
+    @param	byteIndex			the destination index to begin copying from. */
+    template <>
+    inline void Buffer::pop_type(std::string& dataObj) {
+        // Copy out string size
+        size_t stringSize(0ULL);
+        pop_type(stringSize);
+        // Copy out char data
+        const auto chars = std::make_unique<char[]>(stringSize);
+        pop_raw(chars.get(), stringSize);
+        dataObj = std::string(chars.get(), stringSize);
+    }
 };
 
 #endif // YATTA_BUFFER_H

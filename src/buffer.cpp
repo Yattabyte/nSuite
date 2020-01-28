@@ -41,7 +41,7 @@ struct Differential_Instruction {
     /** Execute this instruction. */
     virtual void execute(Buffer& bufferNew, const MemoryRange& bufferOld) const = 0;
     /** Write-out this instruction to a buffer. */
-    virtual void write(Buffer& outputBuffer, size_t& byteIndex) const = 0;
+    virtual void write(Buffer& outputBuffer) const = 0;
     /** Read-in this instruction from a buffer. */
     virtual void read(const Buffer& inputBuffer, size_t& byteIndex) = 0;
 
@@ -64,29 +64,20 @@ struct Copy_Instruction final : public Differential_Instruction {
         const auto old_subRange = bufferOld.subrange(m_beginRead, m_endRead - m_beginRead);
         std::copy(old_subRange.cbegin(), old_subRange.cend(), &bufferNew[m_index]);
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
-        // Write Type
-        outputBuffer.in_type(m_type, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
-        // Write Index
-        outputBuffer.in_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Write Begin
-        outputBuffer.in_type(m_beginRead, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Write End
-        outputBuffer.in_type(m_endRead, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+    void write(Buffer& outputBuffer) const final {
+        // Write Attributes
+        outputBuffer.push_type(m_type);
+        outputBuffer.push_type(m_index);
+        outputBuffer.push_type(m_beginRead);
+        outputBuffer.push_type(m_endRead);
     }
     void read(const Buffer& inputBuffer, size_t& byteIndex) final {
+        // Read Attributes
         // Type already read
-        // Read Index
         inputBuffer.out_type(m_index, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Read Begin
         inputBuffer.out_type(m_beginRead, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Read End
         inputBuffer.out_type(m_endRead, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
     }
@@ -112,34 +103,25 @@ struct Insert_Instruction final : public Differential_Instruction {
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         std::copy(m_newData.cbegin(), m_newData.cend(), &bufferNew[m_index]);
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
-        // Write Type
-        outputBuffer.in_type(m_type, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
-        // Write Index
-        outputBuffer.in_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Write Length
+    void write(Buffer& outputBuffer) const final {
+        // Write Attributes
+        outputBuffer.push_type(m_type);
+        outputBuffer.push_type(m_index);
         auto length = m_newData.size();
-        outputBuffer.in_type(length, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
-        if (length != 0U) {
-            // Write Data
-            outputBuffer.in_raw(m_newData.data(), length, byteIndex);
-            byteIndex += static_cast<size_t>(sizeof(char))* length;
-        }
+        outputBuffer.push_type(length);
+        if (length != 0U) 
+            outputBuffer.push_raw(m_newData.data(), length);
+        
     }
     void read(const Buffer& inputBuffer, size_t& byteIndex) final {
+        // Read Attributes
         // Type already read
-        // Read Index
         inputBuffer.out_type(m_index, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Read Length
         size_t length(0ULL);
         inputBuffer.out_type(length, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
         if (length != 0ULL) {
-            // Read Data
             m_newData.resize(length);
             inputBuffer.out_raw(m_newData.data(), length, byteIndex);
             byteIndex += static_cast<size_t>(sizeof(char))* length;
@@ -163,29 +145,23 @@ struct Repeat_Instruction final : public Differential_Instruction {
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
         std::fill(&bufferNew[0], &bufferNew[std::min(m_amount, bufferNew.size())], m_value);
     }
-    void write(Buffer& outputBuffer, size_t& byteIndex) const final {
-        // Write Type
-        outputBuffer.in_type(m_type, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
+    void write(Buffer& outputBuffer) const final {
+        // Write Attributes
+        outputBuffer.push_type(m_type);
         // Write Index
-        outputBuffer.in_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        outputBuffer.push_type(m_index);
         // Write Amount
-        outputBuffer.in_type(m_amount, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        outputBuffer.push_type(m_amount);
         // Write Value
-        outputBuffer.in_type(m_value, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
+        outputBuffer.push_type(m_value);
     }
     void read(const Buffer& inputBuffer, size_t& byteIndex) final {
+        // Read Attributes
         // Type already read
-        // Read Index
         inputBuffer.out_type(m_index, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Read Amount
         inputBuffer.out_type(m_amount, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(size_t));
-        // Read Value
         inputBuffer.out_type(m_value, byteIndex);
         byteIndex += static_cast<size_t>(sizeof(char));
     }
@@ -277,25 +253,41 @@ void Buffer::resize(const size_t& size)
     // Create the data container if it is missing
     if (m_data == nullptr) {
         m_capacity = size * 2ULL;
-        m_data = std::make_unique<std::byte[]>(size * 2ULL);
+        m_data = std::make_unique<std::byte[]>(m_capacity);
         m_dataPtr = m_data.get();
     }
 
     // Check if our previous buffer is too small
     else if (size > m_capacity) {
         // Allocate new container
-        auto newData = std::make_unique<std::byte[]>(size * 2ULL);
+        m_capacity = size * 2ULL;
+        auto newData = std::make_unique<std::byte[]>(m_capacity);
 
         // Copy over old data
         std::copy(m_data.get(), m_data.get() + m_range, newData.get());
 
         // Swap data containers
-        m_capacity = size * 2ULL;
         std::swap(m_data, newData);
         m_dataPtr = m_data.get();
     }
 
     m_range = size;
+}
+
+void Buffer::reserve(const size_t& capacity)
+{
+    if (capacity > m_capacity) {
+        m_capacity = capacity;
+        auto newData = std::make_unique<std::byte[]>(m_capacity);
+
+        // Copy previous data if present
+        if (m_data != nullptr)
+            std::copy(m_data.get(), m_data.get() + m_range, newData.get());
+
+        // Swap data containers
+        std::swap(m_data, newData);
+        m_dataPtr = m_data.get();
+    }
 }
 
 void Buffer::shrink()
@@ -323,6 +315,29 @@ void Buffer::clear() noexcept
     m_capacity = 0ULL;
     m_data = nullptr;
     m_dataPtr = nullptr;
+}
+
+
+// Public IO Methods
+
+void Buffer::push_raw(const void* const dataPtr, const size_t& size)
+{
+    // Find the starting index to write at
+    const auto byteIndex = m_range;
+    // Grow the container to hold the new data
+    resize(m_range + size);
+    // Copy the data into the container
+    in_raw(dataPtr, size, byteIndex);
+}
+
+void Buffer::pop_raw(void* const dataPtr, const size_t& size)
+{
+    // Find the starting index to read at
+    const auto byteIndex = m_range - size;
+    // Copy the data out of the container
+    out_raw(dataPtr, size, byteIndex);
+    // Shrink the container by the size of the data
+    resize(m_range - size);
 }
 
 // Public Derivation Methods
@@ -687,9 +702,8 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
     Buffer patchBuffer(size_patch);
 
     // Write the instruction data to a buffer
-    size_t m_index(0ULL);
     for (const auto& instruction : instructions)
-        instruction->write(patchBuffer, m_index);
+        instruction->write(patchBuffer);
 
     // Free up memory
     instructions.clear();
@@ -703,14 +717,13 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
 
     // Prepend header information
     constexpr size_t headerSize = sizeof(DifferentialHeader);
-    Buffer bufferWithHeader(patchBuffer.size() + headerSize);
     DifferentialHeader diffHeader{ "yatta diff", sizeB };
+    Buffer bufferWithHeader;
+    bufferWithHeader.reserve(patchBuffer.size() + headerSize);
 
     // Copy header data into new buffer at the beginning
-    bufferWithHeader.in_type(diffHeader);
-
-    // Copy remaining data
-    bufferWithHeader.in_raw(patchBuffer.bytes(), patchBuffer.size(), headerSize);
+    bufferWithHeader.push_type(diffHeader);
+    bufferWithHeader.push_raw(patchBuffer.bytes(), patchBuffer.size());
 
     return bufferWithHeader; // Success
 }

@@ -391,7 +391,8 @@ bool Directory::out_folder(const filepath& path) const
 std::optional<Buffer> Directory::out_package(const std::string& folderName) const
 {
     // Create a buffer large enough to hold all the files
-    Buffer filebuffer(
+    Buffer filebuffer;
+    filebuffer.reserve(
         std::accumulate(
             m_files.cbegin(),
             m_files.cend(),
@@ -407,22 +408,18 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
     );
 
     // Starting with the file count
-    filebuffer.in_type(m_files.size());
-    size_t byteIndex(sizeof(size_t));
+    filebuffer.push_type(m_files.size());
 
     // Iterate over all files, writing in all their data
     for (auto& file : m_files) {
         // Write the path string into the archive
-        filebuffer.in_type(file.m_relativePath, byteIndex);
-        byteIndex += sizeof(size_t) + (sizeof(char) * file.m_relativePath.size());
+        filebuffer.push_type(file.m_relativePath);
 
         // Write the file size in bytes, into the archive
-        filebuffer.in_type(file.m_data.size(), byteIndex);
-        byteIndex += sizeof(size_t);
+        filebuffer.push_type(file.m_data.size());
 
         // Copy the file data
-        filebuffer.in_raw(file.m_data.bytes(), file.m_data.size(), byteIndex);
-        byteIndex += sizeof(std::byte) * file.m_data.size();
+        filebuffer.push_raw(file.m_data.bytes(), file.m_data.size());
     }
 
     // Try to compress the archive buffer
@@ -435,14 +432,13 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
     const auto& packHeaderName = folderName;
     const size_t headerSize = sizeof(packHeaderTitle) + sizeof(size_t) + (sizeof(char) * folderName.size());
-    Buffer bufferWithHeader(filebuffer.size() + headerSize);
+    Buffer bufferWithHeader;
+    bufferWithHeader.reserve(filebuffer.size() + headerSize);
 
     // Copy header data into new buffer at the beginning
-    bufferWithHeader.in_type(packHeaderTitle);
-    bufferWithHeader.in_type(packHeaderName, sizeof(packHeaderTitle));
-
-    // Copy remaining data
-    bufferWithHeader.in_raw(filebuffer.bytes(), filebuffer.size(), headerSize);
+    bufferWithHeader.push_type(packHeaderTitle);
+    bufferWithHeader.push_type(packHeaderName);
+    bufferWithHeader.push_raw(filebuffer.bytes(), filebuffer.size());
 
     return bufferWithHeader; // Success
 }
@@ -501,32 +497,15 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         const auto bufferSize = buffer.size();
         const auto pathLength = path.length();
         const size_t instructionSize = (sizeof(size_t) * 4ULL) + (sizeof(char) * pathLength) + sizeof(char) + bufferSize;
-        size_t byteIndex = instructionBuffer.size();
-        instructionBuffer.resize(byteIndex + instructionSize);
+        instructionBuffer.reserve(instructionBuffer.size() + instructionSize);
 
-        // Write file path
-        instructionBuffer.in_type(path, byteIndex);
-        byteIndex += sizeof(size_t) + (sizeof(char) * pathLength);
-
-        // Write operation flag
-        instructionBuffer.in_type(flag, byteIndex);
-        byteIndex += sizeof(char);
-
-        // Write old hash
-        instructionBuffer.in_type(oldHash, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Write new hash
-        instructionBuffer.in_type(newHash, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Write buffer size
-        instructionBuffer.in_type(bufferSize, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Write buffer
-        instructionBuffer.in_raw(buffer.bytes(), sizeof(std::byte) * bufferSize, byteIndex);
-        byteIndex += sizeof(std::byte) * bufferSize;
+        // Write Attributes
+        instructionBuffer.push_type(path);
+        instructionBuffer.push_type(flag);
+        instructionBuffer.push_type(oldHash);
+        instructionBuffer.push_type(newHash);
+        instructionBuffer.push_type(bufferSize);
+        instructionBuffer.push_raw(buffer.bytes(), sizeof(std::byte) * bufferSize);
     };
 
     // Retrieve all common, added, and removed files
@@ -591,14 +570,13 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
     constexpr char deltaHeaderTitle[16ULL] = "yatta delta";
     const auto& deltaHeaderFileCount = fileCount;
     constexpr size_t headerSize = sizeof(deltaHeaderTitle) + sizeof(size_t);
-    Buffer bufferWithHeader(instructionBuffer.size() + headerSize);
+    Buffer bufferWithHeader;
+    bufferWithHeader.reserve(instructionBuffer.size() + headerSize);
 
     // Copy header data into new buffer at the beginning
-    bufferWithHeader.in_type(deltaHeaderTitle);
-    bufferWithHeader.in_type(deltaHeaderFileCount, sizeof(deltaHeaderTitle));
-
-    // Copy remaining data
-    bufferWithHeader.in_raw(instructionBuffer.bytes(), instructionBuffer.size(), headerSize);
+    bufferWithHeader.push_type(deltaHeaderTitle);
+    bufferWithHeader.push_type(deltaHeaderFileCount);
+    bufferWithHeader.push_raw(instructionBuffer.bytes(), instructionBuffer.size());
 
     return bufferWithHeader; // Success
 }
