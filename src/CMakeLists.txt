@@ -7,7 +7,6 @@ set(Module yatta)
 set(FILES
 	# Header files
 	buffer.hpp
-	bufferView.hpp
 	memoryRange.hpp
 	directory.hpp
 	threader.hpp
@@ -16,7 +15,6 @@ set(FILES
 
 	# Source files
 	buffer.cpp
-	bufferView.cpp
 	memoryRange.cpp
 	directory.cpp
 	lz4/lz4.c

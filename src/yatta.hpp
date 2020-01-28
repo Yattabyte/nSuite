@@ -3,7 +3,6 @@
 #define YATTA_H
 
 #include "buffer.hpp"
-#include "bufferView.hpp"
 #include "directory.hpp"
 #include "memoryRange.hpp"
 #include "threader.hpp"

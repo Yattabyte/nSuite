@@ -1,5 +1,4 @@
 #include "directory.hpp"
-#include "bufferView.hpp"
 #include <algorithm>
 #include <fstream>
 #include <numeric>
@@ -7,7 +6,6 @@
 
 // Convenience definitions
 using yatta::Buffer;
-using yatta::BufferView;
 using yatta::Directory;
 using filepath = std::filesystem::path;
 using directory_itt = std::filesystem::directory_iterator;
@@ -170,8 +168,8 @@ void Directory::in_package(const Buffer& packageBuffer)
     if (std::strcmp(packHeaderTitle, "yatta pack") != 0)
         throw std::runtime_error("Header mismatch");
 
-    // Try to decompress the archive buffer
-    const auto filebuffer = BufferView{ packageBuffer.size() - byteIndex, &packageBuffer.bytes()[byteIndex] }.decompress();
+    // Try to decompress the archive buffer    
+    const auto filebuffer = Buffer::decompress(packageBuffer.subrange(byteIndex, packageBuffer.size() - byteIndex));
     byteIndex = 0ULL; // reset byte index
 
     // Find the file count
@@ -222,7 +220,7 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
         return false; // Failure
 
     // Try to decompress the instruction buffer
-    auto instructionBuffer = BufferView{ deltaBuffer.size() - byteIndex, &deltaBuffer.bytes()[byteIndex] }.decompress();
+    auto instructionBuffer = Buffer::decompress(deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex));
     byteIndex = 0ULL; // reset byte index
 
     // Start reading diff file

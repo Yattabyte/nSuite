@@ -1,5 +1,4 @@
 #include "buffer.hpp"
-#include "bufferView.hpp"
 #include "threader.hpp"
 #include "lz4/lz4.h"
 #include <algorithm>
@@ -11,7 +10,6 @@
 
 // Convenience definitions
 using yatta::Buffer;
-using yatta::BufferView;
 using yatta::MemoryRange;
 using yatta::Threader;
 
@@ -201,27 +199,33 @@ struct Repeat_Instruction final : public Differential_Instruction {
 
 // Public (de)Constructors
 
+Buffer::Buffer() :
+    MemoryRange(0, nullptr)
+{
+}
+
 Buffer::Buffer(const size_t& size) :
-    m_size(size),
+    MemoryRange(size, nullptr),
     m_capacity(size * 2ULL),
     m_data(std::make_unique<std::byte[]>(m_capacity))
 {
+    m_dataPtr = m_data.get();
 }
 
 Buffer::Buffer(const Buffer& other) :
-    m_size(other.m_size),
+    MemoryRange(other),
     m_capacity(other.m_capacity),
     m_data(std::make_unique<std::byte[]>(other.m_capacity))
 {
-    std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
+    m_dataPtr = m_data.get();
+    std::copy(other.m_data.get(), other.m_data.get() + other.m_range, m_data.get());
 }
 
 Buffer::Buffer(Buffer&& other) noexcept :
-    m_size(other.m_size),
+    MemoryRange(other),
     m_capacity(other.m_capacity),
     m_data(std::move(other.m_data))
 {
-    other.m_size = 0ULL;
     other.m_capacity = 0ULL;
     other.m_data = nullptr;
 }
@@ -232,10 +236,11 @@ Buffer::Buffer(Buffer&& other) noexcept :
 Buffer& Buffer::operator=(const Buffer& other)
 {
     if (this != &other) {
-        m_size = other.m_size;
+        m_range = other.m_range;
         m_capacity = other.m_capacity;
         m_data = std::make_unique<std::byte[]>(other.m_capacity);
-        std::copy(other.m_data.get(), other.m_data.get() + other.m_size, m_data.get());
+        m_dataPtr = m_data.get();
+        std::copy(other.m_data.get(), other.m_data.get() + other.m_range, m_data.get());
     }
     return *this;
 }
@@ -243,13 +248,15 @@ Buffer& Buffer::operator=(const Buffer& other)
 Buffer& Buffer::operator=(Buffer&& other) noexcept
 {
     if (this != &other) {
-        m_size = other.m_size;
+        m_range = other.m_range;
         m_capacity = other.m_capacity;
         m_data = std::move(other.m_data);
+        m_dataPtr = m_data.get();
 
-        other.m_size = 0ULL;
+        other.m_range = 0ULL;
         other.m_capacity = 0ULL;
         other.m_data = nullptr;
+        other.m_dataPtr = nullptr;
     }
     return *this;
 }
@@ -259,17 +266,7 @@ Buffer& Buffer::operator=(Buffer&& other) noexcept
 
 bool Buffer::empty() const noexcept
 {
-    return m_data == nullptr || m_size == 0ULL || m_capacity == 0ULL;
-}
-
-bool Buffer::hasData() const noexcept
-{
-    return m_data != nullptr && m_size > 0ULL;
-}
-
-size_t Buffer::size() const noexcept
-{
-    return m_size;
+    return m_data == nullptr || m_range == 0ULL || m_capacity == 0ULL;
 }
 
 size_t Buffer::capacity() const noexcept
@@ -277,37 +274,8 @@ size_t Buffer::capacity() const noexcept
     return m_capacity;
 }
 
-size_t Buffer::hash() const noexcept
-{
-    return MemoryRange{ m_size, bytes() }.hash();
-}
-
 
 // Public Manipulation Methods
-
-std::byte& Buffer::operator[](const size_t& byteIndex)
-{
-    if (byteIndex >= m_size)
-        throw std::runtime_error("Buffer index out of bounds");
-    return m_data[byteIndex];
-}
-
-const std::byte& Buffer::operator[](const size_t& byteIndex) const
-{
-    if (byteIndex >= m_size)
-        throw std::runtime_error("Buffer index out of bounds");
-    return m_data[byteIndex];
-}
-
-char* Buffer::charArray() const noexcept
-{
-    return reinterpret_cast<char*>(&m_data[0]);
-}
-
-std::byte* Buffer::bytes() const noexcept
-{
-    return m_data.get();
-}
 
 void Buffer::resize(const size_t& size)
 {
@@ -315,20 +283,24 @@ void Buffer::resize(const size_t& size)
     if (m_data == nullptr) {
         m_capacity = size * 2ULL;
         m_data = std::make_unique<std::byte[]>(size * 2ULL);
+        m_dataPtr = m_data.get();
     }
 
     // Check if our previous buffer is too small
     else if (size > m_capacity) {
         // Allocate new container
         auto newData = std::make_unique<std::byte[]>(size * 2ULL);
+
         // Copy over old data
-        std::copy(m_data.get(), m_data.get() + m_size, newData.get());
+        std::copy(m_data.get(), m_data.get() + m_range, newData.get());
+
         // Swap data containers
         m_capacity = size * 2ULL;
-        m_data = std::move(newData);
+        std::swap(m_data, newData);
+        m_dataPtr = m_data.get();
     }
 
-    m_size = size;
+    m_range = size;
 }
 
 void Buffer::shrink()
@@ -338,22 +310,24 @@ void Buffer::shrink()
         return;
 
     // Allocate new container
-    auto newData = std::make_unique<std::byte[]>(m_size);
+    auto newData = std::make_unique<std::byte[]>(m_range);
 
     // Copy over old data
-    std::copy(m_data.get(), m_data.get() + m_size, newData.get());
+    std::copy(m_data.get(), m_data.get() + m_range, newData.get());
 
     // Swap data containers
-    m_capacity = m_size;
+    m_capacity = m_range;
     std::swap(m_data, newData);
+    m_dataPtr = m_data.get();
 }
 
 void Buffer::clear() noexcept
 {
     m_data.release();
-    m_size = 0ULL;
+    m_range = 0ULL;
     m_capacity = 0ULL;
     m_data = nullptr;
+    m_dataPtr = nullptr;
 }
 
 // Public Derivation Methods
@@ -785,7 +759,7 @@ Buffer Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMem
     // Try to decompress the diff buffer
     constexpr size_t diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
-    const auto patchBuffer = BufferView{ dataSize, &diffMemory.bytes()[diffHeaderSize] }.decompress();
+    const auto patchBuffer = decompress(diffMemory.subrange(diffHeaderSize, dataSize));    
     const auto patchBufferSize = patchBuffer.size();
 
     // Convert buffer into instructions
