@@ -391,7 +391,7 @@ static bool Buffer_CompressionTest()
                 }
             }
         }
-    }   
+    }
 
     std::cout << "Buffer Compression/Decompression Test - Failure\n";
     return false; // Failure

@@ -66,7 +66,7 @@ namespace yatta {
         }
         /***/
         template <typename T>
-        const T* cbegin_t() const {
+        const T* cbegin_t() const noexcept {
             return reinterpret_cast<T*>(&m_dataPtr[0]);
         }
         /***/
@@ -81,7 +81,7 @@ namespace yatta {
         }
         /***/
         template <typename T>
-        const T* cend_t() const {
+        const T* cend_t() const noexcept {
             const auto lastFullElement = static_cast<size_t>(m_range / sizeof(T)) * sizeof(T);
             return reinterpret_cast<T*>(&m_dataPtr[lastFullElement]);
         }

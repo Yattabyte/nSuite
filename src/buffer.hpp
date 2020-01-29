@@ -187,7 +187,7 @@ namespace yatta {
         // Copy in string size
         push_type(dataObj.size());
         // Copy in char data
-        const auto stringSize = static_cast<size_t>(sizeof(char)) * dataObj.size();
+        const auto stringSize = static_cast<size_t>(sizeof(char))* dataObj.size();
         push_raw(dataObj.data(), stringSize);
     }
     /** Copies data found in this buffer out to a data object.

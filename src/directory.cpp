@@ -95,8 +95,8 @@ void Directory::clear() noexcept
 
 bool Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
-    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) noexcept {
-        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) noexcept {
+    constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
+        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) {
             const auto extension = p.extension();
             for (const auto& excl : e) {
                 if (excl.empty())

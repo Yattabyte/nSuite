@@ -32,11 +32,11 @@
     - LZ4 homepage : http://www.lz4.org
     - LZ4 source repository : https://github.com/lz4/lz4
 */
+#pragma once
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-#pragma once
 #ifndef LZ4_H_2983827168210
 #define LZ4_H_2983827168210
 
@@ -164,7 +164,8 @@ extern "C" {
      *          If there is a need for a different format which bundles together both compressed data and its metadata, consider looking at lz4frame.h instead.
      */
     LZ4LIB_API int LZ4_decompress_safe(const char* source, char* dest,
-        int compressedSize, int maxDecompressedSize);
+        int compressedSize,
+        int maxDecompressedSize);
 
     /*-************************************
     *  Advanced Functions
@@ -190,8 +191,9 @@ extern "C" {
         An acceleration value of "1" is the same as regular LZ4_compress_default()
         Values <= 0 will be replaced by ACCELERATION_DEFAULT (currently == 1, see lz4.c).
     */
-    LZ4LIB_API int LZ4_compress_fast(const char* source, char* dest, int inputSize,
-        int maxOutputSize, int acceleration);
+    LZ4LIB_API int LZ4_compress_fast(const char* source, char* dest,
+        int inputSize, int maxOutputSize,
+        int acceleration);
 
     /*! LZ4_compress_fast_extState() :
      *  Same as LZ4_compress_fast(), using an externally allocated memory space for its state.
@@ -202,7 +204,8 @@ extern "C" {
     LZ4LIB_API int LZ4_sizeofState(void);
     LZ4LIB_API int LZ4_compress_fast_extState(void* state, const char* source,
         char* dest, int inputSize,
-        int maxOutputSize, int acceleration);
+        int maxOutputSize,
+        int acceleration);
 
     /*! LZ4_compress_destSize() :
      *  Reverse the logic : compresses as much data as possible from 'src' buffer
@@ -395,8 +398,8 @@ extern "C" {
     */
     LZ4LIB_API int
         LZ4_decompress_safe_continue(LZ4_streamDecode_t* LZ4_streamDecode,
-            const char* source, char* dest, int compressedSize,
-            int maxOutputSize);
+            const char* source, char* dest,
+            int compressedSize, int maxOutputSize);
 
     /*! LZ4_decompress_*_usingDict() :
      *  These decoding functions work the same as
@@ -673,7 +676,7 @@ extern "C" {
      *  Deprecated functions make the compiler generate a warning when invoked.
      *  This is meant to invite users to update their source code.
      *  Should deprecation warnings be a problem, it is generally possible to disable them,
-     *  typically with -Wno-deprecated-declarations for GCC
+     *  typically with -Wno-deprecated-declarations for gcc
      *  or _CRT_SECURE_NO_WARNINGS in Visual.
      *
      *  Another method is to define LZ4_DISABLE_DEPRECATE_WARNINGS
@@ -703,12 +706,13 @@ extern "C" {
         LZ4LIB_API int LZ4_compress_limitedOutput(const char* source, char* dest,
             int inputSize, int maxOutputSize);
     LZ4_DEPRECATED("use LZ4_compress_fast_extState() instead")
-        LZ4LIB_API int LZ4_compress_withState(void* state, const char* src, char* dst,
-            int srcSize);
+        LZ4LIB_API int LZ4_compress_withState(void* state, const char* src,
+            char* dst, int srcSize);
     LZ4_DEPRECATED("use LZ4_compress_fast_extState() instead")
-        LZ4LIB_API int LZ4_compress_limitedOutput_withState(void* state,
-            const char* src, char* dst,
-            int srcSize, int dstSize);
+        LZ4LIB_API
+        int LZ4_compress_limitedOutput_withState(void* state, const char* src,
+            char* dst, int srcSize,
+            int dstSize);
     LZ4_DEPRECATED("use LZ4_compress_fast_continue() instead") LZ4LIB_API int LZ4_compress_continue(LZ4_stream_t* LZ4_streamPtr, const char* source, char* dest, int inputSize);
     LZ4_DEPRECATED("use LZ4_compress_fast_continue() instead")
         LZ4LIB_API
@@ -738,11 +742,13 @@ extern "C" {
 
     /* Obsolete streaming decoding functions */
     LZ4_DEPRECATED("use LZ4_decompress_safe_usingDict() instead")
-        LZ4LIB_API int LZ4_decompress_safe_withPrefix64k(const char* source, char* dest,
+        LZ4LIB_API
+        int LZ4_decompress_safe_withPrefix64k(const char* source, char* dest,
             int compressedSize,
             int maxOutputSize);
     LZ4_DEPRECATED("use LZ4_decompress_fast_usingDict() instead")
-        LZ4LIB_API int LZ4_decompress_fast_withPrefix64k(const char* source, char* dest,
+        LZ4LIB_API
+        int LZ4_decompress_fast_withPrefix64k(const char* source, char* dest,
             int originalSize);
 
     /*! LZ4_decompress_fast() : **unsafe!**
@@ -779,7 +785,8 @@ extern "C" {
     LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using LZ4_decompress_safe_continue() instead")
         LZ4LIB_API int
         LZ4_decompress_fast_continue(LZ4_streamDecode_t* LZ4_streamDecode,
-            const char* source, char* dest, int originalSize);
+            const char* source, char* dest,
+            int originalSize);
     LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using LZ4_decompress_safe_usingDict() instead")
         LZ4LIB_API int LZ4_decompress_fast_usingDict(const char* source, char* dest,
             int originalSize,

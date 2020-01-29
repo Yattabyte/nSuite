@@ -1,6 +1,6 @@
 #include "buffer.hpp"
-#include "threader.hpp"
 #include "lz4/lz4.h"
+#include "threader.hpp"
 #include <algorithm>
 #include <climits>
 #include <cstring>
@@ -107,11 +107,10 @@ struct Insert_Instruction final : public Differential_Instruction {
         // Write Attributes
         outputBuffer.push_type(m_type);
         outputBuffer.push_type(m_index);
-        auto length = m_newData.size();
+        const auto length = m_newData.size();
         outputBuffer.push_type(length);
-        if (length != 0U) 
+        if (length != 0U)
             outputBuffer.push_raw(m_newData.data(), length);
-        
     }
     void read(const Buffer& inputBuffer, size_t& byteIndex) final {
         // Read Attributes
@@ -348,7 +347,7 @@ std::optional<Buffer> Buffer::compress() const
 }
 
 std::optional<Buffer> Buffer::compress(const Buffer& buffer)
-{    
+{
     return Buffer::compress(Buffer::MemoryRange(buffer));
 }
 
