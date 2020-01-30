@@ -4,7 +4,7 @@
 set(Module MemoryRangeTest)
 
 # Create Library using the supplied files
-add_executable(${Module} main.cpp)
+add_executable(${Module} memoryRangeTest.cpp)
 
 # Add library dependencies
 add_dependencies(${Module} yatta)

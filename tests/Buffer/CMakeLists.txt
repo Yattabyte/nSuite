@@ -4,7 +4,7 @@
 set(Module BufferTest)
 
 # Create Library using the supplied files
-add_executable(${Module} main.cpp)
+add_executable(${Module} bufferTest.cpp)
 
 # Add library dependencies
 add_dependencies(${Module} yatta)

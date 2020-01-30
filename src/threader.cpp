@@ -22,7 +22,7 @@ Threader::Threader(const size_t& maxThreads) noexcept
                 while (m_alive && m_keepOpen) {
                     // Check if there is a job to do
                     if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
-                        if (!m_jobs.empty) {
+                        if (!m_jobs.empty()) {
                             // Get the first job, remove it from the list
                             auto job = m_jobs.front();
                             m_jobs.pop_front();
