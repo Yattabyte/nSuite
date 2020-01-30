@@ -176,37 +176,16 @@ namespace yatta {
     // Template Specializations
 
     template <> inline void MemoryRange::in_type(const std::string& dataObj, const size_t byteIndex) {
-        // Ensure pointers are valid
-        if (m_dataPtr == nullptr)
-            throw std::runtime_error("Invalid Memory Range (null pointer)");
-
-        // Ensure data won't exceed range
-        const auto stringSize = static_cast<size_t>(sizeof(char))* dataObj.size();
-        if ((sizeof(size_t) + stringSize + byteIndex) > m_range)
-            throw std::runtime_error("Memory Range index out of bounds");
-
         // Copy in string size
         in_type(dataObj.size(), byteIndex);
         // Copy in char data
+        const auto stringSize = static_cast<size_t>(sizeof(char))* dataObj.size();
         in_raw(dataObj.data(), stringSize, byteIndex + sizeof(size_t));
     }
     template <> inline void MemoryRange::out_type(std::string& dataObj, const size_t byteIndex) const {
-        // Ensure pointers are valid
-        if (m_dataPtr == nullptr)
-            throw std::runtime_error("Invalid Memory Range (null pointer)");
-
-        // Ensure data won't exceed range
-        if ((sizeof(size_t) + byteIndex) > m_range)
-            throw std::runtime_error("Memory Range index out of bounds");
-
         // Copy out string size
         size_t stringSize(0ULL);
         out_type(stringSize, byteIndex);
-
-        // Ensure string won't exceed range
-        if ((sizeof(size_t) + (sizeof(char) * stringSize) + byteIndex) > m_range)
-            throw std::runtime_error("Memory Range index out of bounds");
-
         // Copy out char data
         const auto chars = std::make_unique<char[]>(stringSize);
         out_raw(chars.get(), stringSize, byteIndex + sizeof(size_t));
