@@ -85,12 +85,12 @@ Buffer buffer(DATA_PTR, DATA_SIZE);
 
 if (auto buff_comp = buffer.compress()) {
 
-	if (auto buff_decomp = buff_comp.decompress()) {
-		// Verify that the decompressed buffer == the original buffer using hashes
-		const auto originalHash = buffer.hash();
-		const auto decompressedHash = buff_decomp->hash();
-		bool hashesMatch = originalHash == decompressedHash;
-	}
+    if (auto buff_decomp = buff_comp.decompress()) {
+        // Verify that the decompressed buffer == the original buffer using hashes
+        const auto originalHash = buffer.hash();
+        const auto decompressedHash = buff_decomp->hash();
+        bool hashesMatch = originalHash == decompressedHash;
+    }
 }
 ```
 
@@ -106,11 +106,11 @@ Buffer buffer_new(DATA2_PTR, DATA2_SIZE);
 
 if (auto buff_diff = buffer_old.diff(buffer_new)) {
 
-	if (auto buff_patched = buffer_old.patch(*buff_diff)) {
-		// Verify that the patched buffer == the original buffer using hashes
-		const auto originalHash = buffer_new.hash();
-		const auto patchedHash = buff_patched->hash();
-		bool hashesMatch = originalHash == patchedHash;
-	}
+    if (auto buff_patched = buffer_old.patch(*buff_diff)) {
+        // Verify that the patched buffer == the original buffer using hashes
+        const auto originalHash = buffer_new.hash();
+        const auto patchedHash = buff_patched->hash();
+        bool hashesMatch = originalHash == patchedHash;
+    }
 }
 ```

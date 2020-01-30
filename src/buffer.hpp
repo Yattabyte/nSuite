@@ -9,64 +9,73 @@
 
 
 namespace yatta {
-    /** An expandable container representing a contiguous memory space.
-    Allocates 2x its creation size, expanding when its capacity is exhausted. */
+    /** An expandable contiguous memory range, similar to a std::vector<std::byte>.
+    Allocates double its size, and may reallocate when the size > capacity.
+    Inherits all memory range functions, and provides pushing, popping, 
+    compressing, expanding, diffing, and patching operations. */
     class Buffer : public MemoryRange {
     public:
         // Public (de)Constructors
-        /** Destroy the buffer, freeing the memory underlying memory. */
+        /** Destroy the buffer, freeing any allocated memory. */
         ~Buffer() = default;
-        /** Construct an empty buffer, allocating no memory. */
+        /** Construct an empty buffer. */
         Buffer() = default;
-        /** Construct a buffer of the specified size in bytes.
-        @param	size				the number of bytes to allocate. */
+        /** Construct a buffer of the specified byte size.
+        @param  size            the number of bytes to allocate. */
         explicit Buffer(const size_t& size);
         /** Construct a buffer, copying from another buffer.
-        @param	other				the buffer to copy from. */
+        @param  other           the buffer to copy from. */
         Buffer(const Buffer& other);
         /** Construct a buffer, moving from another buffer.
-        @param	other				the buffer to move from. */
+        @param  other           the buffer to move from. */
         Buffer(Buffer&& other) noexcept;
 
 
         // Public Assignment Operators
         /** Copy-assignment operator.
-        @param	other				the buffer to copy from.
-        @return						reference to this. */
+        @param  other           the buffer to copy from.
+        @return                 reference to this. */
         Buffer& operator=(const Buffer& other);
         /** Move-assignment operator.
-        @param	other				the buffer to move from.
-        @return						reference to this. */
+        @param  other           the buffer to move from.
+        @return                 reference to this. */
         Buffer& operator=(Buffer&& other) noexcept;
 
 
         // Public Inquiry Methods
-        /** Check if this buffer is empty - has no data allocated.
-        @return						true if no memory has been allocated, false otherwise. */
+        /** Check if this buffer is empty.
+        @return                 true if no memory has been allocated, false otherwise. */
         bool empty() const noexcept;
-        /** Returns the total size + reserved capacity of memory allocated by this buffer.
-        @return						actual number of bytes allocated. */
+        /** Retrieve the total number of bytes allocated.
+        @return                 the number of bytes allocated. */
         size_t capacity() const noexcept;
 
 
         // Public Manipulation Methods
-        /** Changes the size of this buffer, expanding if need be.
-        @note	won't ever reduce the capacity of the container.
-        @note	will invalidate previous pointers when expanding.
-        @param	size				the new size to use. */
+        /** Change the size of this buffer, reallocating if size > capacity.
+        @note   will invalidate previous pointers when reallocating.
+        @param  size            the new size to use. */
         void resize(const size_t& size);
-        /***/
+        /** Change the buffer's memory allocation to a specific capacity. 
+        @note   will invalidate previous pointers when reallocating.
+        @param  capacity        the new memory capacity to use. */
         void reserve(const size_t& capacity);
-        /** Reduces the capacity of this buffer down to its size. */
+        /** Reduces the capacity of this buffer down to its size,
+        reallocating an equal or smaller size chunk of memory. 
+        @note   will invalidate previous pointers when reallocating. */
         void shrink();
-        /** Clear the size and capacity of this buffer, freeing its memory. */
+        /** Free all allocated memory, and set the size and capacity to zero. */
         void clear() noexcept;
 
 
         // Public IO Methods
-        /***/
+        /** Insert raw data onto the end of this buffer, increasing its size. 
+        @param  dataPtr         pointer to the data to insert.
+        @param  size            the number of bytes to insert. */
         void push_raw(const void* const dataPtr, const size_t& size);
-        /***/
+        /** Insert a specific object onto the end of this buffer, increasing its size.
+        @tparam T               the type of the object to insert (auto-deducible).
+        @param  dataObject      the specific object to insert. */
         template <typename T>
         void push_type(const T& dataObj) {
             const auto byteIndex = m_range;
@@ -80,9 +89,13 @@ namespace yatta {
                 std::copy(dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
             }
         }
-        /***/
+        /** Retrieve raw data from the end of this buffer, decreasing its size. 
+        @param  dataPtr         pointer to the data to retrieve. 
+        @param  size            the number of bytes to retrieve. */
         void pop_raw(void* const dataPtr, const size_t& size);
-        /***/
+        /** Retrieve a specific object from the end of this buffer, decreasing its size.
+        @tparam T               the type of the object to retrieve (auto-deducible).
+        @param  dataObject      the specific object to retrieve. */
         template <typename T>
         void pop_type(T& dataObj) {
             const auto byteIndex = m_range - sizeof(T);
@@ -99,79 +112,55 @@ namespace yatta {
 
 
         // Public Derivation Methods
-        /** Compresses this buffer into an equal or smaller-sized buffer.
-        @return						a pointer to the compressed buffer on compression success, empty otherwise.
-        Buffer format:
-        ------------------------------------------------------------------
-        | header: identifier title, uncompressed size | compressed data  |
-        ------------------------------------------------------------------ */
+        /** Compresses the contents of this buffer into a new buffer.
+        @return                 the compressed buffer on success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> compress() const;
-        /** Compresses the supplied buffer into an equal or smaller-sized buffer.
-        @param  buffer              the buffer to compress.
-        @return						a pointer to the compressed buffer on compression success, empty otherwise.
-        Buffer format:
-        ------------------------------------------------------------------
-        | header: identifier title, uncompressed size | compressed data  |
-        ------------------------------------------------------------------ */
+        /** Compresses the contents of the supplied buffer into a new buffer.
+        @param  buffer          the buffer to compress.
+        @return                 the compressed buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> compress(const Buffer& buffer);
-        /** Compresses the supplied memory range into an equal or smaller-sized buffer.
-        @param  memoryRange         the memory range to compress.
-        @return						a pointer to the compressed buffer on compression success, empty otherwise.
-        Buffer format:
-        ------------------------------------------------------------------
-        | header: identifier title, uncompressed size | compressed data  |
-        ------------------------------------------------------------------ */
+        /** Compresses the supplied memory range into a new buffer.
+        @param  memoryRange     the memory range to compress.
+        @return                 the compressed buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> compress(const MemoryRange& memoryRange);
-        /** Generates a decompressed version of this buffer.
-        @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
+        /** Decompress the contents of this buffer into a new buffer.
+        @return                 the decompressed buffer on success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> decompress() const;
-        /** Generates a decompressed version of the supplied buffer.
-        @param  buffer              the buffer to decompress.
-        @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
+        /** Decompress the contents of the supplied buffer into a new buffer.
+        @param  buffer          the buffer to decompress.
+        @return                 the decompressed buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> decompress(const Buffer& buffer);
-        /** Generates a decompressed version of the supplied memory range.
-        @param  memoryRange         the memory range to decompress.
-        @return						a pointer to the decompressed buffer on decompression success, empty otherwise. */
+        /** Decompress the supplied memory range into a new buffer.
+        @param  memoryRange     the memory range to decompress.
+        @return                 the decompressed buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> decompress(const MemoryRange& memoryRange);
-        /** Generates a differential buffer containing patch instructions to get from THIS ->to-> TARGET.
-        @param	target				the newer of the 2 buffers.
-        @return						a pointer to the diff buffer on diff success, empty otherwise.
-        Buffer format:
-        -----------------------------------------------------------------------------------
-        | header: identifier title, final target file size | compressed instruction data  |
-        ----------------------------------------------------------------------------------- */
+        /** Diff this buffer against the supplied buffer, generating a patch instruction set. 
+        @param  target          the buffer to diff against.
+        @return                 the diff buffer on success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> diff(const Buffer& target) const;
-        /** Generates a differential buffer containing patch instructions to get from SOURCE ->to-> TARGET.
-        @param	source				the older of the 2 buffers.
-        @param	target				the newer of the 2 buffers.
-        @return						a pointer to the diff buffer on diff success, empty otherwise.
-        Buffer format:
-        -----------------------------------------------------------------------------------
-        | header: identifier title, final target file size | compressed instruction data  |
-        ----------------------------------------------------------------------------------- */
-        [[nodiscard]] static std::optional<Buffer> diff(const Buffer& source, const Buffer& target);
-        /** Generates a differential buffer containing patch instructions to get from SOURCEMEMORY ->to-> TARGETMEMORY.
-        @param	sourceMemory		the older of the 2 memory ranges.
-        @param	targetMemory    	the newer of the 2 memory ranges.
-        @return						a pointer to the diff buffer on diff success, empty otherwise.
-        Buffer format:
-        -----------------------------------------------------------------------------------
-        | header: identifier title, final target file size | compressed instruction data  |
-        ----------------------------------------------------------------------------------- */
+        /** Diff the supplied buffers against each other, generating a patch instruction set.
+        @param  sourceBuffer    the buffer to diff from.
+        @param  targetBuffer    the buffer to diff against.
+        @return                 the diff buffer on success, empty otherwise. */
+        [[nodiscard]] static std::optional<Buffer> diff(const Buffer& sourceBuffer, const Buffer& targetBuffer);
+        /** Diff the supplied memory ranges against each other, generating a patch instruction set.
+        @param  sourceMemory    the range to diff from.
+        @param  targetMemory    the range to diff against.
+        @return                 the diff buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory);
-        /** Generates a patched version of this buffer, using data found in the supplied diff buffer.
-        @param	diffBuffer			the diff buffer to patch with.
-        @return						a pointer to the patched buffer on patch success, empty otherwise. */
+        /** Patch the contents of this buffer into a new buffer, using the supplied diff buffer.
+        @param  diffBuffer      the patch instruction set to use.
+        @return                 the patched buffer on success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> patch(const Buffer& diffBuffer) const;
-        /** Generates a patched version of the supplied source buffer, using data found in the supplied diff buffer.
-        @param	sourceBuffer		the source buffer to patch from.
-        @param	diffBuffer			the diff buffer to patch with.
-        @return						a pointer to the patched buffer on patch success, empty otherwise. */
+        /** Patch the contents of the supplied buffer into a new buffer, using the supplied diff buffer.
+        @param  sourceBuffer    the source buffer to patch from.
+        @param  diffBuffer      the patch instruction set to use.
+        @return                 the patched buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> patch(const Buffer& sourceBuffer, const Buffer& diffBuffer);
-        /** Generates a patched version of the supplied source memory, using data found in the supplied diff memory.
-        @param	sourceMemory		the source memory range to patch from.
-        @param	diffMemory			the diff memory range to patch with.
-        @return						a pointer to the patched buffer on patch success, empty otherwise. */
+        /** Patch the contents of the supplied memory range into a new buffer, using the supplied diff memory range.
+        @param  sourceMemory    the source memory range to patch from.
+        @param  diffMemory      the patch instruction set to use.
+        @return                 the patched buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory);
 
 
@@ -182,19 +171,18 @@ namespace yatta {
         /** Underlying data pointer. */
         std::unique_ptr<std::byte[]> m_data = nullptr;
     };
-    template <>
-    inline void Buffer::push_type(const std::string& dataObj) {
+
+
+    // Template Specializations
+
+    template <> inline void Buffer::push_type(const std::string& dataObj) {
         // Copy in string size
         push_type(dataObj.size());
         // Copy in char data
-        const auto stringSize = static_cast<size_t>(sizeof(char))* dataObj.size();
+        const auto stringSize = dataObj.size() * sizeof(char);
         push_raw(dataObj.data(), stringSize);
     }
-    /** Copies data found in this buffer out to a data object.
-    @param	dataObj				reference to some object to copy into.
-    @param	byteIndex			the destination index to begin copying from. */
-    template <>
-    inline void Buffer::pop_type(std::string& dataObj) {
+    template <> inline void Buffer::pop_type(std::string& dataObj) {
         // Copy out string size
         size_t stringSize(0ULL);
         pop_type(stringSize);

@@ -16,72 +16,35 @@ namespace yatta {
     class Threader {
     public:
         // Public (de)constructors
-        /** Destroys this threader object, shutting down all threads it owns. */
-        ~Threader() {
-            shutdown();
-        }
-        /** Creates a threader object and generates a specified number of worker threads.
-        @param	maxThreads		 the number of threads to spawn (up to std::thread::hardware_concurrency). */
-        explicit Threader(const size_t& maxThreads = std::thread::hardware_concurrency()) noexcept {
-            m_maxThreads = std::clamp<size_t>(maxThreads, 1ULL, static_cast<size_t>(std::thread::hardware_concurrency()));
-            m_threads.resize(m_maxThreads);
-            for (auto& thread : m_threads) {
-                thread = std::thread([&]() {
-                    while (m_alive && m_keepOpen) {
-                        // Check if there is a job to do
-                        if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
-                            if (m_jobs.size()) {
-                                // Get the first job, remove it from the list
-                                auto job = m_jobs.front();
-                                m_jobs.pop_front();
-                                // Unlock
-                                writeGuard.unlock();
-                                writeGuard.release();
-                                // Do Job
-                                job();
-                                m_jobsFinished++;
-                            }
-                        }
-                    }
-                    });
-            }
-        }
+        /** Destroys this threader and shut down all its threads. */
+        ~Threader();
+        /** Creates a threader and generates a specified number of worker threads.
+        @param  maxThreads       the number of threads to spawn (max std::thread::hardware_concurrency). */
+        explicit Threader(const size_t& maxThreads = std::thread::hardware_concurrency()) noexcept;
         /** Deleted copy-assignment constructor. */
         Threader(const Threader&) = delete;
         /** Deleted move-assignment constructor. */
         Threader(Threader&&) = delete;
 
 
-        // Public Methods
-        /** Adds a job/task/function to the queue.
-        @param	func	the task to be executed on a separate thread. A function with void return type and no arguments. */
-        void addJob(const std::function<void()>&& func) {
-            std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
-            m_jobs.emplace_back(func);
-            m_jobsStarted++;
-        }
-        /** Check if the threader has completed all its jobs.
-        @return			true if finished, false otherwise. */
-        [[nodiscard]] bool isFinished() const noexcept {
-            return m_jobsStarted == m_jobsFinished;
-        }
-        /** Prepare the threader for shutdown, notifying threads to complete early. */
-        void prepareForShutdown() noexcept {
-            m_keepOpen = false;
-        }
-        /** Shuts down the threader, forcing threads to close. */
-        void shutdown() {
-            m_alive = false;
-            m_keepOpen = false;
-            for (auto& thread : m_threads)
-                if (thread.joinable())
-                    thread.join();
-            m_threads.clear();
-        }
+        // Public Assignment Operators
         /** Deleted copy-assignment operator. */
         Threader& operator=(const Threader& other) = delete;
         /** Deleted move-assignment operator. */
         Threader& operator=(Threader&& other) = delete;
+
+
+        // Public Methods
+        /** Adds the specified function object to the queue.
+        @param  func            the task to be executed on a separate thread. */
+        void addJob(const std::function<void()>&& func);
+        /** Check if the threader has completed all its jobs.
+        @return                 true if finished, false otherwise. */
+        bool isFinished() const noexcept;
+        /** Prepare the threader for shutdown, alerting threads to exit early. */
+        void prepareForShutdown() noexcept;
+        /** Shuts down the threader, forcing threads to close. */
+        void shutdown();
 
 
     private:

@@ -93,6 +93,9 @@ void Directory::clear() noexcept
     m_files.clear();
 }
 
+
+// Public IO Methods
+
 bool Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
     constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
@@ -202,7 +205,7 @@ bool Directory::in_package(const Buffer& packageBuffer)
         // Copy the file data
         file.m_data.resize(bufferSize);
         filebuffer.out_raw(file.m_data.bytes(), file.m_data.size(), byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(std::byte))* file.m_data.size();
+        byteIndex += sizeof(std::byte) * file.m_data.size();
         ++fileIndex;
     }
 
@@ -396,7 +399,7 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
         std::accumulate(
             m_files.cbegin(),
             m_files.cend(),
-            static_cast<size_t>(sizeof(size_t)), // Starting with the file count
+            sizeof(size_t), // Starting with the file count
             [](const size_t& currentSize, const VirtualFile& file) noexcept {
                 return currentSize
                     + sizeof(size_t) // Path Size

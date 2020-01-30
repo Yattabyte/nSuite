@@ -8,7 +8,7 @@
 #include <vector>
 
 
-// Convenience definitions
+// Convenience Definitions
 using yatta::Buffer;
 using yatta::MemoryRange;
 using yatta::Threader;
@@ -75,11 +75,11 @@ struct Copy_Instruction final : public Differential_Instruction {
         // Read Attributes
         // Type already read
         inputBuffer.out_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         inputBuffer.out_type(m_beginRead, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         inputBuffer.out_type(m_endRead, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
     }
 
 
@@ -116,14 +116,14 @@ struct Insert_Instruction final : public Differential_Instruction {
         // Read Attributes
         // Type already read
         inputBuffer.out_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         size_t length(0ULL);
         inputBuffer.out_type(length, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         if (length != 0ULL) {
             m_newData.resize(length);
             inputBuffer.out_raw(m_newData.data(), length, byteIndex);
-            byteIndex += static_cast<size_t>(sizeof(char))* length;
+            byteIndex += sizeof(char) * length;
         }
     }
 
@@ -158,11 +158,11 @@ struct Repeat_Instruction final : public Differential_Instruction {
         // Read Attributes
         // Type already read
         inputBuffer.out_type(m_index, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         inputBuffer.out_type(m_amount, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(size_t));
+        byteIndex += sizeof(size_t);
         inputBuffer.out_type(m_value, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
+        byteIndex += sizeof(char);
     }
 
 
@@ -339,6 +339,7 @@ void Buffer::pop_raw(void* const dataPtr, const size_t& size)
     resize(m_range - size);
 }
 
+
 // Public Derivation Methods
 
 std::optional<Buffer> Buffer::compress() const
@@ -348,7 +349,8 @@ std::optional<Buffer> Buffer::compress() const
 
 std::optional<Buffer> Buffer::compress(const Buffer& buffer)
 {
-    return Buffer::compress(Buffer::MemoryRange(buffer));
+    const MemoryRange& range = buffer;
+    return Buffer::compress(range);
 }
 
 std::optional<Buffer> Buffer::compress(const MemoryRange& memoryRange)
@@ -394,7 +396,8 @@ std::optional<Buffer> Buffer::decompress() const
 
 std::optional<Buffer> Buffer::decompress(const Buffer& buffer)
 {
-    return Buffer::decompress(Buffer::MemoryRange(buffer));
+    const MemoryRange& range = buffer;
+    return Buffer::decompress(range);
 }
 
 std::optional<Buffer> Buffer::decompress(const MemoryRange& memoryRange)
@@ -434,9 +437,11 @@ std::optional<Buffer> Buffer::diff(const Buffer& target) const
     return Buffer::diff(*this, target);
 }
 
-std::optional<Buffer> Buffer::diff(const Buffer& source, const Buffer& target)
+std::optional<Buffer> Buffer::diff(const Buffer& sourceBuffer, const Buffer& targetBuffer)
 {
-    return Buffer::diff(Buffer::MemoryRange(source), Buffer::MemoryRange(target));
+    const MemoryRange& sourcetRange = sourceBuffer;
+    const MemoryRange& targetRange = targetBuffer;
+    return Buffer::diff(sourcetRange, targetRange);
 }
 
 struct MatchInfo {
@@ -461,7 +466,7 @@ auto find_matching_regions(const MemoryRange& rangeA, const MemoryRange& rangeB)
             const size_t index_8byte = &elementA - reinterpret_cast<const size_t*>(rangeA.cbegin());
             const size_t index_byte = index_8byte * sizeof(size_t);
             const auto subRangeA = rangeA.subrange(index_byte, rangeA.size() - index_byte);
-            const auto length = std::min<size_t>(subRangeA.size(), rangeB.size());
+            const auto length = std::min(subRangeA.size(), rangeB.size());
 
             // Iterate through {subRangeA and rangeB} 8 bytes at a time
             // Take note of matches >= 32 bytes in a row
@@ -505,7 +510,7 @@ auto split_and_match_ranges(const MemoryRange& rangeA, const MemoryRange& rangeB
     std::vector<std::pair<WindowInfo, std::vector<MatchInfo>>> matchingRegions;
 
     while (indexA < sizeA && indexB < sizeB) {
-        const auto windowSize = std::min<size_t>(4096ULL, std::min<size_t>(sizeA - indexA, sizeB - indexB));
+        const auto windowSize = std::min(4096ULL, std::min<size_t>(sizeA - indexA, sizeB - indexB));
 
         threader.addJob(
             [&, windowSize, indexA, indexB]()
@@ -631,7 +636,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                 // We only care about repeats larger than 36 bytes.
                 if (inst->m_newData.size() > 36ull) {
                     // Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-                    size_t max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
+                    size_t max = std::min(inst->m_newData.size(), inst->m_newData.size() - 37ull);
                     for (size_t x = 0ull; x < max; ++x) {
                         const auto& value_at_x = inst->m_newData[x];
                         if (inst->m_newData[x + 36ull] != value_at_x)
@@ -673,7 +678,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                             writeGuard.release();
 
                             x = ULLONG_MAX; // require overflow, because we want next iteration for x == 0
-                            max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
+                            max = std::min(inst->m_newData.size(), inst->m_newData.size() - 37ull);
                             break;
                         }
                         x = y - 1;
@@ -734,7 +739,9 @@ std::optional<Buffer> Buffer::patch(const Buffer& diffBuffer) const
 
 std::optional<Buffer> Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer)
 {
-    return Buffer::patch(Buffer::MemoryRange(sourceBuffer), Buffer::MemoryRange(diffBuffer));
+    const MemoryRange& sourcetRange = sourceBuffer;
+    const MemoryRange& diffRange = diffBuffer;
+    return Buffer::patch(sourcetRange, diffRange);
 }
 
 std::optional<Buffer> Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory)
@@ -768,7 +775,7 @@ std::optional<Buffer> Buffer::patch(const MemoryRange& sourceMemory, const Memor
         // Deduce the instruction type
         char type(0);
         patchBuffer.out_type(type, byteIndex);
-        byteIndex += static_cast<size_t>(sizeof(char));
+        byteIndex += sizeof(char);
 
         const auto executeInstruction = [&](auto instruction) {
             // Read the instruction

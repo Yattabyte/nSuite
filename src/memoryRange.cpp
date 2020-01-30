@@ -1,5 +1,7 @@
 #include "memoryRange.hpp"
 
+
+// Convenience Definition
 using yatta::MemoryRange;
 
 
