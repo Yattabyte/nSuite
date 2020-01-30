@@ -22,7 +22,7 @@ namespace yatta {
         @param  path            the absolute path to a desired folder or a package file.
         @param  exclusions      list of files or extensions to exclude. */
         explicit Directory(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
-        /** Constructs a directory from a packaged buffer. 
+        /** Constructs a directory from a packaged buffer.
         @param  packageBuffer   the package to source data from. */
         explicit Directory(const Buffer& packageBuffer);
         /** Construct a directory, copying from another.
@@ -60,7 +60,7 @@ namespace yatta {
         /** Generates a hash value derived from this directory's contents.
         @return                 hash value for this directory, derived from its buffers. */
         size_t hash() const noexcept;
-        /** Retrieve the running directory for this application. 
+        /** Retrieve the running directory for this application.
         @return                 the directory this application launched from. */
         static std::string GetRunningDirectory() noexcept;
 
@@ -72,16 +72,16 @@ namespace yatta {
 
         // Public IO Methods
         /** Copies in the files found on disk at the path specified.
-        @param  path            the path to look for files at. 
-        @param  exclusions      list of filenames/types to skip. "string" matches relative path, ".ext" matches extension. 
+        @param  path            the path to look for files at.
+        @param  exclusions      list of filenames/types to skip. "string" matches relative path, ".ext" matches extension.
         @return                 true on success, false otherwise. */
         bool in_folder(const std::filesystem::path& path, const std::vector<std::string>& exclusions = {});
         /** Parses and expands the contents of a package into this directory.
-        @param  packageBuffer   the package to source data from. 
+        @param  packageBuffer   the package to source data from.
         @return                 true on success, false otherwise. */
         bool in_package(const Buffer& packageBuffer);
-        /** Updates and patches the files in this directory using the specified patch file. 
-        @param  deltaBuffer     the patch to apply. 
+        /** Updates and patches the files in this directory using the specified patch file.
+        @param  deltaBuffer     the patch to apply.
         @return                 true on success, false otherwise. */
         bool in_delta(const Buffer& deltaBuffer);
         /** Copies out the files found in this directory to the path on disk specified.

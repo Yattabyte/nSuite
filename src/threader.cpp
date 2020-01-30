@@ -7,7 +7,7 @@ using yatta::Threader;
 
 // Public (de)constructors
 
-Threader::~Threader() 
+Threader::~Threader()
 {
     shutdown();
 }
@@ -22,7 +22,7 @@ Threader::Threader(const size_t& maxThreads) noexcept
                 while (m_alive && m_keepOpen) {
                     // Check if there is a job to do
                     if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
-                        if (m_jobs.size()) {
+                        if (!m_jobs.empty) {
                             // Get the first job, remove it from the list
                             auto job = m_jobs.front();
                             m_jobs.pop_front();
@@ -43,24 +43,24 @@ Threader::Threader(const size_t& maxThreads) noexcept
 
 // Public Methods
 
-void Threader::addJob(const std::function<void()>&& func) 
+void Threader::addJob(const std::function<void()>&& func)
 {
     std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
     m_jobs.emplace_back(func);
     m_jobsStarted++;
 }
 
-bool Threader::isFinished() const noexcept 
+bool Threader::isFinished() const noexcept
 {
     return m_jobsStarted == m_jobsFinished;
 }
 
-void Threader::prepareForShutdown() noexcept 
+void Threader::prepareForShutdown() noexcept
 {
     m_keepOpen = false;
 }
 
-void Threader::shutdown() 
+void Threader::shutdown()
 {
     m_alive = false;
     m_keepOpen = false;

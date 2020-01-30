@@ -15,7 +15,7 @@ bool Buffer_IOTest();
 bool Buffer_CompressionTest();
 bool Buffer_DiffTest();
 
-int main() noexcept
+int main()
 {
     if (Buffer_ConstructionTest() &&
         Buffer_AssignmentTest() &&

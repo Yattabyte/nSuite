@@ -11,7 +11,7 @@
 namespace yatta {
     constexpr size_t ZeroHash = 1234567890ULL;
 
-    /** A range of contiguous memory. 
+    /** A range of contiguous memory.
     Provides means of indexing and manipulating the data it represents. */
     class MemoryRange {
     public:
@@ -59,7 +59,7 @@ namespace yatta {
         @param  offset          the byte index to begin the sub-range at.
         @param  length          the byte length of the sub-range. */
         MemoryRange subrange(const size_t& offset, const size_t& length) const;
-        /** Retrieve an iterator to the beginning of this memory range. 
+        /** Retrieve an iterator to the beginning of this memory range.
         @return                 beginning iterator. */
         std::byte* begin() noexcept;
         /** Retrieve a const iterator to the beginning of this memory range.

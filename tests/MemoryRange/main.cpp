@@ -13,7 +13,7 @@ bool MemoryRange_AssignmentTest();
 bool MemoryRange_MethodTest();
 bool MemoryRange_IOTest();
 
-int main() noexcept
+int main()
 {
     if (MemoryRange_ConstructionTest() &&
         MemoryRange_AssignmentTest() &&
@@ -44,7 +44,7 @@ bool MemoryRange_ConstructionTest()
                     // Ensure pointers match
                     if (&copyMemRange[0] == &largeBuffer[0]) {
                         return true; // Success
-                    }                    
+                    }
                 }
             }
         }

@@ -12,7 +12,7 @@ bool Directory_ConstructionTest();
 bool Directory_MethodTest();
 bool Directory_ManipulationTest();
 
-int main() noexcept
+int main()
 {
     if (Directory_ConstructionTest() &&
         Directory_MethodTest() &&

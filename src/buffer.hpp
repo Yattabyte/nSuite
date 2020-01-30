@@ -11,7 +11,7 @@
 namespace yatta {
     /** An expandable contiguous memory range, similar to a std::vector<std::byte>.
     Allocates double its size, and may reallocate when the size > capacity.
-    Inherits all memory range functions, and provides pushing, popping, 
+    Inherits all memory range functions, and provides pushing, popping,
     compressing, expanding, diffing, and patching operations. */
     class Buffer : public MemoryRange {
     public:
@@ -56,12 +56,12 @@ namespace yatta {
         @note   will invalidate previous pointers when reallocating.
         @param  size            the new size to use. */
         void resize(const size_t& size);
-        /** Change the buffer's memory allocation to a specific capacity. 
+        /** Change the buffer's memory allocation to a specific capacity.
         @note   will invalidate previous pointers when reallocating.
         @param  capacity        the new memory capacity to use. */
         void reserve(const size_t& capacity);
         /** Reduces the capacity of this buffer down to its size,
-        reallocating an equal or smaller size chunk of memory. 
+        reallocating an equal or smaller size chunk of memory.
         @note   will invalidate previous pointers when reallocating. */
         void shrink();
         /** Free all allocated memory, and set the size and capacity to zero. */
@@ -69,7 +69,7 @@ namespace yatta {
 
 
         // Public IO Methods
-        /** Insert raw data onto the end of this buffer, increasing its size. 
+        /** Insert raw data onto the end of this buffer, increasing its size.
         @param  dataPtr         pointer to the data to insert.
         @param  size            the number of bytes to insert. */
         void push_raw(const void* const dataPtr, const size_t& size);
@@ -89,8 +89,8 @@ namespace yatta {
                 std::copy(dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
             }
         }
-        /** Retrieve raw data from the end of this buffer, decreasing its size. 
-        @param  dataPtr         pointer to the data to retrieve. 
+        /** Retrieve raw data from the end of this buffer, decreasing its size.
+        @param  dataPtr         pointer to the data to retrieve.
         @param  size            the number of bytes to retrieve. */
         void pop_raw(void* const dataPtr, const size_t& size);
         /** Retrieve a specific object from the end of this buffer, decreasing its size.
@@ -134,7 +134,7 @@ namespace yatta {
         @param  memoryRange     the memory range to decompress.
         @return                 the decompressed buffer on success, empty otherwise. */
         [[nodiscard]] static std::optional<Buffer> decompress(const MemoryRange& memoryRange);
-        /** Diff this buffer against the supplied buffer, generating a patch instruction set. 
+        /** Diff this buffer against the supplied buffer, generating a patch instruction set.
         @param  target          the buffer to diff against.
         @return                 the diff buffer on success, empty otherwise. */
         [[nodiscard]] std::optional<Buffer> diff(const Buffer& target) const;
