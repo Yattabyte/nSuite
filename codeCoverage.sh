@@ -6,7 +6,7 @@ Starting Code Coverage Build
 **************************************************"
 lcov --version
 gcov --version
-cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_GENERATOR_PLATFORM=x64 -DCMAKE_CXX_FLAGS="-g -O0 -fprofile-arcs -ftest-coverage --coverage" . || exit 1
+cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fprofile-arcs -ftest-coverage --coverage" . || exit 1
 cmake --build . -- -j $(nproc) || exit 1
 ctest --output-on-failure -j $(nproc) || exit 1
 
