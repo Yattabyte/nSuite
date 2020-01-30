@@ -216,6 +216,8 @@ bool MemoryRange_ExceptionTest()
         // Catch null pointer exception
         const MemoryRange emptyRange;
         const auto subRange = emptyRange.subrange(0, 0);
+        if (subRange.hasData())
+            return false;
         return false;
     }
     catch (std::exception&) {}
@@ -224,6 +226,8 @@ bool MemoryRange_ExceptionTest()
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         const MemoryRange smallRange(1, smallBuffer.get());
         const auto subRange = smallRange.subrange(0, 2);
+        if (subRange.hasData())
+            return false;
         return false;
     }
     catch (std::exception&) {}
