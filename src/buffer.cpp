@@ -510,7 +510,7 @@ auto split_and_match_ranges(const MemoryRange& rangeA, const MemoryRange& rangeB
     std::vector<std::pair<WindowInfo, std::vector<MatchInfo>>> matchingRegions;
 
     while (indexA < sizeA && indexB < sizeB) {
-        const auto windowSize = std::min(4096ULL, std::min<size_t>(sizeA - indexA, sizeB - indexB));
+        const auto windowSize = std::min(static_cast<size_t>(4096ULL), std::min(sizeA - indexA, sizeB - indexB));
 
         threader.addJob(
             [&, windowSize, indexA, indexB]()
@@ -636,7 +636,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                 // We only care about repeats larger than 36 bytes.
                 if (inst->m_newData.size() > 36ull) {
                     // Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-                    size_t max = std::min(inst->m_newData.size(), inst->m_newData.size() - 37ull);
+                    auto max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
                     for (size_t x = 0ull; x < max; ++x) {
                         const auto& value_at_x = inst->m_newData[x];
                         if (inst->m_newData[x + 36ull] != value_at_x)
@@ -678,7 +678,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                             writeGuard.release();
 
                             x = ULLONG_MAX; // require overflow, because we want next iteration for x == 0
-                            max = std::min(inst->m_newData.size(), inst->m_newData.size() - 37ull);
+                            max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
                             break;
                         }
                         x = y - 1;
