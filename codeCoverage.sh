@@ -8,7 +8,6 @@ lcov --version
 gcov --version
 cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=ON -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fprofile-arcs -ftest-coverage --coverage" . || exit 1
 cmake --build . -- -j $(nproc) || exit 1
-ctest --verbose --output-on-failure -j $(nproc) || exit 1
 
 echo "
 **************************************************

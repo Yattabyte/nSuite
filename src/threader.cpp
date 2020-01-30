@@ -14,7 +14,7 @@ Threader::~Threader()
 
 Threader::Threader(const size_t& maxThreads) noexcept
 {
-    m_maxThreads = std::clamp(maxThreads, 1ULL, static_cast<size_t>(std::thread::hardware_concurrency()));
+    m_maxThreads = std::clamp<size_t>(maxThreads, 1ULL, static_cast<size_t>(std::thread::hardware_concurrency()));
     m_threads.resize(m_maxThreads);
     for (auto& thread : m_threads) {
         thread = std::thread(

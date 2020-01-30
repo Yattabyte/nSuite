@@ -1,13 +1,10 @@
-##################
-### Unit Tests ###
-##################
-set(Module UnitTests)
-
-# Configure and acquire files
-set(FILES main.cpp)
+######################
+### Directory Test ###
+######################
+set(Module DirectoryTest)
 
 # Create Library using the supplied files
-add_executable(${Module} ${FILES})
+add_executable(${Module} main.cpp)
 
 # Add library dependencies
 add_dependencies(${Module} yatta)
@@ -30,4 +27,4 @@ set_target_properties(${Module} PROPERTIES
 	VERSION ${PROJECT_VERSION}
 )
 
-add_test(NAME LibraryTest COMMAND ${Module} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/app/)
+add_test(NAME DirectoryTest COMMAND ${Module} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/app/)

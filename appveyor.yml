@@ -10,8 +10,8 @@ build_script:
 
 # Debug Build
 - cmd: cmake --build . --clean-first --config Debug
-- cmd: ctest --verbose --output-on-failure -C Debug
+- cmd: ctest --output-on-failure -C Debug
 
 # Release Build
 - cmd: cmake --build . --clean-first --config Release
-- cmd: ctest --verbose --output-on-failure -C Release
+- cmd: ctest --output-on-failure -C Release
