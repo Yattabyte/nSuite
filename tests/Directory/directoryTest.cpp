@@ -1,5 +1,6 @@
 #include "yatta.hpp"
 #include <iostream>
+#include <assert.h>
 
 
 // Convenience Definitions
@@ -8,176 +9,135 @@ constexpr int FAILURE = 1;
 using yatta::Directory;
 
 // Forward Declarations
-bool Directory_ConstructionTest();
-bool Directory_MethodTest();
-bool Directory_ManipulationTest();
+void Directory_ConstructionTest();
+void Directory_MethodTest();
+void Directory_ManipulationTest();
 
 int main()
 {
-    if (!Directory_ConstructionTest() ||
-        !Directory_MethodTest() ||
-        !Directory_ManipulationTest())
-        exit(FAILURE); // LCOV_EXCL_LINE
-
+    Directory_ConstructionTest();
+    Directory_MethodTest();
+    Directory_ManipulationTest();
     exit(SUCCESS);
 }
 
-bool Directory_ConstructionTest()
+void Directory_ConstructionTest()
 {
     // Ensure we can make an empty directory
     Directory directory;
-    if (!directory.empty())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.empty());
 
     // Ensure we can virtualize directories
     Directory dirA(Directory::GetRunningDirectory() + "/old");
-    if (!dirA.hasFiles())
-        return false; // LCOV_EXCL_LINE
+    assert(dirA.hasFiles());
 
     // Dump to a package, and ensure we can virtualize the package
     const auto package = dirA.out_package("old");
-    if (!package.has_value())
-        return false; // LCOV_EXCL_LINE
+    assert(package.has_value());
     Directory dirB(*package);
-    if (!dirA.hasFiles())
-        return false; // LCOV_EXCL_LINE
+    assert(dirA.hasFiles());
 
     // Ensure move constructor works
     Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
-    if (moveDirectory.fileCount() != dirA.fileCount())
-        return false; // LCOV_EXCL_LINE
+    assert(moveDirectory.fileCount() == dirA.fileCount());
 
     // Ensure copy constructor works
-    const Directory& copyDir(moveDirectory);
-    if (copyDir.fileSize() != moveDirectory.fileSize())
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    const Directory copyDir(moveDirectory);
+    assert(copyDir.fileSize() == moveDirectory.fileSize());
 }
 
-bool Directory_MethodTest()
+void Directory_MethodTest()
 {
     // Ensure we can retrieve the running directory
-    if (Directory::GetRunningDirectory().empty())
-        return false; // LCOV_EXCL_LINE
+    assert(!Directory::GetRunningDirectory().empty());
 
     // Verify empty directories
     Directory directory;
-    if (!directory.empty())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.empty());
 
     // Verify that we can input folders
     directory.in_folder(Directory::GetRunningDirectory() + "/old");
-    if (!directory.hasFiles())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hasFiles());
 
     // Ensure we have 4 files all together
-    if (directory.fileCount() != 4ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.fileCount() == 4ULL);
 
     // Ensure the total size is as expected
-    if (directory.fileSize() != 147777ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.fileSize() == 147777ULL);
 
     // Ensure we can hash an actual directory
-    if (const auto hash = directory.hash(); hash == yatta::ZeroHash)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hash() != yatta::ZeroHash);
 
     // Ensure we can clear a directory
     directory.clear();
-    if (!directory.empty() || directory.hasFiles())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.empty() && !directory.hasFiles());
 
     // Ensure we can hash an empty directory
-    if (directory.hash() != yatta::ZeroHash)
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(directory.hash() == yatta::ZeroHash);
 }
 
-bool Directory_ManipulationTest()
+void Directory_ManipulationTest()
 {
     // Verify empty directories
     Directory directory;
-    if (!directory.empty())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.empty());
 
     // Ensure we have 8 files all together
     directory.in_folder(Directory::GetRunningDirectory() + "/old");
     directory.in_folder(Directory::GetRunningDirectory() + "/new");
-    if (directory.fileCount() != 8ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.fileCount() == 8ULL);
 
     // Ensure the total size is as expected
-    if (directory.fileSize() != 189747ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.fileSize() == 189747ULL);
 
     // Reset the directory to just the 'old' folder, hash it
     directory = Directory(Directory::GetRunningDirectory() + "/old");
     const auto oldHash = directory.hash();
-    if (oldHash == yatta::ZeroHash)
-        return false; // LCOV_EXCL_LINE
+    assert(oldHash != yatta::ZeroHash);
 
     // Overwrite the /old folder, make sure hashes match
     directory.out_folder(Directory::GetRunningDirectory() + "/old");
     directory = Directory(Directory::GetRunningDirectory() + "/old");
-    if (const auto reHash = directory.hash(); reHash == yatta::ZeroHash || reHash != oldHash)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hash() == oldHash);
 
     // Ensure we can dump a directory as a package
     const auto package = directory.out_package("package");
-    if (!package.has_value() || !package->hasData())
-        return false; // LCOV_EXCL_LINE
+    assert(package.has_value() && package->hasData());
 
     // Ensure we can import a package and that it matches the old one
     directory.clear();
     directory.in_package(*package);
-    if (directory.fileSize() != 147777ULL || directory.fileCount() != 4ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL);
 
     // Ensure new hash matches
-    if (const auto packHash = directory.hash(); packHash == yatta::ZeroHash || packHash != oldHash)
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hash() == oldHash);
 
     // Try to diff the old and new directories
     Directory newDirectory(Directory::GetRunningDirectory() + "/new");
     const auto deltaBuffer = directory.out_delta(newDirectory);
-    if (!deltaBuffer.has_value() || !deltaBuffer->hasData())
-        return false; // LCOV_EXCL_LINE
+    assert(deltaBuffer.has_value() && deltaBuffer->hasData());
 
     // Try to patch the old directory into the new directory
-    if (!directory.in_delta(*deltaBuffer))
-        return false; // LCOV_EXCL_LINE
+    assert(directory.in_delta(*deltaBuffer));
 
     // Ensure the hashes match
-    if (directory.hash() != newDirectory.hash())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hash() == newDirectory.hash());
 
     // Overwrite the /new folder, make sure the hashes match
     directory.out_folder(Directory::GetRunningDirectory() + "/new");
     directory = Directory(Directory::GetRunningDirectory() + "/new");
-    if (directory.hash() != newDirectory.hash())
-        return false; // LCOV_EXCL_LINE
+    assert(directory.hash() == newDirectory.hash());
 
     // Ensure we can't export an empty directory
     directory.clear();
-    if (directory.out_folder(""))
-        return false; // LCOV_EXCL_LINE
+    assert(!directory.out_folder(""));
 
     // Ensure we can't import an invalid directory
-    if (directory.in_folder(""))
-        return false; // LCOV_EXCL_LINE
+    assert(!directory.in_folder(""));
 
     // Ensure we can't export an empty package
-    if (directory.out_package(""))
-        return false; // LCOV_EXCL_LINE
+    assert(!directory.out_package(""));
 
     // Ensure we can't import an empty package
-    if (directory.in_package(yatta::Buffer()))
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(!directory.in_package(yatta::Buffer()));
 }

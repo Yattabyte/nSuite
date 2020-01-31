@@ -478,8 +478,7 @@ auto find_matching_regions(const MemoryRange& rangeA, const MemoryRange& rangeB)
                 else {
                     if (matchCount >= 4ULL) {
                         const auto matchLength = matchCount * sizeof(size_t);
-                        matches.push_back(
-                            {
+                        matches.emplace_back(MatchInfo{
                                 matchLength,
                                 ind + index_byte - matchLength,
                                 ind - matchLength

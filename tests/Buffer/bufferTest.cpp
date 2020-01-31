@@ -1,5 +1,6 @@
 #include "yatta.hpp"
 #include <iostream>
+#include <assert.h>
 
 
 // Convenience Definitions
@@ -8,115 +9,91 @@ constexpr int FAILURE = 1;
 using yatta::Buffer;
 
 // Forward Declarations
-bool Buffer_ConstructionTest();
-bool Buffer_AssignmentTest();
-bool Buffer_MethodTest();
-bool Buffer_IOTest();
-bool Buffer_CompressionTest();
-bool Buffer_DiffTest();
+void Buffer_ConstructionTest();
+void Buffer_AssignmentTest();
+void Buffer_MethodTest();
+void Buffer_IOTest();
+void Buffer_CompressionTest();
+void Buffer_DiffTest();
 
 int main()
 {
-    if (!Buffer_ConstructionTest() ||
-        !Buffer_AssignmentTest() ||
-        !Buffer_MethodTest() ||
-        !Buffer_IOTest() ||
-        !Buffer_CompressionTest() ||
-        !Buffer_DiffTest())
-        exit(FAILURE); // LCOV_EXCL_LINE
-
+    Buffer_ConstructionTest();
+    Buffer_AssignmentTest();
+    Buffer_MethodTest();
+    Buffer_IOTest();
+    Buffer_CompressionTest();
+    Buffer_DiffTest();
     exit(SUCCESS);
 }
 
-bool Buffer_ConstructionTest()
+void Buffer_ConstructionTest()
 {
     // Ensure we can make empty buffers
     Buffer buffer;
-    if (!buffer.empty() || buffer.hasData())
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.empty() && !buffer.hasData());
 
     // Ensure we can construct a buffer
     Buffer largeBuffer(1234ULL);
-    if (!largeBuffer.hasData() || largeBuffer.empty())
-        return false; // LCOV_EXCL_LINE
+    assert(largeBuffer.hasData() && !largeBuffer.empty());
 
     // Ensure move constructor works
     Buffer moveBuffer(Buffer(1234ULL));
-    if (moveBuffer.size() != 1234ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(moveBuffer.size() == 1234ULL);
 
     // Ensure copy constructor works
     largeBuffer[0] = static_cast<std::byte>(255U);
     const Buffer copyBuffer(largeBuffer);
-    if (copyBuffer[0] != largeBuffer[0])
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(copyBuffer[0] == largeBuffer[0]);
 }
 
-bool Buffer_AssignmentTest()
+void Buffer_AssignmentTest()
 {
     // Ensure buffers are equal
     Buffer bufferA;
     Buffer bufferB(123456789ULL);
     bufferB[0] = static_cast<std::byte>(126U);
     bufferA = bufferB;
-    if (bufferA[0] != bufferB[0])
-        return false; // LCOV_EXCL_LINE
+    assert(bufferA[0] == bufferB[0]);
 
     // Ensure bufferC is fully moved over to bufferA
     Buffer bufferC(456);
     bufferC[0] = static_cast<std::byte>(64U);
     bufferA = std::move(bufferC);
-    if (bufferA[0] != static_cast<std::byte>(64U))
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(bufferA[0] == static_cast<std::byte>(64U));
 }
 
-bool Buffer_MethodTest()
+void Buffer_MethodTest()
 {
     Buffer buffer;
     // Ensure the buffer is empty
-    if (!buffer.empty() || buffer.hasData())
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.empty() && !buffer.hasData());
 
     // Ensure we can resize the buffer with data
     buffer.resize(1234ULL);
-    if (!buffer.hasData() || buffer.empty())
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.hasData() && !buffer.empty());
 
     // Ensure the size is 1234
-    if (buffer.size() != 1234ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.size() == 1234ULL);
 
     // Ensure the capacity is doubled
-    if (buffer.capacity() != 2468ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.capacity() == 2468ULL);
 
     // Ensure we can explicitly set the capacity
     buffer.reserve(3000ULL);
-    if (buffer.capacity() != 3000ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.capacity() == 3000ULL);
 
     // Ensure we can shrink the buffer
     buffer.shrink();
-    if (buffer.size() != 1234ULL || buffer.capacity() != 1234ULL)
-        return false; // LCOV_EXCL_LINE
+    assert(buffer.size() == 1234ULL && buffer.capacity() == 1234ULL);
 
     // Ensure we can completely free the buffer
     buffer.clear();
     buffer.shrink();
-    if (!buffer.empty() || buffer.hasData())
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(buffer.empty() && !buffer.hasData());
 }
 
-bool Buffer_IOTest()
+void Buffer_IOTest()
 {
     // Ensure we can push data
     Buffer buffer;
@@ -148,26 +125,21 @@ bool Buffer_IOTest()
     buffer.pop_type(data1_out);
 
     // Ensure the data matches
-    if (data1 != data1_out ||
-        data2 != data2_out ||
-        data3 != data3_out ||
-        !std::equal(std::cbegin(data4), std::cend(data4), std::cbegin(data4_out)) ||
-        data5 != data5_out ||
-        std::string(data6) != std::string(data6_out))
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(data1 == data1_out &&
+        data2 == data2_out &&
+        data3 == data3_out &&
+        std::equal(std::cbegin(data4), std::cend(data4), std::cbegin(data4_out)) &&
+        data5 == data5_out &&
+        std::string(data6) == std::string(data6_out));
 }
 
-bool Buffer_CompressionTest()
+void Buffer_CompressionTest()
 {
     // Ensure we cannot compress or decompress an empty or incorrect buffer
     Buffer buffer;
     const auto badResult1 = buffer.compress();
     const auto badResult2 = badResult1->decompress();
-    if (badResult1 || badResult2)
-        return false; // LCOV_EXCL_LINE
+    assert(!badResult1 && !badResult2);
 
     // The structure we'll compress and decompress
     struct TestStructure {
@@ -189,35 +161,28 @@ bool Buffer_CompressionTest()
 
     // Attempt to compress the buffer
     const auto compressedBuffer = buffer.compress();
-    if (!compressedBuffer.has_value() || compressedBuffer->empty())
-        return false; // LCOV_EXCL_LINE
+    assert(compressedBuffer.has_value() && !compressedBuffer->empty());
 
     // Attempt to decompress the compressed buffer
     const auto decompressedBuffer = compressedBuffer->decompress();
-    if (!decompressedBuffer.has_value() || decompressedBuffer->empty())
-        return false; // LCOV_EXCL_LINE
+    assert(decompressedBuffer.has_value() && !decompressedBuffer->empty());
 
     // Dump buffer data back into test structure
     TestStructure decompressedData;
     decompressedBuffer->out_type(decompressedData);
 
     // Ensure data matches
-    if (testData.a != decompressedData.a || testData.b != decompressedData.b || std::strcmp(testData.c, decompressedData.c) != 0)
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0);
 }
 
-bool Buffer_DiffTest()
+void Buffer_DiffTest()
 {
     // Ensure we cannot diff or patch an empty or incorrect buffer
     Buffer bufferA;
     Buffer bufferB;
     const auto badResult1 = bufferA.diff(bufferB);
     const auto badResult2 = badResult1->patch(bufferB);
-    if (badResult1 || badResult2)
-        return false; // LCOV_EXCL_LINE
+    assert(!badResult1 && !badResult2);
 
     struct Foo {
         int a = 0;
@@ -238,19 +203,13 @@ bool Buffer_DiffTest()
 
     // Ensure we've generated an instruction set
     const auto diffBuffer = bufferA.diff(bufferB);
-    if (!diffBuffer.has_value() || diffBuffer->empty())
-        return false; // LCOV_EXCL_LINE
+    assert(diffBuffer.has_value() && !diffBuffer->empty());
 
     // Check that we've actually converted from A to B
     const auto patchedBuffer = bufferA.patch(*diffBuffer);
-    if (!patchedBuffer.has_value() || patchedBuffer->empty())
-        return false; // LCOV_EXCL_LINE
+    assert(patchedBuffer.has_value() && !patchedBuffer->empty());
 
     Bar dataC;
     patchedBuffer->out_type(dataC);
-    if (std::strcmp(dataB.a, dataC.a) != 0 || dataB.b != dataC.b || dataB.c != dataC.c || patchedBuffer->hash() != bufferB.hash())
-        return false; // LCOV_EXCL_LINE
-
-    // Success
-    return true;
+    assert(std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedBuffer->hash() == bufferB.hash());
 }

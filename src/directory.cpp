@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fstream>
 #include <numeric>
+#include <assert.h>
 
 
 // Convenience definitions
@@ -136,8 +137,7 @@ bool Directory::in_folder(const filepath& path, const std::vector<std::string>& 
             const std::string path_string = entry.path().string();
             constexpr std::ios_base::openmode mode = std::ios_base::in | std::ios_base::binary;
             std::ifstream fileOnDisk = std::ifstream(path_string, mode);
-            if (!fileOnDisk.is_open())
-                return false; // Error
+            assert(fileOnDisk.is_open());
 
             fileOnDisk.read(
                 fileBuffer.charArray(),
@@ -384,8 +384,7 @@ bool Directory::out_folder(const filepath& path) const
         std::filesystem::create_directories(filepath(fullPath).parent_path());
         constexpr std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary;
         std::ofstream fileOnDisk = std::ofstream(fullPath.c_str(), mode);
-        if (!fileOnDisk.is_open())
-            return false; // Failure
+        assert(fileOnDisk.is_open());
 
         fileOnDisk.write(
             file.m_data.charArray(),
