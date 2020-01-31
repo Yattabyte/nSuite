@@ -19,7 +19,7 @@ Threader::Threader(const size_t& maxThreads) noexcept
     for (auto& thread : m_threads) {
         thread = std::thread(
             [&]() {
-                while (m_alive && m_keepOpen) {
+                while (m_alive) {
                     // Check if there is a job to do
                     if (std::unique_lock<std::shared_mutex> writeGuard(m_mutex, std::try_to_lock); writeGuard.owns_lock()) {
                         if (!m_jobs.empty()) {
@@ -55,15 +55,9 @@ bool Threader::isFinished() const noexcept
     return m_jobsStarted == m_jobsFinished;
 }
 
-void Threader::prepareForShutdown() noexcept
-{
-    m_keepOpen = false;
-}
-
 void Threader::shutdown()
 {
     m_alive = false;
-    m_keepOpen = false;
     for (auto& thread : m_threads)
         if (thread.joinable())
             thread.join();

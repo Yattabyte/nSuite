@@ -16,15 +16,13 @@ bool MemoryRange_ExceptionTest();
 
 int main()
 {
-    if (MemoryRange_ConstructionTest() &&
-        MemoryRange_AssignmentTest() &&
-        MemoryRange_MethodTest() &&
-        MemoryRange_IOTest() &&
-        MemoryRange_ExceptionTest())
-        return SUCCESS;
-
-    std::cout << "Error while running Memory Range Tests\n";
-    return FAILURE;
+    if (!MemoryRange_ConstructionTest() ||
+        !MemoryRange_AssignmentTest() ||
+        !MemoryRange_MethodTest() ||
+        !MemoryRange_IOTest() ||
+        !MemoryRange_ExceptionTest())
+        exit(FAILURE);
+    exit(SUCCESS);
 }
 
 bool MemoryRange_ConstructionTest()
@@ -32,28 +30,28 @@ bool MemoryRange_ConstructionTest()
     // Ensure we can make empty memory ranges
     const MemoryRange memRange;
     if (!memRange.empty())
-        return false;
+        exit(FAILURE);
 
     // Ensure we can make a large memory range
     const auto largeBuffer = std::make_unique<std::byte[]>(1234ULL);
     MemoryRange largeMemRange(1234ULL, largeBuffer.get());
     if (!largeMemRange.hasData())
-        return false;
+        exit(FAILURE);
 
     // Ensure move constructor works
     MemoryRange moveMemRange(std::move(largeMemRange));
     if (moveMemRange.size() != 1234ULL)
-        return false;
+        exit(FAILURE);
 
     // Ensure copy constructor works
     moveMemRange[0] = static_cast<std::byte>(255U);
     const MemoryRange& copyMemRange(moveMemRange);
     if (copyMemRange[0] != moveMemRange[0])
-        return false;
+        exit(FAILURE);
 
     // Ensure pointers match
     if (copyMemRange.bytes() != moveMemRange.bytes() || copyMemRange.bytes() != largeBuffer.get())
-        return false;
+        exit(FAILURE);
 
     // Success
     return true;
@@ -71,7 +69,7 @@ bool MemoryRange_AssignmentTest()
     // Ensure ranges are equal
     rangeA = rangeB;
     if ((rangeA[0] != rangeB[0]) || (rangeA.bytes() != rangeB.bytes()))
-        return false;
+        exit(FAILURE);
 
     // Ensure rangeC is fully moved over to rangeA
     const auto bufferC = std::make_unique<std::byte[]>(456ULL);
@@ -79,7 +77,7 @@ bool MemoryRange_AssignmentTest()
     rangeC[0] = static_cast<std::byte>(64U);
     rangeA = rangeC;
     if (rangeA[0] != static_cast<std::byte>(64U))
-        return false;
+        exit(FAILURE);
 
     // Success
     return true;
@@ -90,38 +88,38 @@ bool MemoryRange_MethodTest()
     // Ensure the memory range is reassignable
     MemoryRange memRange;
     if (!memRange.empty())
-        return false;
+        exit(FAILURE);
 
     // Ensure memory range has data
     const auto buffer = std::make_unique<std::byte[]>(1234ULL);
     memRange = MemoryRange(1234ULL, buffer.get());
     if (!memRange.hasData())
-        return false;
+        exit(FAILURE);
 
     // Ensure memory range size is the same as the buffer
     if (memRange.size() != 1234ULL)
-        return false;
+        exit(FAILURE);
 
     // Ensure we can hash the memory range
     if (const auto hash = memRange.hash(); hash == 0ULL || hash == yatta::ZeroHash)
-        return false;
+        exit(FAILURE);
 
     // Ensure we can return a char array
     if (const char* const cArray = memRange.charArray(); cArray == nullptr)
-        return false;
+        exit(FAILURE);
 
     // Ensure we can return a byte array
     if (const std::byte* const bytes = memRange.bytes(); bytes == nullptr)
-        return false;
+        exit(FAILURE);
 
     // Ensure both char array and byte array are the same underlying pointer
     if (static_cast<const void*>(memRange.charArray()) != static_cast<const void*>(memRange.bytes()))
-        return false;
+        exit(FAILURE);
 
     // Ensure we can create a valid sub-range
     auto subRange = memRange.subrange(0, 617ULL);
     if (subRange.empty() || !subRange.hasData())
-        return false;
+        exit(FAILURE);
 
     // Ensure we can iterate over the subrange
     int byteCount(0);
@@ -130,7 +128,7 @@ bool MemoryRange_MethodTest()
         ++byteCount;
     }
     if (byteCount != 617)
-        return false;
+        exit(FAILURE);
 
     // Ensure we can iterate over the subrange with arbitrary types
     constexpr int expectedCount = static_cast<int>(617ULL / sizeof(size_t));
@@ -138,7 +136,7 @@ bool MemoryRange_MethodTest()
     for (auto* it = subRange.cbegin_t<size_t>(); it != subRange.cend_t<size_t>(); ++it)
         ++iterationCount;
     if (iterationCount != expectedCount)
-        return false;
+        exit(FAILURE);
 
     // Success
     return true;
@@ -154,7 +152,7 @@ bool MemoryRange_IOTest()
     int out_int(0);
     memRange.out_type(out_int);
     if (in_int != out_int)
-        return false;
+        exit(FAILURE);
 
     // Ensure raw pointer IO is correct
     const char word[28] = "This is a sample sentence.\0";
@@ -169,7 +167,7 @@ bool MemoryRange_IOTest()
     } combinedOutput{};
     memRange.out_raw(&combinedOutput, sizeof(TestStructure));
     if (combinedOutput.a != in_int || std::string(combinedOutput.b) != word)
-        return false;
+        exit(FAILURE);
 
     // Test string template specializations
     buffer = std::make_unique<std::byte[]>(1234ULL);
@@ -179,7 +177,7 @@ bool MemoryRange_IOTest()
     std::string outputString;
     memRange.out_type(outputString);
     if (string != outputString)
-        return false;
+        exit(FAILURE);
 
     // Success
     return true;
@@ -195,15 +193,15 @@ bool MemoryRange_ExceptionTest()
     try {
         MemoryRange emptyRange;
         emptyRange[0] = static_cast<std::byte>(123U);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Const version
     try {
         const MemoryRange emptyRange;
         if (emptyRange[0] != emptyRange[0])
-            return false;
-        return false;
+            exit(FAILURE);
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -217,8 +215,8 @@ bool MemoryRange_ExceptionTest()
         const MemoryRange emptyRange;
         const auto subRange = emptyRange.subrange(0, 0);
         if (subRange.hasData())
-            return false;
-        return false;
+            exit(FAILURE);
+        exit(FAILURE);
     }
     catch (std::exception&) {}
     try {
@@ -227,8 +225,8 @@ bool MemoryRange_ExceptionTest()
         const MemoryRange smallRange(1, smallBuffer.get());
         const auto subRange = smallRange.subrange(0, 2);
         if (subRange.hasData())
-            return false;
-        return false;
+            exit(FAILURE);
+        exit(FAILURE);
     }
     catch (std::exception&) {}
 
@@ -240,7 +238,7 @@ bool MemoryRange_ExceptionTest()
     MemoryRange memRange;
     try {
         memRange[0] = static_cast<std::byte>(123U);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -248,22 +246,22 @@ bool MemoryRange_ExceptionTest()
     try {
         const MemoryRange constRange;
         if (constRange[0] != constRange[0])
-            return false;
-        return false;
+            exit(FAILURE);
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
     // Ensure we can't write in raw memory to a null pointer
     try {
         memRange.in_raw(nullptr, 0);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
     // Ensure we can't write out raw memory from a null pointer
     try {
         memRange.out_raw(nullptr, 0);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -272,21 +270,21 @@ bool MemoryRange_ExceptionTest()
     memRange = MemoryRange(1, &byte);
     try {
         memRange.in_raw(nullptr, 0);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
     // Ensure we can't write out data to a null pointer
     try {
         memRange.out_raw(nullptr, 0);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
     // Ensure we can't write in raw memory out of bounds
     try {
         memRange.in_raw(&byte, 8ULL);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -294,7 +292,7 @@ bool MemoryRange_ExceptionTest()
     try {
         std::byte outByte;
         memRange.out_raw(&outByte, 8ULL);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -307,7 +305,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange emptyRange;
         size_t obj;
         emptyRange.in_type(obj);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't read out from a null pointer
@@ -315,7 +313,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange emptyRange;
         size_t obj;
         emptyRange.out_type(obj);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't write out of bounds
@@ -324,7 +322,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange smallRange(1, smallBuffer.get());
         size_t obj;
         smallRange.in_type(obj);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't read out of bounds
@@ -333,7 +331,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange smallRange(1, smallBuffer.get());
         size_t obj;
         smallRange.out_type(obj);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 
@@ -346,7 +344,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange emptyRange;
         std::string string;
         emptyRange.in_type(string);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't read out from a null pointer
@@ -354,7 +352,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange emptyRange;
         std::string string;
         emptyRange.out_type(string);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't write out of bounds
@@ -363,7 +361,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange smallRange(1, smallBuffer.get());
         std::string string;
         smallRange.in_type(string);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
     // Ensure we can't read out of bounds
@@ -372,7 +370,7 @@ bool MemoryRange_ExceptionTest()
         MemoryRange smallRange(1, smallBuffer.get());
         std::string string;
         smallRange.out_type(string);
-        return false;
+        exit(FAILURE);
     }
     catch (const std::exception&) {}
 

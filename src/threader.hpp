@@ -41,8 +41,6 @@ namespace yatta {
         /** Check if the threader has completed all its jobs.
         @return                 true if finished, false otherwise. */
         bool isFinished() const noexcept;
-        /** Prepare the threader for shutdown, alerting threads to exit early. */
-        void prepareForShutdown() noexcept;
         /** Shuts down the threader, forcing threads to close. */
         void shutdown();
 
@@ -50,7 +48,7 @@ namespace yatta {
     private:
         // Private Attributes
         std::shared_mutex m_mutex;
-        std::atomic_bool m_alive = true, m_keepOpen = true;
+        std::atomic_bool m_alive = true;
         std::vector<std::thread> m_threads;
         std::deque<std::function<void()>> m_jobs;
         std::atomic_size_t m_jobsStarted = 0ull, m_jobsFinished = 0ull;
