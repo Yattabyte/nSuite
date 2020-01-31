@@ -142,7 +142,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
         return static_cast<size_t>(sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char));
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
-        std::fill(&bufferNew[0], &bufferNew[std::min(m_amount, bufferNew.size())], m_value);
+        std::fill(&bufferNew[m_index], &bufferNew[std::min(m_index + m_amount, bufferNew.size())], m_value);
     }
     void write(Buffer& outputBuffer) const final {
         // Write Attributes

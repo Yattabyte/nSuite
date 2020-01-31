@@ -222,13 +222,15 @@ bool Buffer_DiffTest()
     struct Foo {
         int a = 0;
         float b = 0.0F;
-        char c[128] = { '\0' };
-    } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo.99999999999999999999999999999999999999999999999999999999999\0" };
+        char c[160] = { '\0' };
+    } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo."
+        "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999\0" };
     struct Bar {
         float b = 0.0F;
         int c = 0;
-        char a[128] = { '\0' };
-    } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar.88888888888888888888888888888888888888888888888888888888888\0", };
+        char a[160] = { '\0' };
+    } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar."
+        "8888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888\0", };
     bufferA.resize(sizeof(Foo));
     bufferB.resize(sizeof(Bar));
     bufferA.in_type(dataA);
