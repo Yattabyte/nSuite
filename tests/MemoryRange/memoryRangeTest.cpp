@@ -154,6 +154,7 @@ void MemoryRange_IOTest()
 void MemoryRange_ExceptionTest()
 {
     bool exception[20] = { 0 };
+    std::fill(std::begin(exception), std::end(exception), false);
 
     /////////////////////////////////
     /// index operator exceptions ///
