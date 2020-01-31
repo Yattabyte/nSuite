@@ -340,13 +340,13 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
             continue; // Soft Error
 
         // Erase any instances of this file
-        m_files.erase(std::find_if(
-            m_files.cbegin(),
-            m_files.cend(),
+        m_files.erase(std::remove_if(
+            m_files.begin(),
+            m_files.end(),
             [&](const VirtualFile& file) noexcept {
                 return file.m_relativePath == inst.path;
             }
-        ));
+        ), m_files.end());
 
         // Emplace the file
         m_files.emplace_back(VirtualFile{ inst.path, std::move(newBuffer) });
@@ -356,15 +356,15 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
     // Delete all files
     for (FileInstruction& inst : removedFiles) {
         // Erase any instances of this file if the file name and hash matches
-        m_files.erase(std::find_if(
-            m_files.cbegin(),
-            m_files.cend(),
+        m_files.erase(std::remove_if(
+            m_files.begin(),
+            m_files.end(),
             [&](const VirtualFile& file) noexcept {
                 return
                     file.m_relativePath == inst.path &&
                     file.m_data.hash() == inst.diff_oldHash;
             }
-        ));
+        ), m_files.end());
     }
     removedFiles.clear();
 
@@ -518,7 +518,8 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         instructionBuffer.push_type(oldHash);
         instructionBuffer.push_type(newHash);
         instructionBuffer.push_type(bufferSize);
-        instructionBuffer.push_raw(buffer.bytes(), sizeof(std::byte) * bufferSize);
+        if (bufferSize)
+            instructionBuffer.push_raw(buffer.bytes(), sizeof(std::byte) * bufferSize);
     };
 
     // Retrieve all common, added, and removed files
