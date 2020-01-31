@@ -34,6 +34,14 @@ bool Directory_ConstructionTest()
     if (!dirA.hasFiles())
         return false; // LCOV_EXCL_LINE
 
+    // Dump to a package, and ensure we can virtualize the package
+    const auto package = dirA.out_package("old");
+    if (!package.has_value())
+        return false; // LCOV_EXCL_LINE
+    Directory dirB(*package);
+    if (!dirA.hasFiles())
+        return false; // LCOV_EXCL_LINE
+
     // Ensure move constructor works
     Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
     if (moveDirectory.fileCount() != dirA.fileCount())
@@ -50,6 +58,10 @@ bool Directory_ConstructionTest()
 
 bool Directory_MethodTest()
 {
+    // Ensure we can retrieve the running directory
+    if (Directory::GetRunningDirectory().empty())
+        return false; // LCOV_EXCL_LINE
+
     // Verify empty directories
     Directory directory;
     if (!directory.empty())
@@ -147,6 +159,23 @@ bool Directory_ManipulationTest()
     directory.out_folder(Directory::GetRunningDirectory() + "/new");
     directory = Directory(Directory::GetRunningDirectory() + "/new");
     if (directory.hash() != newDirectory.hash())
+        return false; // LCOV_EXCL_LINE
+
+    // Ensure we can't export an empty directory
+    directory.clear();
+    if (directory.out_folder(""))
+        return false; // LCOV_EXCL_LINE
+
+    // Ensure we can't import an invalid directory
+    if (directory.in_folder(""))
+        return false; // LCOV_EXCL_LINE
+
+    // Ensure we can't export an empty package
+    if (directory.out_package(""))
+        return false; // LCOV_EXCL_LINE
+
+    // Ensure we can't import an empty package
+    if (directory.in_package(yatta::Buffer()))
         return false; // LCOV_EXCL_LINE
 
     // Success

@@ -30,23 +30,23 @@ bool MemoryRange_ConstructionTest()
 {
     // Ensure we can make empty memory ranges
     const MemoryRange memRange;
-    if (!memRange.empty())
+    if (!memRange.empty() || memRange.hasData())
         return false; // LCOV_EXCL_LINE
 
-    // Ensure we can make a large memory range
+    // Ensure we can construct a memory range
     const auto largeBuffer = std::make_unique<std::byte[]>(1234ULL);
     MemoryRange largeMemRange(1234ULL, largeBuffer.get());
-    if (!largeMemRange.hasData())
+    if (!largeMemRange.hasData() || largeMemRange.empty())
         return false; // LCOV_EXCL_LINE
 
     // Ensure move constructor works
-    MemoryRange moveMemRange(std::move(largeMemRange));
+    MemoryRange moveMemRange = std::move(largeMemRange);
     if (moveMemRange.size() != 1234ULL)
         return false; // LCOV_EXCL_LINE
 
     // Ensure copy constructor works
     moveMemRange[0] = static_cast<std::byte>(255U);
-    const MemoryRange& copyMemRange(moveMemRange);
+    const MemoryRange copyMemRange(moveMemRange);
     if (copyMemRange[0] != moveMemRange[0])
         return false; // LCOV_EXCL_LINE
 
@@ -60,14 +60,11 @@ bool MemoryRange_ConstructionTest()
 
 bool MemoryRange_AssignmentTest()
 {
-    const auto bufferA = std::make_unique<std::byte[]>(1234ULL);
-    const auto bufferB = std::make_unique<std::byte[]>(123456789ULL);
-    MemoryRange rangeA(1234ULL, bufferA.get());
-    MemoryRange rangeB(123456789ULL, bufferB.get());
-    rangeA[0] = static_cast<std::byte>(255U);
-    rangeB[0] = static_cast<std::byte>(126U);
-
     // Ensure ranges are equal
+    const auto bufferB = std::make_unique<std::byte[]>(123456789ULL);
+    MemoryRange rangeA;
+    MemoryRange rangeB(123456789ULL, bufferB.get());
+    rangeB[0] = static_cast<std::byte>(126U);
     rangeA = rangeB;
     if ((rangeA[0] != rangeB[0]) || (rangeA.bytes() != rangeB.bytes()))
         return false; // LCOV_EXCL_LINE
@@ -88,13 +85,13 @@ bool MemoryRange_MethodTest()
 {
     // Ensure the memory range is reassignable
     MemoryRange memRange;
-    if (!memRange.empty())
+    if (!memRange.empty() || memRange.hasData())
         return false; // LCOV_EXCL_LINE
 
     // Ensure memory range has data
     const auto buffer = std::make_unique<std::byte[]>(1234ULL);
     memRange = MemoryRange(1234ULL, buffer.get());
-    if (!memRange.hasData())
+    if (!memRange.hasData() || memRange.empty())
         return false; // LCOV_EXCL_LINE
 
     // Ensure memory range size is the same as the buffer
@@ -102,7 +99,7 @@ bool MemoryRange_MethodTest()
         return false; // LCOV_EXCL_LINE
 
     // Ensure we can hash the memory range
-    if (const auto hash = memRange.hash(); hash == 0ULL || hash == yatta::ZeroHash)
+    if (const auto hash = memRange.hash(); hash == yatta::ZeroHash)
         return false; // LCOV_EXCL_LINE
 
     // Ensure we can return a char array
@@ -214,9 +211,7 @@ bool MemoryRange_ExceptionTest()
     try {
         // Catch null pointer exception
         const MemoryRange emptyRange;
-        const auto subRange = emptyRange.subrange(0, 0);
-        if (subRange.hasData())
-            return false; // LCOV_EXCL_LINE
+        emptyRange.subrange(0, 0);
         return false; // LCOV_EXCL_LINE
     }
     catch (std::exception&) {}
@@ -224,9 +219,7 @@ bool MemoryRange_ExceptionTest()
         // Catch out of range exception
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         const MemoryRange smallRange(1, smallBuffer.get());
-        const auto subRange = smallRange.subrange(0, 2);
-        if (subRange.hasData())
-            return false; // LCOV_EXCL_LINE
+        smallRange.subrange(0, 2);
         return false; // LCOV_EXCL_LINE
     }
     catch (std::exception&) {}

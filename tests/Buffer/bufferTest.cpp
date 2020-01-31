@@ -32,12 +32,12 @@ bool Buffer_ConstructionTest()
 {
     // Ensure we can make empty buffers
     Buffer buffer;
-    if (!buffer.empty())
+    if (!buffer.empty() || buffer.hasData())
         return false; // LCOV_EXCL_LINE
 
-    // Ensure we can make a large buffer
+    // Ensure we can construct a buffer
     Buffer largeBuffer(1234ULL);
-    if (!largeBuffer.hasData())
+    if (!largeBuffer.hasData() || largeBuffer.empty())
         return false; // LCOV_EXCL_LINE
 
     // Ensure move constructor works
@@ -72,17 +72,6 @@ bool Buffer_AssignmentTest()
     if (bufferA[0] != static_cast<std::byte>(64U))
         return false; // LCOV_EXCL_LINE
 
-    // Ensure we throw if going out of bounds
-    try {
-        bufferA[1234] = static_cast<std::byte>(64U);
-        const std::byte constLookup = bufferA[1234];
-        bufferA[0] = constLookup;
-        return false; // LCOV_EXCL_LINE
-    }
-    catch (const std::runtime_error&) {
-        return true; // Success
-    }
-
     // Success
     return true;
 }
@@ -91,12 +80,12 @@ bool Buffer_MethodTest()
 {
     Buffer buffer;
     // Ensure the buffer is empty
-    if (!buffer.empty())
+    if (!buffer.empty() || buffer.hasData())
         return false; // LCOV_EXCL_LINE
 
     // Ensure we can resize the buffer with data
     buffer.resize(1234ULL);
-    if (!buffer.hasData())
+    if (!buffer.hasData() || buffer.empty())
         return false; // LCOV_EXCL_LINE
 
     // Ensure the size is 1234
@@ -107,20 +96,9 @@ bool Buffer_MethodTest()
     if (buffer.capacity() != 2468ULL)
         return false; // LCOV_EXCL_LINE
 
-    // Ensure we can hash the buffer
-    if (const auto hash = buffer.hash(); hash == 0ULL || hash == yatta::ZeroHash)
-        return false; // LCOV_EXCL_LINE
-
-    // Ensure we can return a char array
-    if (const char* const cArray = buffer.charArray(); cArray == nullptr)
-        return false; // LCOV_EXCL_LINE
-
-    // Ensure we can return a byte array
-    if (const std::byte* const bytes = buffer.bytes(); bytes == nullptr)
-        return false; // LCOV_EXCL_LINE
-
-    // Ensure both char array and byte array are the same underlying pointer
-    if (static_cast<const void*>(buffer.charArray()) != static_cast<const void*>(buffer.bytes()))
+    // Ensure we can explicitly set the capacity
+    buffer.reserve(3000ULL);
+    if (buffer.capacity() != 3000ULL)
         return false; // LCOV_EXCL_LINE
 
     // Ensure we can shrink the buffer
@@ -140,36 +118,43 @@ bool Buffer_MethodTest()
 
 bool Buffer_IOTest()
 {
-    // Ensure we can't perform IO on an empty buffer
-    try {
-        Buffer buffer;
-        constexpr size_t largeValue(123456789ULL);
-        buffer.in_type(largeValue);
-        return false; // LCOV_EXCL_LINE
-    }
-    catch (std::runtime_error&) {
-        // Ensure object IO is correct
-        Buffer buffer(sizeof(std::byte));
-        constexpr auto in_byte(static_cast<std::byte>(64));
-        buffer.in_type(in_byte);
-        std::byte out_byte;
-        buffer.out_type(out_byte);
-        if (in_byte != out_byte)
-            return false; // LCOV_EXCL_LINE
+    // Ensure we can push data
+    Buffer buffer;
+    constexpr size_t data1(123ULL);
+    constexpr char data2('§');
+    constexpr bool data3(true);
+    constexpr int data4[10] = { 0,1,2,3,4,5,6,7,8,9 };
+    const std::string data5 = "hello world";
+    constexpr char data6[5] = { 'a', 'b', 'c', 'd', '\0' };
+    buffer.push_type(data1);
+    buffer.push_type(data2);
+    buffer.push_type(data3);
+    buffer.push_type(data4);
+    buffer.push_type(data5);
+    buffer.push_raw(data6, sizeof(char) * 5ULL);
 
-        // Ensure raw pointer IO is correct
-        const char word[28] = "This is a sample sentence.\0";
-        constexpr size_t sentenceSize = sizeof(char) * 28ULL;
-        buffer.resize(sentenceSize + sizeof(std::byte));
-        buffer.in_raw(&word, sentenceSize, sizeof(std::byte));
-        struct TestStructure {
-            std::byte a;
-            char b[28];
-        } combinedOutput{};
-        buffer.out_raw(&combinedOutput, sizeof(TestStructure));
-        if (combinedOutput.a != in_byte || std::string(combinedOutput.b) != word)
-            return false; // LCOV_EXCL_LINE
-    }
+    // Ensure we can pop data
+    size_t data1_out(0ULL);
+    char data2_out('\0');
+    bool data3_out(false);
+    int data4_out[10] = { 0 };
+    std::string data5_out;
+    char data6_out[5] = { '\0' };
+    buffer.pop_raw(data6_out, sizeof(char) * 5ULL);
+    buffer.pop_type(data5_out);
+    buffer.pop_type(data4_out);
+    buffer.pop_type(data3_out);
+    buffer.pop_type(data2_out);
+    buffer.pop_type(data1_out);
+
+    // Ensure the data matches
+    if (data1 != data1_out ||
+        data2 != data2_out ||
+        data3 != data3_out ||
+        !std::equal(std::cbegin(data4), std::cend(data4), std::cbegin(data4_out)) ||
+        data5 != data5_out ||
+        std::string(data6) != std::string(data6_out))
+        return false; // LCOV_EXCL_LINE
 
     // Success
     return true;
@@ -238,12 +223,12 @@ bool Buffer_DiffTest()
         int a = 0;
         float b = 0.0F;
         char c[128] = { '\0' };
-    } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo.\0" };
+    } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo.99999999999999999999999999999999999999999999999999999999999\0" };
     struct Bar {
         float b = 0.0F;
         int c = 0;
         char a[128] = { '\0' };
-    } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar.\0", };
+    } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar.88888888888888888888888888888888888888888888888888888888888\0", };
     bufferA.resize(sizeof(Foo));
     bufferB.resize(sizeof(Bar));
     bufferA.in_type(dataA);

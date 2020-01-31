@@ -98,12 +98,14 @@ void Directory::clear() noexcept
 
 bool Directory::in_folder(const filepath& path, const std::vector<std::string>& exclusions)
 {
+    // Ensure the directory exists
+    if (!std::filesystem::exists(path))
+        return false; // Failure
+
     constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
         constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) {
             const auto extension = p.extension();
             for (const auto& excl : e) {
-                if (excl.empty())
-                    continue;
                 // Compare Paths && Extensions
                 if (p == excl || extension == excl) {
                     // Don't use path
@@ -167,7 +169,7 @@ bool Directory::in_package(const Buffer& packageBuffer)
     size_t byteIndex = sizeof(packHeaderTitle);
     packageBuffer.out_type(packHeaderTitle);
     packageBuffer.out_type(packHeaderName, byteIndex);
-    byteIndex += sizeof(size_t) + (sizeof(char) * packHeaderName.size());
+    byteIndex += sizeof(size_t) + (sizeof(char) * packHeaderName.size()) + sizeof(size_t);
 
     // Ensure header title matches
     if (std::strcmp(packHeaderTitle, "yatta pack") != 0)
@@ -195,7 +197,7 @@ bool Directory::in_package(const Buffer& packageBuffer)
         auto& file = m_files[fileIndex];
         // Read the path string out of the archive
         filebuffer.out_type(file.m_relativePath, byteIndex);
-        byteIndex += sizeof(size_t) + (sizeof(char) * file.m_relativePath.size());
+        byteIndex += sizeof(size_t) + (sizeof(char) * file.m_relativePath.size()) + sizeof(size_t);
 
         // Write the file size in bytes, into the archive
         size_t bufferSize(0ULL);
@@ -253,7 +255,7 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 
         // Read file path
         instructionBuffer.out_type(FI.path, byteIndex);
-        byteIndex += sizeof(size_t) + (sizeof(char) * FI.path.length());
+        byteIndex += sizeof(size_t) + (sizeof(char) * FI.path.length()) + sizeof(size_t);
 
         // Read operation flag
         char flag(0);
@@ -372,6 +374,10 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 
 bool Directory::out_folder(const filepath& path) const
 {
+    // Ensure we have files to output
+    if (m_files.size() == 0ULL)
+        return false; // Failure
+
     for (auto& file : m_files) {
         // Write-out the file
         const auto fullPath = path.string() + "/" + file.m_relativePath;
@@ -393,6 +399,10 @@ bool Directory::out_folder(const filepath& path) const
 
 std::optional<Buffer> Directory::out_package(const std::string& folderName) const
 {
+    // Ensure we have files to output
+    if (m_files.size() == 0ULL)
+        return {}; // Failure
+
     // Create a buffer large enough to hold all the files
     Buffer filebuffer;
     filebuffer.reserve(
@@ -404,6 +414,7 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
                 return currentSize
                     + sizeof(size_t) // Path Size
                     + (sizeof(char) * file.m_relativePath.size()) // Path
+                    + sizeof(size_t) // Path Size again for bidirectional reading
                     + sizeof(size_t) // File Size
                     + (sizeof(std::byte) * file.m_data.size()); // File Data
             }
@@ -434,7 +445,7 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
     // Prepend header information
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
     const auto& packHeaderName = folderName;
-    const size_t headerSize = sizeof(packHeaderTitle) + sizeof(size_t) + (sizeof(char) * folderName.size());
+    const size_t headerSize = sizeof(packHeaderTitle) + sizeof(size_t) + (sizeof(char) * folderName.size()) + sizeof(size_t);
     Buffer bufferWithHeader;
     bufferWithHeader.reserve(filebuffer.size() + headerSize);
 

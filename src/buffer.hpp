@@ -176,11 +176,13 @@ namespace yatta {
     // Template Specializations
 
     template <> inline void Buffer::push_type(const std::string& dataObj) {
-        // Copy in string size
+        // Copy in string size for forwards reading
         push_type(dataObj.size());
         // Copy in char data
         const auto stringSize = dataObj.size() * sizeof(char);
         push_raw(dataObj.data(), stringSize);
+        // Copy in string size again for backwards reading
+        push_type(dataObj.size());
     }
     template <> inline void Buffer::pop_type(std::string& dataObj) {
         // Copy out string size
@@ -190,6 +192,8 @@ namespace yatta {
         const auto chars = std::make_unique<char[]>(stringSize);
         pop_raw(chars.get(), stringSize);
         dataObj = std::string(chars.get(), stringSize);
+        // Pop size again for forwards direction
+        pop_type(stringSize);
     }
 };
 
