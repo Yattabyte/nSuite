@@ -23,14 +23,14 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 
 ***Table 1:** Descriptions of continuous integration environments in use.*
 
-| CI Environment   | Build                | Test                       | Analyze                                                                                                                                 |
-|:-----------------|:---------------------|:---------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
-| Travis CI        |<ul>- [x] Linux  </ul>|<ul>- [x] Debug/Release</ul>|<ul><li>- [x] Code Coverage</li><li>- [x] Clang Tidy</li><li>- [x] Clang Sanitizers</li><li>- [x] CppCheck</li><li>- [x] OCLint</li></ul>|
-| Appveyor         |<ul>- [x] Windows</ul>|<ul>- [x] Debug/Release</ul>|<ul>- [ ] n/a                                                                                                                       </ul>|
-| Codecov          |<ul>- [ ] n/a    </ul>|<ul>- [ ] n/a          </ul>|<ul>- [x] Code Coverage                                                                                                             </ul>|
-| LGTM             |<ul>- [ ] n/a    </ul>|<ul>- [ ] n/a          </ul>|<ul>- [x] Code Review                                                                                                               </ul>|
-| CodeFactor       |<ul>- [ ] n/a    </ul>|<ul>- [ ] n/a          </ul>|<ul>- [x] Code Review                                                                                                               </ul>|
-| Codacy           |<ul>- [ ] n/a    </ul>|<ul>- [ ] n/a          </ul>|<ul>- [x] Code Review                                                                                                               </ul>|
+| CI Environment   | Build                         | Test                                | Analyze                                                                                                                                 |
+|:-----------------|:------------------------------|:------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
+| Travis CI        |<ul><li>- [x] Linux  </li></ul>|<ul><li>- [x] Debug/Release</li></ul>|<ul><li>- [x] Code Coverage</li><li>- [x] Clang Tidy</li><li>- [x] Clang Sanitizers</li><li>- [x] CppCheck</li><li>- [x] OCLint</li></ul>|
+| Appveyor         |<ul><li>- [x] Windows</li></ul>|<ul><li>- [x] Debug/Release</li></ul>|<ul><li>- [ ] n/a                                                                                                              </li></ul>|
+| Codecov          |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Coverage                                                                                                    </li></ul>|
+| LGTM             |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
+| CodeFactor       |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
+| Codacy           |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
 
 
 ***Table 2:** List of operating systems and compilers supported.*
