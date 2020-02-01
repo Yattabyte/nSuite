@@ -34,11 +34,11 @@ namespace yatta {
         /** Copy-assignment operator.
         @param  other           the range to copy from.
         @return                 reference to this. */
-        virtual MemoryRange& operator=(const MemoryRange& other) = default;
+        MemoryRange& operator=(const MemoryRange& other) = default;
         /** Move-assignment operator.
         @param  other           the range to move from.
         @return                 reference to this. */
-        virtual MemoryRange& operator=(MemoryRange&& other) noexcept = default;
+        MemoryRange& operator=(MemoryRange&& other) noexcept = default;
 
 
         // Public Inquiry Methods
