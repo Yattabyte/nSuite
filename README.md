@@ -1,4 +1,12 @@
 # Yatta (formerly nSuite)
+[![Linux](https://img.shields.io/travis/yattabyte/nsuite?label=Linux%20Build&logo=Travis)](https://travis-ci.com/Yattabyte/nSuite)
+[![Windows](https://img.shields.io/appveyor/ci/yattabyte/nsuite?label=Windows%20Build&logo=Appveyor)](https://ci.appveyor.com/project/Yattabyte/nsuite)
+[![CodeCov](https://img.shields.io/codecov/c/gh/yattabyte/nsuite/beta?label=Code%20Coverage&logo=CodeCov)](https://codecov.io/gh/Yattabyte/nSuite)
+[![CodeFactor](https://img.shields.io/codefactor/grade/github/yattabyte/nsuite?label=Code%20Factor&logo=CodeFactor)](https://www.codefactor.io/repository/github/yattabyte/nsuite)
+[![Codacy](https://img.shields.io/codacy/grade/2b38f4eaa90d4b238942d6daaf578655?label=Code%20Quality&logo=Codacy)](https://www.codacy.com/manual/Yattabyte/nSuite)
+[![LGTM](https://img.shields.io/lgtm/grade/cpp/github/Yattabyte/nSuite?label=Code%20Quality&logo=LGTM)](https://lgtm.com/projects/g/Yattabyte/nSuite)
+[![CodeDocs](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/)
+[![license](https://img.shields.io/github/license/Yattabyte/nSuite?label=License&logo=github)](https://github.com/Yattabyte/nSuite/blob/beta/LICENSE)
 
 This is a C++17 library which allows users to pack, unpack, diff, and patch buffers as well as directories.
 Using the standard filesystem library, it can virtualize directories, package them, hash them, diff them, and patch them.
@@ -15,22 +23,22 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 
 ***Table 1:** Descriptions of continuous integration environments in use.*
 
-| CI Environment   | Tasks                     | Status                                                                                                                                                                             |
-|:-----------------|:-------------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| Travis CI        | Build/Test/LCOV/Analysis/ | [![Linux](https://img.shields.io/travis/yattabyte/nsuite?label=Linux%20Build&logo=Travis)](https://travis-ci.com/Yattabyte/nSuite)                                                 |
-| Appveyor         | Build/Test                | [![Windows](https://img.shields.io/appveyor/ci/yattabyte/nsuite?label=Windows%20Build&logo=Appveyor)](https://ci.appveyor.com/project/Yattabyte/nsuite)                            |
-| Codecov          | Code Coverage             | [![CodeCov](https://img.shields.io/codecov/c/gh/yattabyte/nsuite/beta?label=Code%20Coverage&logo=CodeCov)](https://codecov.io/gh/Yattabyte/nSuite)                                 |
-| CodeFactor       | Code Analys               | [![CodeFactor](https://img.shields.io/codefactor/grade/github/yattabyte/nsuite?label=Code%20Factor&logo=CodeFactor)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
-| Codacy           | Code Analys               | [![Codacy](https://img.shields.io/codacy/grade/2b38f4eaa90d4b238942d6daaf578655?label=Code%20Quality&logo=Codacy)](https://www.codacy.com/manual/Yattabyte/nSuite)                 |
-| LGTM             | Code Analys               | [![LGTM](https://img.shields.io/lgtm/grade/cpp/github/Yattabyte/nSuite?logo=LGTM)](https://lgtm.com/projects/g/Yattabyte/nSuite)                                                   |
-| CodeDocs         | Documentation             | [![CodeDocs](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/)                                                                                   |
+| CI Environment   | Build | Test  | Analyze |
+|:-----------------|:-----:|:-----:|:-------:|
+| Travis CI        |  [x]  |  [x]  |   [x]   |
+| Appveyor         |  [x]  |  [x]  |   [ ]   |
+| LGTM             |  [x]  |  [ ]  |   [x]   |
+| Codecov          |  [ ]  |  [ ]  |   [x]   |
+| CodeFactor       |  [ ]  |  [ ]  |   [x]   |
+| Codacy           |  [ ]  |  [ ]  |   [x]   |
+
 
 ***Table 2:** List of operating systems and compilers supported.*
 
-| Operating System | Compiler             | Debug/Release |
-|:-----------------|:--------------------:|:-------------:|
-| Linux (x64)      | GCC 8/9, Clang 7/8/9 |      BOTH     |
-| Windows (x64)    | MSVC 2017/2019, LLVM |      BOTH     |
+| Operating System | Compiler                   | Debug/Release |
+|:-----------------|:--------------------------:|:-------------:|
+| Linux (x64)      | GCC 8/9, Clang 7/8/9       |      BOTH     |
+| Windows (x64)    | MSVC 2017/2019, Clang+LLVM |      BOTH     |
 
 ***Table 3:** List of all other requirements and dependencies.*
 
