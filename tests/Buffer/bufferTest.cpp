@@ -1,11 +1,8 @@
 #include "yatta.hpp"
+#include <cassert>
 #include <iostream>
-#include <assert.h>
-
 
 // Convenience Definitions
-constexpr int SUCCESS = 0;
-constexpr int FAILURE = 1;
 using yatta::Buffer;
 
 // Forward Declarations
@@ -24,7 +21,7 @@ int main()
     Buffer_IOTest();
     Buffer_CompressionTest();
     Buffer_DiffTest();
-    exit(SUCCESS);
+    exit(0);
 }
 
 void Buffer_ConstructionTest()
@@ -98,7 +95,7 @@ void Buffer_IOTest()
     // Ensure we can push data
     Buffer buffer;
     constexpr size_t data1(123ULL);
-    constexpr char data2('§');
+    constexpr char data2('Z');
     constexpr bool data3(true);
     constexpr int data4[10] = { 0,1,2,3,4,5,6,7,8,9 };
     const std::string data5 = "hello world";

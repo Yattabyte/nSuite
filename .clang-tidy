@@ -3,4 +3,4 @@ Checks:            '*, -*abseil*, -*fuchsia*, -*google*, -*no-array-decay*, -*ma
 WarningsAsErrors:  ''
 HeaderFilterRegex: none
 FormatStyle:       'LLVM'
-User:              troy lowry
+User:              Troy Lowry

@@ -159,7 +159,7 @@ namespace yatta {
             else {
                 // Instead of casting the data to type T, std::copy the range
                 const auto dataObjPtr = reinterpret_cast<std::byte*>(&dataObj);
-                std::copy(&m_dataPtr[byteIndex], &m_dataPtr[byteIndex] + sizeof(T), dataObjPtr);
+                std::copy(&m_dataPtr[byteIndex], &m_dataPtr[byteIndex + sizeof(T)], dataObjPtr);
             }
         }
 

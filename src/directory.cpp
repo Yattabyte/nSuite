@@ -1,9 +1,8 @@
 #include "directory.hpp"
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <numeric>
-#include <assert.h>
-
 
 // Convenience definitions
 using yatta::Buffer;
@@ -375,7 +374,7 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 bool Directory::out_folder(const filepath& path) const
 {
     // Ensure we have files to output
-    if (m_files.size() == 0ULL)
+    if (m_files.empty())
         return false; // Failure
 
     for (auto& file : m_files) {
@@ -399,10 +398,10 @@ bool Directory::out_folder(const filepath& path) const
 std::optional<Buffer> Directory::out_package(const std::string& folderName) const
 {
     // Ensure we have files to output
-    if (m_files.size() == 0ULL)
+    if (m_files.empty())
         return {}; // Failure
 
-    // Create a buffer large enough to hold all the files
+      // Create a buffer large enough to hold all the files
     Buffer filebuffer;
     filebuffer.reserve(
         std::accumulate(
@@ -518,8 +517,9 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         instructionBuffer.push_type(oldHash);
         instructionBuffer.push_type(newHash);
         instructionBuffer.push_type(bufferSize);
-        if (bufferSize)
-            instructionBuffer.push_raw(buffer.bytes(), sizeof(std::byte) * bufferSize);
+        if (bufferSize != 0u)
+            instructionBuffer.push_raw(buffer.bytes(),
+                sizeof(std::byte) * bufferSize);
     };
 
     // Retrieve all common, added, and removed files

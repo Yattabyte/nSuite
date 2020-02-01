@@ -1,11 +1,8 @@
 #include "yatta.hpp"
+#include <cassert>
 #include <iostream>
-#include <assert.h>
-
 
 // Convenience Definitions
-constexpr int SUCCESS = 0;
-constexpr int FAILURE = 1;
 using yatta::MemoryRange;
 
 // Forward Declarations
@@ -22,7 +19,7 @@ int main()
     MemoryRange_MethodTest();
     MemoryRange_IOTest();
     MemoryRange_ExceptionTest();
-    exit(SUCCESS);
+    exit(0);
 }
 
 void MemoryRange_ConstructionTest()
@@ -37,7 +34,7 @@ void MemoryRange_ConstructionTest()
     assert(largeMemRange.hasData() && !largeMemRange.empty());
 
     // Ensure move constructor works
-    MemoryRange moveMemRange = std::move(largeMemRange);
+    MemoryRange moveMemRange(MemoryRange(1234ULL, largeBuffer.get()));
     assert(moveMemRange.size() == 1234ULL);
 
     // Ensure copy constructor works
@@ -118,11 +115,11 @@ void MemoryRange_IOTest()
     auto buffer = std::make_unique<std::byte[]>(sizeof(int) + sizeof(std::byte));
     MemoryRange memRange(sizeof(int) + sizeof(std::byte), buffer.get());
     constexpr int in_int(64);
-    constexpr std::byte in_byte(static_cast<std::byte>(123U));
+    constexpr auto in_byte(static_cast<std::byte>(123U));
     memRange.in_type(in_int);
     memRange.in_type(in_byte, sizeof(int));
     int out_int(0);
-    std::byte out_byte(static_cast<std::byte>(0U));
+    auto out_byte(static_cast<std::byte>(0U));
     memRange.out_type(out_int);
     memRange.out_type(out_byte, sizeof(int));
     assert(in_int == out_int && in_byte == out_byte);
@@ -153,7 +150,7 @@ void MemoryRange_IOTest()
 
 void MemoryRange_ExceptionTest()
 {
-    bool exception[20] = { 0 };
+    bool exception[20];
     std::fill(std::begin(exception), std::end(exception), false);
 
     /////////////////////////////////

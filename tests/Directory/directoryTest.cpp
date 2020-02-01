@@ -1,11 +1,8 @@
 #include "yatta.hpp"
+#include <cassert>
 #include <iostream>
-#include <assert.h>
-
 
 // Convenience Definitions
-constexpr int SUCCESS = 0;
-constexpr int FAILURE = 1;
 using yatta::Directory;
 
 // Forward Declarations
@@ -18,7 +15,7 @@ int main()
     Directory_ConstructionTest();
     Directory_MethodTest();
     Directory_ManipulationTest();
-    exit(SUCCESS);
+    exit(0);
 }
 
 void Directory_ConstructionTest()
@@ -38,7 +35,7 @@ void Directory_ConstructionTest()
     assert(dirA.hasFiles());
 
     // Ensure move constructor works
-    Directory moveDirectory = Directory(Directory::GetRunningDirectory() + "/old");
+    Directory moveDirectory(Directory(Directory::GetRunningDirectory() + "/old"));
     assert(moveDirectory.fileCount() == dirA.fileCount());
 
     // Ensure copy constructor works
@@ -93,7 +90,7 @@ void Directory_ManipulationTest()
     // Reset the directory to just the 'old' folder, hash it
     directory = Directory(Directory::GetRunningDirectory() + "/old");
     const auto oldHash = directory.hash();
-    (void)oldHash; // avoid GCC warning on oldhash not being used 
+    (void)oldHash; // avoid GCC warning on oldhash not being used
     assert(oldHash != yatta::ZeroHash);
 
     // Overwrite the /old folder, make sure hashes match

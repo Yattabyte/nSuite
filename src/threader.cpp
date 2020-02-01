@@ -12,7 +12,7 @@ Threader::~Threader()
     shutdown();
 }
 
-Threader::Threader(const size_t& maxThreads) noexcept
+Threader::Threader(const size_t& maxThreads)
 {
     m_maxThreads = std::clamp<size_t>(maxThreads, 1ULL, static_cast<size_t>(std::thread::hardware_concurrency()));
     m_threads.resize(m_maxThreads);

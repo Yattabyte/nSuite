@@ -20,7 +20,7 @@ namespace yatta {
         ~Threader();
         /** Creates a threader and generates a specified number of worker threads.
         @param  maxThreads       the number of threads to spawn (max std::thread::hardware_concurrency). */
-        explicit Threader(const size_t& maxThreads = std::thread::hardware_concurrency()) noexcept;
+        explicit Threader(const size_t& maxThreads = std::thread::hardware_concurrency());
         /** Deleted copy-assignment constructor. */
         Threader(const Threader&) = delete;
         /** Deleted move-assignment constructor. */
