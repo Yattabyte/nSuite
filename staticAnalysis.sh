@@ -6,7 +6,7 @@ echo "
 Starting Clang-Tidy
 **************************************************"
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy .
-cmake --build . --clean-first -- -j $(nproc) --config Debug
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
 # Run Valgrind
@@ -27,7 +27,7 @@ echo "
 Starting Address Sanitizer
 **************************************************"
 cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=address" -UCMAKE_CXX_CLANG_TIDY .
-cmake --build . --clean-first -- -j $(nproc) --config Debug
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
 # Undefined Behaviour Sanitizer
@@ -36,7 +36,7 @@ echo "
 Starting Undefined-Behaviour Sanitizer
 **************************************************"
 cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=undefined" -UCMAKE_CXX_CLANG_TIDY .
-cmake --build . --clean-first -- -j $(nproc) --config Debug
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
 # Thread Sanitizer
