@@ -15,15 +15,15 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 
 ***Table 1:** Descriptions of continuous integration environments in use.*
 
-| CI Environment   | Tasks                     | Status                                                                                                                                                                                                 |
-|:-----------------|:-------------------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| Travis CI        | Build/Test/LCOV/Analysis/ | [![Linux](https://img.shields.io/travis/yattabyte/nsuite?label=Linux%20Build&logo=Travis&style=for-the-badge)](https://travis-ci.com/Yattabyte/nSuite)                                                 |
-| Appveyor         | Build/Test                | [![Windows](https://img.shields.io/appveyor/ci/yattabyte/nsuite?label=Windows%20Build&logo=Appveyor&style=for-the-badge)](https://ci.appveyor.com/project/Yattabyte/nsuite)                            |
-| Codecov          | Code Coverage             | [![CodeCov](https://img.shields.io/codecov/c/gh/yattabyte/nsuite/beta?label=Code%20Coverage&logo=CodeCov&style=for-the-badge)](https://codecov.io/gh/Yattabyte/nSuite)                                 |
-| CodeFactor       | Code Analys               | [![CodeFactor](https://img.shields.io/codefactor/grade/github/yattabyte/nsuite?label=Code%20Factor&logo=CodeFactor&style=for-the-badge)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
-| Codacy           | Code Analys               | [![Codacy](https://img.shields.io/codacy/grade/2b38f4eaa90d4b238942d6daaf578655?label=Code%20Quality&logo=Codacy&style=for-the-badge)](https://www.codacy.com/manual/Yattabyte/nSuite)                 |
-| LGTM             | Code Analys               | [![LGTM](https://img.shields.io/lgtm/grade/cpp/github/Yattabyte/nSuite?logo=LGTM&style=for-the-badge)](https://lgtm.com/projects/g/Yattabyte/nSuite)                                                   |
-| CodeDocs         | Documentation             | [![CodeDocs](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/)                                                                                                       |
+| CI Environment   | Tasks                     | Status                                                                                                                                                                             |
+|:-----------------|:-------------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| Travis CI        | Build/Test/LCOV/Analysis/ | [![Linux](https://img.shields.io/travis/yattabyte/nsuite?label=Linux%20Build&logo=Travis)](https://travis-ci.com/Yattabyte/nSuite)                                                 |
+| Appveyor         | Build/Test                | [![Windows](https://img.shields.io/appveyor/ci/yattabyte/nsuite?label=Windows%20Build&logo=Appveyor)](https://ci.appveyor.com/project/Yattabyte/nsuite)                            |
+| Codecov          | Code Coverage             | [![CodeCov](https://img.shields.io/codecov/c/gh/yattabyte/nsuite/beta?label=Code%20Coverage&logo=CodeCov)](https://codecov.io/gh/Yattabyte/nSuite)                                 |
+| CodeFactor       | Code Analys               | [![CodeFactor](https://img.shields.io/codefactor/grade/github/yattabyte/nsuite?label=Code%20Factor&logo=CodeFactor)](https://www.codefactor.io/repository/github/yattabyte/nsuite) |
+| Codacy           | Code Analys               | [![Codacy](https://img.shields.io/codacy/grade/2b38f4eaa90d4b238942d6daaf578655?label=Code%20Quality&logo=Codacy)](https://www.codacy.com/manual/Yattabyte/nSuite)                 |
+| LGTM             | Code Analys               | [![LGTM](https://img.shields.io/lgtm/grade/cpp/github/Yattabyte/nSuite?logo=LGTM)](https://lgtm.com/projects/g/Yattabyte/nSuite)                                                   |
+| CodeDocs         | Documentation             | [![CodeDocs](https://codedocs.xyz/Yattabyte/nSuite.svg)](https://codedocs.xyz/Yattabyte/nSuite/)                                                                                   |
 
 ***Table 2:** List of operating systems and compilers supported.*
 
