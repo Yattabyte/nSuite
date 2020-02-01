@@ -25,12 +25,12 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 
 | CI Environment   | Build | Test  | Analyze |
 |:-----------------|:-----:|:-----:|:-------:|
-| Travis CI        |  [x]  |  [x]  |   [x]   |
-| Appveyor         |  [x]  |  [x]  |   [ ]   |
-| LGTM             |  [x]  |  [ ]  |   [x]   |
-| Codecov          |  [ ]  |  [ ]  |   [x]   |
-| CodeFactor       |  [ ]  |  [ ]  |   [x]   |
-| Codacy           |  [ ]  |  [ ]  |   [x]   |
+| Travis CI        |- [x]  |- [x]  | - [x]   |
+| Appveyor         |- [x]  |- [x]  | - [ ]   |
+| LGTM             |- [x]  |- [ ]  | - [x]   |
+| Codecov          |- [ ]  |- [ ]  | - [x]   |
+| CodeFactor       |- [ ]  |- [ ]  | - [x]   |
+| Codacy           |- [ ]  |- [ ]  | - [x]   |
 
 
 ***Table 2:** List of operating systems and compilers supported.*
