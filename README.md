@@ -26,11 +26,11 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 | CI Environment   | Build                         | Test                                | Analyze                                                                                                                                 |
 |:-----------------|:------------------------------|:------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
 | Travis CI        |<ul><li>- [x] Linux  </li></ul>|<ul><li>- [x] Debug/Release</li></ul>|<ul><li>- [x] Code Coverage</li><li>- [x] Clang Tidy</li><li>- [x] Clang Sanitizers</li><li>- [x] CppCheck</li><li>- [x] OCLint</li></ul>|
-| Appveyor         |<ul><li>- [x] Windows</li></ul>|<ul><li>- [x] Debug/Release</li></ul>|<ul><li>- [ ] n/a                                                                                                              </li></ul>|
-| Codecov          |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Coverage                                                                                                    </li></ul>|
-| LGTM             |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
-| CodeFactor       |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
-| Codacy           |<ul><li>- [ ] n/a    </li></ul>|<ul><li>- [ ] n/a          </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
+| Appveyor         |<ul><li>- [x] Windows</li></ul>|<ul><li>- [x] Debug/Release</li></ul>|<ul><li>- [ ]                                                                                                                  </li></ul>|
+| Codecov          |<ul><li>- [ ]        </li></ul>|<ul><li>- [ ]              </li></ul>|<ul><li>- [x] Code Coverage                                                                                                    </li></ul>|
+| LGTM             |<ul><li>- [ ]        </li></ul>|<ul><li>- [ ]              </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
+| CodeFactor       |<ul><li>- [ ]        </li></ul>|<ul><li>- [ ]              </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
+| Codacy           |<ul><li>- [ ]        </li></ul>|<ul><li>- [ ]              </li></ul>|<ul><li>- [x] Code Review                                                                                                      </li></ul>|
 
 
 ***Table 2:** List of operating systems and compilers supported.*
