@@ -192,7 +192,7 @@ Buffer::Buffer(const Buffer& other) :
 }
 
 Buffer::Buffer(Buffer&& other) noexcept :
-    MemoryRange(other),
+    MemoryRange(std::move(other)),
     m_capacity(other.m_capacity),
     m_data(std::move(other.m_data))
 {

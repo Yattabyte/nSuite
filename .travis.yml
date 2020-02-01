@@ -79,7 +79,7 @@ jobs:
           update: true
       env: COMPILER_CXX=clang++-9 COMPILER_C=clang-9 STATIC_ANALYSIS=true
       script:
-        - export ASAN_SYMBOLIZER_PATH="/usr/local/clang-9/bin/llvm-symbolizer"
+        - export ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer) ASAN_OPTIONS=symbolize=1
         - bash ./staticAnalysis.sh
 
 
