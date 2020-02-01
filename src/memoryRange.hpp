@@ -16,10 +16,29 @@ namespace yatta {
     class MemoryRange {
     public:
         // Public Constructor
+        /** Destroy this memory range. */
+        virtual ~MemoryRange() = default;
         /** Construct a memory range from the specified pointer and size.
         @param  size            the number of bytes in the range.
         @param  dataPtr         pointer to some data source. */
         explicit MemoryRange(const size_t& size = 0ULL, std::byte* dataPtr = nullptr) noexcept;
+        /** Construct a memory range, copying from another.
+        @param  other           the range to copy from. */
+        MemoryRange(const MemoryRange& other) = default;
+        /** Construct a memory range, moving from another.
+        @param  other           the range to move from. */
+        MemoryRange(MemoryRange&& other) noexcept = default;
+
+
+        // Public Assignment Operators
+        /** Copy-assignment operator.
+        @param  other           the range to copy from.
+        @return                 reference to this. */
+        virtual MemoryRange& operator=(const MemoryRange& other) = default;
+        /** Move-assignment operator.
+        @param  other           the range to move from.
+        @return                 reference to this. */
+        virtual MemoryRange& operator=(MemoryRange&& other) noexcept = default;
 
 
         // Public Inquiry Methods

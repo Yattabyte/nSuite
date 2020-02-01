@@ -90,7 +90,7 @@ void Directory_ManipulationTest()
     // Reset the directory to just the 'old' folder, hash it
     directory = Directory(Directory::GetRunningDirectory() + "/old");
     const auto oldHash = directory.hash();
-    (void)oldHash; // avoid GCC warning on oldhash not being used
+    (void)oldHash; // avoid GCC warning on old hash not being used
     assert(oldHash != yatta::ZeroHash);
 
     // Overwrite the /old folder, make sure hashes match
