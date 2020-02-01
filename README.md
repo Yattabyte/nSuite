@@ -23,14 +23,14 @@ And lastly, for all other requirements and dependencies, see *Table 3* below.
 
 ***Table 1:** Descriptions of continuous integration environments in use.*
 
-| CI Environment   | Build | Test  | Analyze |
-|:-----------------|:-----:|:-----:|:-------:|
-| Travis CI        |- [x]  |- [x]  | - [x]   |
-| Appveyor         |- [x]  |- [x]  | - [ ]   |
-| LGTM             |- [x]  |- [ ]  | - [x]   |
-| Codecov          |- [ ]  |- [ ]  | - [x]   |
-| CodeFactor       |- [ ]  |- [ ]  | - [x]   |
-| Codacy           |- [ ]  |- [ ]  | - [x]   |
+| CI Environment   | Build         | Test                | Analyze                                                                                                                                   |
+|:-----------------|:--------------|:--------------------|:-----------------------------------------------------------------------------------------------------------------------------------------:|
+| Travis CI        | - [x] Linux   | - [x] Debug/Release | <ul><li>- [x] Code Coverage</li><li>- [x] Clang Tidy</li><li>- [x] Clang Sanitizers</li><li>- [x] CppCheck</li><li>- [x] OCLint</li></ul> |
+| Appveyor         | - [x] Windows | - [x] Debug/Release | - [ ] n/a                                                                                                                                 |
+| Codecov          | - [ ] n/a     | - [ ] n/a           | - [x] Code Coverage                                                                                                                       |
+| LGTM             | - [ ] n/a     | - [ ] n/a           | - [x] Code Review                                                                                                                         |
+| CodeFactor       | - [ ] n/a     | - [ ] n/a           | - [x] Code Review                                                                                                                         |
+| Codacy           | - [ ] n/a     | - [ ] n/a           | - [x] Code Review                                                                                                                         |
 
 
 ***Table 2:** List of operating systems and compilers supported.*
