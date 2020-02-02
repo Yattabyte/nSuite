@@ -79,8 +79,7 @@ void Directory_MethodTest() {
 void Directory_CompressionTest() {
     // Reset the directory to just the 'old' folder, hash it
     Directory directory = Directory(Directory::GetRunningDirectory() + "/old");
-    const auto oldHash = directory.hash();
-    (void)oldHash; // avoid GCC warning on old hash not being used
+    [[maybe_unused]] const auto oldHash = directory.hash();
     assert(oldHash != yatta::ZeroHash);
 
     // Overwrite the /old folder, make sure hashes match
@@ -119,8 +118,8 @@ void Directory_DeltaTest() {
     // Ensure the 2 directories are different
     Directory oldDirectory(Directory::GetRunningDirectory() + "/old");
     Directory newDirectory(Directory::GetRunningDirectory() + "/new");
-    const auto oldHash = oldDirectory.hash();
-    const auto newHash = newDirectory.hash();
+    [[maybe_unused]] const auto oldHash = oldDirectory.hash();
+    [[maybe_unused]] const auto newHash = newDirectory.hash();
     assert(oldHash != newHash);
 
     // Try to diff the old and new directories
