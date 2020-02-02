@@ -10,14 +10,22 @@ void MemoryRange_ConstructionTest();
 void MemoryRange_AssignmentTest();
 void MemoryRange_MethodTest();
 void MemoryRange_IOTest();
-void MemoryRange_ExceptionTest();
+void MemoryRange_IndexExceptionTest();
+void MemoryRange_SubrangeExceptionTest();
+void MemoryRange_InOutRawExceptionTest();
+void MemoryRange_InOutTypeExceptionTest();
+void MemoryRange_InOutStringExceptionTest();
 
 int main() {
     MemoryRange_ConstructionTest();
     MemoryRange_AssignmentTest();
     MemoryRange_MethodTest();
     MemoryRange_IOTest();
-    MemoryRange_ExceptionTest();
+    MemoryRange_IndexExceptionTest();
+    MemoryRange_SubrangeExceptionTest();
+    MemoryRange_InOutRawExceptionTest();
+    MemoryRange_InOutTypeExceptionTest();
+    MemoryRange_InOutStringExceptionTest();
     exit(0);
 }
 
@@ -66,12 +74,12 @@ void MemoryRange_AssignmentTest() {
 void MemoryRange_MethodTest() {
     // Ensure the memory range is reassignable
     MemoryRange memRange;
-    assert(memRange.empty() && !memRange.hasData());
+    assert(memRange.empty());
 
     // Ensure memory range has data
     const auto buffer = std::make_unique<std::byte[]>(1234ULL);
     memRange = MemoryRange(1234ULL, buffer.get());
-    assert(memRange.hasData() && !memRange.empty());
+    assert(memRange.hasData());
 
     // Ensure memory range size is the same as the buffer
     assert(memRange.size() == 1234ULL);
@@ -87,8 +95,8 @@ void MemoryRange_MethodTest() {
 
     // Ensure both char array and byte array are the same underlying pointer
     assert(
-        static_cast<const void *>(memRange.charArray()) ==
-        static_cast<const void *>(memRange.bytes()));
+        static_cast<const void*>(memRange.charArray()) ==
+        static_cast<const void*>(memRange.bytes()));
 
     // Ensure we can create a valid sub-range
     auto subRange = memRange.subrange(0, 617ULL);
@@ -96,7 +104,7 @@ void MemoryRange_MethodTest() {
 
     // Ensure we can iterate over the subrange
     int byteCount(0);
-    for (auto &byte : subRange) {
+    for (auto& byte : subRange) {
         byte = static_cast<std::byte>(123U);
         ++byteCount;
     }
@@ -104,7 +112,7 @@ void MemoryRange_MethodTest() {
 
     // Ensure we can iterate over the subrange with arbitrary types
     int iterationCount(0);
-    for (auto *it = subRange.cbegin_t<size_t>();
+    for (auto* it = subRange.cbegin_t<size_t>();
          it != subRange.cend_t<size_t>(); ++it)
         ++iterationCount;
     assert(iterationCount == static_cast<int>(617ULL / sizeof(size_t)));
@@ -150,217 +158,222 @@ void MemoryRange_IOTest() {
     assert(string == outputString);
 }
 
-void MemoryRange_ExceptionTest() {
-    bool exception[20];
-    std::fill(std::begin(exception), std::end(exception), false);
-
-    /////////////////////////////////
-    /// index operator exceptions ///
-    /////////////////////////////////
-
+void MemoryRange_IndexExceptionTest() {
     // Ensure we can't access out of bounds
+    bool exception1 = false;
     try {
         MemoryRange emptyRange;
         emptyRange[0] = static_cast<std::byte>(123U);
-    } catch (const std::exception &) {
-        exception[0] = true;
+    } catch (const std::exception&) {
+        exception1 = true;
     }
-    assert(exception[0]);
+    assert(exception1);
 
     // Const version
+    bool exception2 = false;
     try {
         const MemoryRange emptyRange;
         assert(emptyRange[0] == emptyRange[0]);
-    } catch (const std::exception &) {
-        exception[1] = true;
+    } catch (const std::exception&) {
+        exception2 = true;
     }
-    assert(exception[1]);
+    assert(exception2);
+}
 
-    ///////////////////////////
-    /// subrange exceptions ///
-    ///////////////////////////
-
+void MemoryRange_SubrangeExceptionTest() {
     // Catch null pointer exception
+    bool exception1 = false;
     try {
         const MemoryRange emptyRange;
-        emptyRange.subrange(0, 0);
-    } catch (std::exception &) {
-        exception[2] = true;
+        emptyRange.subrange(0, 0).empty();
+    } catch (std::exception&) {
+        exception1 = true;
     }
-    assert(exception[2]);
+    assert(exception1);
 
     // Catch out of range exception
+    bool exception2 = false;
     try {
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         const MemoryRange smallRange(1, smallBuffer.get());
-        smallRange.subrange(0, 2);
-    } catch (std::exception &) {
-        exception[3] = true;
+        smallRange.subrange(0, 2).empty();
+    } catch (std::exception&) {
+        exception2 = true;
     }
-    assert(exception[3]);
+    assert(exception2);
+}
 
-    /////////////////////////////////////
-    /// in_raw and out_raw exceptions ///
-    /////////////////////////////////////
-
+void MemoryRange_InOutRawExceptionTest() {
     // Ensure we can't write out of bounds
+    bool exception1 = false;
     MemoryRange memRange;
     try {
         memRange[0] = static_cast<std::byte>(123U);
-    } catch (const std::exception &) {
-        exception[4] = true;
+    } catch (const std::exception&) {
+        exception1 = true;
     }
-    assert(exception[4]);
+    assert(exception1);
 
     // Ensure we can't read out of bounds
+    bool exception2 = false;
     try {
         const MemoryRange constRange;
         assert(constRange[0] == constRange[0]);
-    } catch (const std::exception &) {
-        exception[5] = true;
+    } catch (const std::exception&) {
+        exception2 = true;
     }
-    assert(exception[5]);
+    assert(exception2);
 
     // Ensure we can't write in raw memory to a null pointer
+    bool exception3 = false;
     try {
         memRange.in_raw(nullptr, 0);
-    } catch (const std::exception &) {
-        exception[6] = true;
+    } catch (const std::exception&) {
+        exception3 = true;
     }
-    assert(exception[6]);
+    assert(exception3);
 
     // Ensure we can't write out raw memory from a null pointer
+    bool exception4 = false;
     try {
         memRange.out_raw(nullptr, 0);
-    } catch (const std::exception &) {
-        exception[7] = true;
+    } catch (const std::exception&) {
+        exception4 = true;
     }
-    assert(exception[7]);
+    assert(exception4);
 
     // Ensure we can't write null data to a memory range
+    bool exception5 = false;
     std::byte byte;
     memRange = MemoryRange(1, &byte);
     try {
         memRange.in_raw(nullptr, 0);
-    } catch (const std::exception &) {
-        exception[8] = true;
+    } catch (const std::exception&) {
+        exception5 = true;
     }
-    assert(exception[8]);
+    assert(exception5);
 
     // Ensure we can't write out data to a null pointer
+    bool exception6 = false;
     try {
         memRange.out_raw(nullptr, 0);
-    } catch (const std::exception &) {
-        exception[9] = true;
+    } catch (const std::exception&) {
+        exception6 = true;
     }
-    assert(exception[9]);
+    assert(exception6);
 
     // Ensure we can't write in raw memory out of bounds
+    bool exception7 = false;
     try {
         memRange.in_raw(&byte, 8ULL);
-    } catch (const std::exception &) {
-        exception[10] = true;
+    } catch (const std::exception&) {
+        exception7 = true;
     }
-    assert(exception[10]);
+    assert(exception7);
 
     // Ensure we can't write out raw memory out of bounds
+    bool exception8 = false;
     try {
         std::byte outByte;
         memRange.out_raw(&outByte, 8ULL);
-    } catch (const std::exception &) {
-        exception[11] = true;
+    } catch (const std::exception&) {
+        exception8 = true;
     }
-    assert(exception[11]);
+    assert(exception8);
+}
 
-    ///////////////////////////////////////
-    /// in_type and out_type exceptions ///
-    ///      for ANY template type      ///
-    ///////////////////////////////////////
+void MemoryRange_InOutTypeExceptionTest() {
     // Ensure we can't write onto a null pointer
+    bool exception1 = false;
     try {
         MemoryRange emptyRange;
         size_t obj;
         emptyRange.in_type(obj);
-    } catch (const std::exception &) {
-        exception[12] = true;
+    } catch (const std::exception&) {
+        exception1 = true;
     }
-    assert(exception[12]);
+    assert(exception1);
 
     // Ensure we can't read out from a null pointer
+    bool exception2 = false;
     try {
         MemoryRange emptyRange;
         size_t obj;
         emptyRange.out_type(obj);
-    } catch (const std::exception &) {
-        exception[13] = true;
+    } catch (const std::exception&) {
+        exception2 = true;
     }
-    assert(exception[13]);
+    assert(exception2);
 
     // Ensure we can't write out of bounds
+    bool exception3 = false;
     try {
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         MemoryRange smallRange(1, smallBuffer.get());
         size_t obj;
         smallRange.in_type(obj);
-    } catch (const std::exception &) {
-        exception[14] = true;
+    } catch (const std::exception&) {
+        exception3 = true;
     }
-    assert(exception[14]);
+    assert(exception3);
 
     // Ensure we can't read out of bounds
+    bool exception4 = false;
     try {
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         MemoryRange smallRange(1, smallBuffer.get());
         size_t obj;
         smallRange.out_type(obj);
-    } catch (const std::exception &) {
-        exception[15] = true;
+    } catch (const std::exception&) {
+        exception4 = true;
     }
-    assert(exception[15]);
+    assert(exception4);
+}
 
-    ///////////////////////////////////////
-    /// in_type and out_type exceptions ///
-    ///    for STRING specialization    ///
-    ///////////////////////////////////////
+void MemoryRange_InOutStringExceptionTest() {
     // Ensure we can't write onto a null pointer
+    bool exception1 = false;
     try {
         MemoryRange emptyRange;
         std::string string;
         emptyRange.in_type(string);
-    } catch (const std::exception &) {
-        exception[16] = true;
+    } catch (const std::exception&) {
+        exception1 = true;
     }
-    assert(exception[16]);
+    assert(exception1);
 
     // Ensure we can't read out from a null pointer
+    bool exception2 = false;
     try {
         MemoryRange emptyRange;
         std::string string;
         emptyRange.out_type(string);
-    } catch (const std::exception &) {
-        exception[17] = true;
+    } catch (const std::exception&) {
+        exception2 = true;
     }
-    assert(exception[17]);
+    assert(exception2);
 
     // Ensure we can't write out of bounds
+    bool exception3 = false;
     try {
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         MemoryRange smallRange(1, smallBuffer.get());
         std::string string;
         smallRange.in_type(string);
-    } catch (const std::exception &) {
-        exception[18] = true;
+    } catch (const std::exception&) {
+        exception3 = true;
     }
-    assert(exception[18]);
+    assert(exception3);
 
     // Ensure we can't read out of bounds
+    bool exception4 = false;
     try {
         const auto smallBuffer = std::make_unique<std::byte[]>(1ULL);
         MemoryRange smallRange(1, smallBuffer.get());
         std::string string;
         smallRange.out_type(string);
-    } catch (const std::exception &) {
-        exception[19] = true;
+    } catch (const std::exception&) {
+        exception4 = true;
     }
-    assert(exception[19]);
+    assert(exception4);
 }

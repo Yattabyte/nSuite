@@ -14,12 +14,12 @@ using directory_rec_itt = std::filesystem::recursive_directory_iterator;
 // Public (de)Constructors
 
 Directory::Directory(
-    const filepath &path, const std::vector<std::string> &exclusions) {
+    const filepath& path, const std::vector<std::string>& exclusions) {
     if (std::filesystem::is_directory(path))
         in_folder(path, exclusions);
 }
 
-Directory::Directory(const Buffer &packageBuffer) {
+Directory::Directory(const Buffer& packageBuffer) {
     if (packageBuffer.hasData())
         in_package(packageBuffer);
 }
@@ -35,7 +35,7 @@ size_t Directory::fileCount() const noexcept { return m_files.size(); }
 size_t Directory::fileSize() const noexcept {
     return std::accumulate(
         m_files.begin(), m_files.end(), 0ULL,
-        [](const size_t &currentSum, const VirtualFile &file) noexcept {
+        [](const size_t& currentSum, const VirtualFile& file) noexcept {
             return currentSum + file.m_data.size();
         });
 }
@@ -45,7 +45,7 @@ size_t Directory::hash() const noexcept {
     // same such that 2 copies of the same directory result in the same hash
     return std::accumulate(
         m_files.begin(), m_files.end(), yatta::ZeroHash,
-        [](const size_t &currentHash, const VirtualFile &file) noexcept {
+        [](const size_t& currentHash, const VirtualFile& file) noexcept {
             return currentHash + file.m_data.hash();
         });
 }
@@ -71,42 +71,29 @@ void Directory::clear() noexcept { m_files.clear(); }
 // Public IO Methods
 
 bool Directory::in_folder(
-    const filepath &path, const std::vector<std::string> &exclusions) {
+    const filepath& path, const std::vector<std::string>& exclusions) {
     // Ensure the directory exists
     if (!std::filesystem::exists(path))
         return false; // Failure
 
-    constexpr auto get_file_paths = [](const filepath &directory,
-                                       const std::vector<std::string> &exc) {
-        constexpr auto check_exclusion =
-            [](const filepath &filePath,
-               const std::vector<std::string> &fileExclusion) {
-                const auto extension = filePath.extension();
-                for (const auto &excl : fileExclusion) {
-                    // Compare Paths && Extensions
-                    if (filePath == excl || extension == excl) {
-                        // Don't use path
-                        return false;
-                    }
-                }
-                // Safe to use path
-                return true;
-            };
+    constexpr auto get_file_paths = [](const filepath& directory,
+                                       const std::vector<std::string>& exc) {
         std::vector<std::filesystem::directory_entry> paths;
         if (std::filesystem::is_directory(directory))
-            for (const auto &entry : directory_rec_itt(directory))
+            for (const auto& entry : directory_rec_itt(directory))
                 if (entry.is_regular_file()) {
-                    auto subpath = entry.path().string();
-                    subpath = subpath.substr(
-                        directory.string().size(),
-                        subpath.size() - directory.string().size());
-                    if (check_exclusion(subpath, exc))
+                    const auto extension = entry.path().extension();
+                    if (!std::any_of(
+                            exc.cbegin(), exc.cend(),
+                            [extension](const auto& element) {
+                                return element == extension;
+                            }))
                         paths.emplace_back(entry);
                 }
         return paths;
     };
 
-    for (const auto &entry : get_file_paths(path, exclusions)) {
+    for (const auto& entry : get_file_paths(path, exclusions)) {
         if (entry.is_regular_file()) {
             // Read the file data
             Buffer fileBuffer(entry.file_size());
@@ -130,7 +117,7 @@ bool Directory::in_folder(
     return true; // Success
 }
 
-bool Directory::in_package(const Buffer &packageBuffer) {
+bool Directory::in_package(const Buffer& packageBuffer) {
     // Ensure the package buffer exists
     if (packageBuffer.empty())
         return false; // Failure
@@ -168,7 +155,7 @@ bool Directory::in_package(const Buffer &packageBuffer) {
     m_files.resize(m_files.size() + fileCount);
     const auto finalSize = m_files.size();
     while (byteIndex < packSize && fileIndex < finalSize) {
-        auto &file = m_files[fileIndex];
+        auto& file = m_files[fileIndex];
         // Read the path string out of the archive
         filebuffer.out_type(file.m_relativePath, byteIndex);
         byteIndex += sizeof(size_t) +
@@ -190,7 +177,7 @@ bool Directory::in_package(const Buffer &packageBuffer) {
     return true; // Success
 }
 
-bool Directory::in_delta(const Buffer &deltaBuffer) {
+bool Directory::in_delta(const Buffer& deltaBuffer) {
     // Ensure buffer at least *exists*
     if (deltaBuffer.empty())
         return false; // Failure
@@ -274,11 +261,11 @@ bool Directory::in_delta(const Buffer &deltaBuffer) {
     instructionBuffer.clear();
 
     // Patch all files first
-    for (FileInstruction &inst : diffFiles) {
+    for (FileInstruction& inst : diffFiles) {
         // Try to find the target file
         auto storedFile = std::find_if(
             m_files.begin(), m_files.end(),
-            [&](const VirtualFile &file) noexcept {
+            [&](const VirtualFile& file) noexcept {
                 return file.m_relativePath == inst.path;
             });
         if (storedFile == m_files.end())
@@ -305,7 +292,7 @@ bool Directory::in_delta(const Buffer &deltaBuffer) {
     diffFiles.clear();
 
     // Add new files
-    for (FileInstruction &inst : addedFiles) {
+    for (FileInstruction& inst : addedFiles) {
         // Convert the instruction into a virtual file
         Buffer newBuffer;
         if (auto result = Buffer().patch(inst.instructionBuffer))
@@ -321,7 +308,7 @@ bool Directory::in_delta(const Buffer &deltaBuffer) {
         m_files.erase(
             std::remove_if(
                 m_files.begin(), m_files.end(),
-                [&](const VirtualFile &file) noexcept {
+                [&](const VirtualFile& file) noexcept {
                     return file.m_relativePath == inst.path;
                 }),
             m_files.end());
@@ -332,12 +319,12 @@ bool Directory::in_delta(const Buffer &deltaBuffer) {
     addedFiles.clear();
 
     // Delete all files
-    for (FileInstruction &inst : removedFiles) {
+    for (FileInstruction& inst : removedFiles) {
         // Erase any instances of this file if the file name and hash matches
         m_files.erase(
             std::remove_if(
                 m_files.begin(), m_files.end(),
-                [&](const VirtualFile &file) noexcept {
+                [&](const VirtualFile& file) noexcept {
                     return file.m_relativePath == inst.path &&
                            file.m_data.hash() == inst.diff_oldHash;
                 }),
@@ -349,12 +336,12 @@ bool Directory::in_delta(const Buffer &deltaBuffer) {
     return true;
 }
 
-bool Directory::out_folder(const filepath &path) const {
+bool Directory::out_folder(const filepath& path) const {
     // Ensure we have files to output
     if (m_files.empty())
         return false; // Failure
 
-    for (auto &file : m_files) {
+    for (auto& file : m_files) {
         // Write-out the file
         const auto fullPath = path.string() + "/" + file.m_relativePath;
         std::filesystem::create_directories(filepath(fullPath).parent_path());
@@ -373,7 +360,7 @@ bool Directory::out_folder(const filepath &path) const {
 }
 
 std::optional<Buffer>
-Directory::out_package(const std::string &folderName) const {
+Directory::out_package(const std::string& folderName) const {
     // Ensure we have files to output
     if (m_files.empty())
         return {}; // Failure
@@ -383,7 +370,7 @@ Directory::out_package(const std::string &folderName) const {
     filebuffer.reserve(std::accumulate(
         m_files.cbegin(), m_files.cend(),
         sizeof(size_t), // Starting with the file count
-        [](const size_t &currentSize, const VirtualFile &file) noexcept {
+        [](const size_t& currentSize, const VirtualFile& file) noexcept {
             return currentSize + sizeof(size_t)                  // Path Size
                    + (sizeof(char) * file.m_relativePath.size()) // Path
                    + sizeof(size_t) // Path Size again for bidirectional reading
@@ -395,7 +382,7 @@ Directory::out_package(const std::string &folderName) const {
     filebuffer.push_type(m_files.size());
 
     // Iterate over all files, writing in all their data
-    for (auto &file : m_files) {
+    for (auto& file : m_files) {
         // Write the path string into the archive
         filebuffer.push_type(file.m_relativePath);
 
@@ -414,7 +401,7 @@ Directory::out_package(const std::string &folderName) const {
 
     // Prepend header information
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
-    const auto &packHeaderName = folderName;
+    const auto& packHeaderName = folderName;
     const size_t headerSize = sizeof(packHeaderTitle) + sizeof(size_t) +
                               (sizeof(char) * folderName.size()) +
                               sizeof(size_t);
@@ -430,7 +417,7 @@ Directory::out_package(const std::string &folderName) const {
 }
 
 std::optional<Buffer>
-Directory::out_delta(const Directory &targetDirectory) const {
+Directory::out_delta(const Directory& targetDirectory) const {
     // Ensure we have files to diff
     if (fileCount() == 0 && targetDirectory.fileCount() == 0)
         return {}; // Failure
@@ -439,14 +426,14 @@ Directory::out_delta(const Directory &targetDirectory) const {
     using PathList = std::vector<VirtualFile>;
     using PathPairList = std::vector<std::pair<VirtualFile, VirtualFile>>;
     static constexpr auto getFileLists =
-        [](const Directory &oldDirectory, const Directory &newDirectory,
-           PathPairList &commonFiles, PathList &addFiles, PathList &delFiles) {
+        [](const Directory& oldDirectory, const Directory& newDirectory,
+           PathPairList& commonFiles, PathList& addFiles, PathList& delFiles) {
             auto srcOld_Files = oldDirectory.m_files;
             auto srcNew_Files = newDirectory.m_files;
-            for (const auto &nFile : srcNew_Files) {
+            for (const auto& nFile : srcNew_Files) {
                 bool found = false;
                 size_t oIndex(0ULL);
-                for (const auto &oFile : srcOld_Files) {
+                for (const auto& oFile : srcOld_Files) {
                     if (nFile.m_relativePath == oFile.m_relativePath) {
                         // Common file found
                         commonFiles.push_back({ oFile, nFile });
@@ -467,12 +454,12 @@ Directory::out_delta(const Directory &targetDirectory) const {
             // All 'old files' that remain didn't exist in the 'new file' set
             delFiles = srcOld_Files;
         };
-    static constexpr auto writeInstructions = [](const std::string &path,
-                                                 const size_t &oldHash,
-                                                 const size_t &newHash,
-                                                 const Buffer &buffer,
-                                                 const char &flag,
-                                                 Buffer &instructionBuffer) {
+    static constexpr auto writeInstructions = [](const std::string& path,
+                                                 const size_t& oldHash,
+                                                 const size_t& newHash,
+                                                 const Buffer& buffer,
+                                                 const char& flag,
+                                                 Buffer& instructionBuffer) {
         const auto bufferSize = buffer.size();
         const auto pathLength = path.length();
         const size_t instructionSize = (sizeof(size_t) * 4ULL) +
@@ -503,9 +490,9 @@ Directory::out_delta(const Directory &targetDirectory) const {
 
     // These files are common, maybe some have changed
     size_t fileCount(0ULL);
-    for (const auto &[oldFile, newFile] : commonFiles) {
-        const auto &oldBuffer = oldFile.m_data;
-        const auto &newBuffer = newFile.m_data;
+    for (const auto& [oldFile, newFile] : commonFiles) {
+        const auto& oldBuffer = oldFile.m_data;
+        const auto& newBuffer = newFile.m_data;
         const auto oldHash = oldBuffer.hash();
         const auto newHash = newBuffer.hash();
         // Check if a common file has changed
@@ -524,8 +511,8 @@ Directory::out_delta(const Directory &targetDirectory) const {
     commonFiles.clear();
 
     // These files are brand new
-    for (const auto &nFile : addedFiles) {
-        const auto &newBuffer = nFile.m_data;
+    for (const auto& nFile : addedFiles) {
+        const auto& newBuffer = nFile.m_data;
         const auto newHash = newBuffer.hash();
         Buffer diffBuffer;
         if (auto result = Buffer().diff(newBuffer))
@@ -540,8 +527,8 @@ Directory::out_delta(const Directory &targetDirectory) const {
     addedFiles.clear();
 
     // These files are deprecated
-    for (const auto &oFile : removedFiles) {
-        const auto &oldBuffer = oFile.m_data;
+    for (const auto& oFile : removedFiles) {
+        const auto& oldBuffer = oFile.m_data;
         const auto oldHash = oldBuffer.hash();
         writeInstructions(
             oFile.m_relativePath, oldHash, 0ULL, Buffer(), 'D',
@@ -558,7 +545,7 @@ Directory::out_delta(const Directory &targetDirectory) const {
 
     // Prepend header information
     constexpr char deltaHeaderTitle[16ULL] = "yatta delta";
-    const auto &deltaHeaderFileCount = fileCount;
+    const auto& deltaHeaderFileCount = fileCount;
     constexpr size_t headerSize = sizeof(deltaHeaderTitle) + sizeof(size_t);
     Buffer bufferWithHeader;
     bufferWithHeader.reserve(instructionBuffer.size() + headerSize);

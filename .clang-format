@@ -5,6 +5,7 @@ AlignAfterOpenBracket: AlwaysBreak
 Cpp11BracedListStyle: 'false'
 IndentWidth: '4'
 Language: Cpp
+PointerAlignment: Left
 Standard: Cpp11
 TabWidth: '4'
 UseTab: Never

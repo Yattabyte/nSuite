@@ -21,22 +21,22 @@ class Threader {
     @param  maxThreads       the number of threads to spawn (max
     std::thread::hardware_concurrency). */
     explicit Threader(
-        const size_t &maxThreads = std::thread::hardware_concurrency());
+        const size_t& maxThreads = std::thread::hardware_concurrency());
     /** Deleted copy-assignment constructor. */
-    Threader(const Threader &) = delete;
+    Threader(const Threader&) = delete;
     /** Deleted move-assignment constructor. */
-    Threader(Threader &&) = delete;
+    Threader(Threader&&) = delete;
 
     // Public Assignment Operators
     /** Deleted copy-assignment operator. */
-    Threader &operator=(const Threader &other) = delete;
+    Threader& operator=(const Threader& other) = delete;
     /** Deleted move-assignment operator. */
-    Threader &operator=(Threader &&other) = delete;
+    Threader& operator=(Threader&& other) = delete;
 
     // Public Methods
     /** Adds the specified function object to the queue.
     @param  func            the task to be executed on a separate thread. */
-    void addJob(const std::function<void()> &&func);
+    void addJob(const std::function<void()>&& func);
     /** Check if the threader has completed all its jobs.
     @return                 true if finished, false otherwise. */
     bool isFinished() const noexcept;

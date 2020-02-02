@@ -21,27 +21,27 @@ class Directory {
     @param  path            the absolute path to a desired folder.
     @param  exclusions      list of files or extensions to exclude. */
     explicit Directory(
-        const std::filesystem::path &path,
-        const std::vector<std::string> &exclusions = {});
+        const std::filesystem::path& path,
+        const std::vector<std::string>& exclusions = {});
     /** Constructs a directory from a packaged buffer.
     @param  packageBuffer   the package to source data from. */
-    explicit Directory(const Buffer &packageBuffer);
+    explicit Directory(const Buffer& packageBuffer);
     /** Construct a directory, copying from another.
     @param  other           the directory to copy from. */
-    Directory(const Directory &other) = default;
+    Directory(const Directory& other) = default;
     /** Construct a directory, moving from another.
     @param  other           the directory to move from. */
-    Directory(Directory &&other) noexcept = default;
+    Directory(Directory&& other) noexcept = default;
 
     // Public Assignment Operators
     /** Copy-assignment operator.
     @param  other           the directory to copy from.
     @return                 reference to this. */
-    Directory &operator=(const Directory &other) = default;
+    Directory& operator=(const Directory& other) = default;
     /** Move-assignment operator.
     @param  other           the directory to move from.
     @return                 reference to this. */
-    Directory &operator=(Directory &&other) noexcept = default;
+    Directory& operator=(Directory&& other) noexcept = default;
 
     // Public Inquiry Methods
     /** Check if this directory is empty.
@@ -76,32 +76,32 @@ class Directory {
     relative path, ".ext" matches extension.
     @return                 true on success, false otherwise. */
     bool in_folder(
-        const std::filesystem::path &path,
-        const std::vector<std::string> &exclusions = {});
+        const std::filesystem::path& path,
+        const std::vector<std::string>& exclusions = {});
     /** Parses and expands the contents of a package into this directory.
     @param  packageBuffer   the package to source data from.
     @return                 true on success, false otherwise. */
-    bool in_package(const Buffer &packageBuffer);
+    bool in_package(const Buffer& packageBuffer);
     /** Updates and patches the files in this directory using the specified
     patch file.
     @param  deltaBuffer     the patch to apply.
     @return                 true on success, false otherwise. */
-    bool in_delta(const Buffer &deltaBuffer);
+    bool in_delta(const Buffer& deltaBuffer);
     /** Copies out the files found in this directory to the path on disk
     specified.
     @param  path            the path to write the files at.
     @return                 true on success, false otherwise. */
-    bool out_folder(const std::filesystem::path &path) const;
+    bool out_folder(const std::filesystem::path& path) const;
     /** Generate a package buffer from this directory.
     @param  folderName      the name to give this package.
     @return                 packaged version of this directory on success, empty
     otherwise. */
-    std::optional<Buffer> out_package(const std::string &folderName) const;
+    std::optional<Buffer> out_package(const std::string& folderName) const;
     /** Generate a patch buffer from this directory against the specified target
     directory.
     @param  targetDirectory the target to diff against.
     @return                 patch buffer on success, empty otherwise. */
-    std::optional<Buffer> out_delta(const Directory &targetDirectory) const;
+    std::optional<Buffer> out_delta(const Directory& targetDirectory) const;
 
     protected:
     // Protected Attributes

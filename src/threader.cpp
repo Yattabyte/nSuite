@@ -7,12 +7,12 @@ using yatta::Threader;
 
 Threader::~Threader() { shutdown(); }
 
-Threader::Threader(const size_t &maxThreads) {
+Threader::Threader(const size_t& maxThreads) {
     m_maxThreads = std::clamp<size_t>(
         maxThreads, 1ULL,
         static_cast<size_t>(std::thread::hardware_concurrency()));
     m_threads.resize(m_maxThreads);
-    for (auto &thread : m_threads) {
+    for (auto& thread : m_threads) {
         thread = std::thread([&]() {
             while (m_alive) {
                 // Check if there is a job to do
@@ -36,7 +36,7 @@ Threader::Threader(const size_t &maxThreads) {
 
 // Public Methods
 
-void Threader::addJob(const std::function<void()> &&func) {
+void Threader::addJob(const std::function<void()>&& func) {
     std::unique_lock<std::shared_mutex> writeGuard(m_mutex);
     m_jobs.emplace_back(func);
     m_jobsStarted++;
@@ -48,7 +48,7 @@ bool Threader::isFinished() const noexcept {
 
 void Threader::shutdown() {
     m_alive = false;
-    for (auto &thread : m_threads)
+    for (auto& thread : m_threads)
         if (thread.joinable())
             thread.join();
     m_threads.clear();

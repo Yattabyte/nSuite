@@ -1,36 +1,36 @@
 /*
- *  LZ4 - Fast LZ compression algorithm
- *  Header File
- *  Copyright (C) 2011-present, Yann Collet.
+*  LZ4 - Fast LZ compression algorithm
+*  Header File
+*  Copyright (C) 2011-present, Yann Collet.
 
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+  BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
 
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
+      * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following disclaimer
+  in the documentation and/or other materials provided with the
+  distribution.
 
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-   You can contact the author at :
-    - LZ4 homepage : http://www.lz4.org
-    - LZ4 source repository : https://github.com/lz4/lz4
+  You can contact the author at :
+   - LZ4 homepage : http://www.lz4.org
+   - LZ4 source repository : https://github.com/lz4/lz4
 */
 #pragma once
 #if defined(__cplusplus)
@@ -120,7 +120,7 @@ extern "C" {
 
 LZ4LIB_API int LZ4_versionNumber(
     void); /**< library version number; useful to check dll version */
-LZ4LIB_API const char *LZ4_versionString(
+LZ4LIB_API const char* LZ4_versionString(
     void); /**< library version string; useful to check dll version */
 
 /*-************************************
@@ -156,7 +156,7 @@ LZ4LIB_API const char *LZ4_versionString(
  * read outside 'source' buffer).
  */
 LZ4LIB_API int LZ4_compress_default(
-    const char *src, char *dst, int srcSize, int maxOutputSize);
+    const char* src, char* dst, int srcSize, int maxOutputSize);
 
 /*! LZ4_decompress_safe() :
  *  compressedSize : is the exact complete size of the compressed block.
@@ -178,7 +178,7 @@ LZ4LIB_API int LZ4_compress_default(
  * and its metadata, consider looking at lz4frame.h instead.
  */
 LZ4LIB_API int LZ4_decompress_safe(
-    const char *source, char *dest, int compressedSize,
+    const char* source, char* dest, int compressedSize,
     int maxDecompressedSize);
 
 /*-************************************
@@ -212,7 +212,7 @@ LZ4LIB_API int LZ4_compressBound(int isize);
    replaced by ACCELERATION_DEFAULT (currently == 1, see lz4.c).
 */
 LZ4LIB_API int LZ4_compress_fast(
-    const char *source, char *dest, int inputSize, int maxOutputSize,
+    const char* source, char* dest, int inputSize, int maxOutputSize,
     int acceleration);
 
 /*! LZ4_compress_fast_extState() :
@@ -223,7 +223,7 @@ LZ4LIB_API int LZ4_compress_fast(
  */
 LZ4LIB_API int LZ4_sizeofState(void);
 LZ4LIB_API int LZ4_compress_fast_extState(
-    void *state, const char *source, char *dest, int inputSize,
+    void* state, const char* source, char* dest, int inputSize,
     int maxOutputSize, int acceleration);
 
 /*! LZ4_compress_destSize() :
@@ -239,7 +239,7 @@ LZ4LIB_API int LZ4_compress_fast_extState(
  *           or 0 if compression fails.
  */
 LZ4LIB_API int LZ4_compress_destSize(
-    const char *src, char *dst, int *srcSizePtr, int targetDstSize);
+    const char* src, char* dst, int* srcSizePtr, int targetDstSize);
 
 /*! LZ4_decompress_safe_partial() :
  *  Decompress an LZ4 compressed block, of size 'srcSize' at position 'src',
@@ -267,7 +267,7 @@ LZ4LIB_API int LZ4_compress_destSize(
  * break API.
  */
 LZ4LIB_API int LZ4_decompress_safe_partial(
-    const char *src, char *dst, int compressedSize, int targetOutputSize,
+    const char* src, char* dst, int compressedSize, int targetOutputSize,
     int dstCapacity);
 
 /*-*********************************************
@@ -275,8 +275,8 @@ LZ4LIB_API int LZ4_decompress_safe_partial(
  ***********************************************/
 typedef union LZ4_stream_u LZ4_stream_t; /* incomplete type (defined later) */
 
-LZ4LIB_API LZ4_stream_t *LZ4_createStream(void);
-LZ4LIB_API int LZ4_freeStream(LZ4_stream_t *LZ4_stream);
+LZ4LIB_API LZ4_stream_t* LZ4_createStream(void);
+LZ4LIB_API int LZ4_freeStream(LZ4_stream_t* LZ4_stream);
 
 /*! LZ4_resetStream_fast() : v1.9.0+
  *  Use this to prepare an LZ4_stream_t for a new chain of dependent blocks
@@ -301,7 +301,7 @@ LZ4LIB_API int LZ4_freeStream(LZ4_stream_t *LZ4_stream);
  *        Invoking LZ4_resetStream_fast() before is redundant, and even
  * counterproductive.
  */
-LZ4LIB_API void LZ4_resetStream_fast(LZ4_stream_t *ctx);
+LZ4LIB_API void LZ4_resetStream_fast(LZ4_stream_t* ctx);
 
 /*! LZ4_loadDict() :
  *  Use this function to reference a static dictionary into LZ4_stream_t.
@@ -315,7 +315,7 @@ LZ4LIB_API void LZ4_resetStream_fast(LZ4_stream_t *ctx);
  * @return : loaded dictionary size, in bytes (necessarily <= 64 KB)
  */
 LZ4LIB_API int
-LZ4_loadDict(LZ4_stream_t *LZ4_dict, const char *dictionary, int dictSize);
+LZ4_loadDict(LZ4_stream_t* LZ4_dict, const char* dictionary, int dictSize);
 
 /*! LZ4_compress_fast_continue() :
  *  Compress 'src' content using data from previously compressed blocks, for
@@ -347,7 +347,7 @@ LZ4_loadDict(LZ4_stream_t *LZ4_dict, const char *dictionary, int dictSize);
  * only be reset or freed.
  */
 LZ4LIB_API int LZ4_compress_fast_continue(
-    LZ4_stream_t *LZ4_stream, const char *source, char *dest, int inputSize,
+    LZ4_stream_t* LZ4_stream, const char* source, char* dest, int inputSize,
     int maxOutputSize, int acceleration);
 
 /*! LZ4_saveDict() :
@@ -359,7 +359,7 @@ LZ4LIB_API int LZ4_compress_fast_continue(
  * if error.
  */
 LZ4LIB_API int
-LZ4_saveDict(LZ4_stream_t *LZ4_dict, char *safeBuffer, int maxDictSize);
+LZ4_saveDict(LZ4_stream_t* LZ4_dict, char* safeBuffer, int maxDictSize);
 
 /*-**********************************************
  *  Streaming Decompression Functions
@@ -371,8 +371,8 @@ typedef union LZ4_streamDecode_u LZ4_streamDecode_t; /* tracking context */
  *  creation / destruction of streaming decompression tracking context.
  *  A tracking context can be re-used multiple times.
  */
-LZ4LIB_API LZ4_streamDecode_t *LZ4_createStreamDecode(void);
-LZ4LIB_API int LZ4_freeStreamDecode(LZ4_streamDecode_t *LZ4_stream);
+LZ4LIB_API LZ4_streamDecode_t* LZ4_createStreamDecode(void);
+LZ4LIB_API int LZ4_freeStreamDecode(LZ4_streamDecode_t* LZ4_stream);
 
 /*! LZ4_setStreamDecode() :
  *  An LZ4_streamDecode_t context can be allocated once and re-used multiple
@@ -383,7 +383,7 @@ LZ4LIB_API int LZ4_freeStreamDecode(LZ4_streamDecode_t *LZ4_stream);
  * @return : 1 if OK, 0 if error
  */
 LZ4LIB_API int LZ4_setStreamDecode(
-    LZ4_streamDecode_t *LZ4_streamDecode, const char *dictionary, int dictSize);
+    LZ4_streamDecode_t* LZ4_streamDecode, const char* dictionary, int dictSize);
 
 /*! LZ4_decoderRingBufferSize() : v1.8.2+
  *  Note : in a ring buffer scenario (optional),
@@ -434,7 +434,7 @@ LZ4LIB_API int LZ4_decoderRingBufferSize(int maxBlockSize);
  * LZ4_setStreamDecode(), before decompressing next block.
  */
 LZ4LIB_API int LZ4_decompress_safe_continue(
-    LZ4_streamDecode_t *LZ4_streamDecode, const char *source, char *dest,
+    LZ4_streamDecode_t* LZ4_streamDecode, const char* source, char* dest,
     int compressedSize, int maxOutputSize);
 
 /*! LZ4_decompress_*_usingDict() :
@@ -447,8 +447,8 @@ LZ4LIB_API int LZ4_decompress_safe_continue(
  * dictSize.
  */
 LZ4LIB_API int LZ4_decompress_safe_usingDict(
-    const char *source, char *dest, int compressedSize, int maxOutputSize,
-    const char *dictStart, int dictSize);
+    const char* source, char* dest, int compressedSize, int maxOutputSize,
+    const char* dictStart, int dictSize);
 
 #endif /* LZ4_H_2983827168210 */
 
@@ -499,7 +499,7 @@ LZ4LIB_API int LZ4_decompress_safe_usingDict(
  * call to LZ4_resetStream().
  */
 LZ4LIB_STATIC_API int LZ4_compress_fast_extState_fastReset(
-    void *state, const char *src, char *dst, int srcSize, int dstCapacity,
+    void* state, const char* src, char* dst, int srcSize, int dstCapacity,
     int acceleration);
 
 /*! LZ4_attach_dictionary() :
@@ -529,7 +529,7 @@ LZ4LIB_STATIC_API int LZ4_compress_fast_extState_fastReset(
  *  through the completion of the first compression call on the stream.
  */
 LZ4LIB_STATIC_API void LZ4_attach_dictionary(
-    LZ4_stream_t *workingStream, const LZ4_stream_t *dictionaryStream);
+    LZ4_stream_t* workingStream, const LZ4_stream_t* dictionaryStream);
 
 /*! In-place compression and decompression
  *
@@ -639,15 +639,15 @@ struct LZ4_stream_t_internal {
     uint32_t currentOffset;
     uint16_t dirty;
     uint16_t tableType;
-    const uint8_t *dictionary;
-    const LZ4_stream_t_internal *dictCtx;
+    const uint8_t* dictionary;
+    const LZ4_stream_t_internal* dictCtx;
     uint32_t dictSize;
 };
 
 typedef struct {
-    const uint8_t *externalDict;
+    const uint8_t* externalDict;
     size_t extDictSize;
-    const uint8_t *prefixEnd;
+    const uint8_t* prefixEnd;
     size_t prefixSize;
 } LZ4_streamDecode_t_internal;
 
@@ -659,14 +659,14 @@ struct LZ4_stream_t_internal {
     unsigned int currentOffset;
     unsigned short dirty;
     unsigned short tableType;
-    const unsigned char *dictionary;
-    const LZ4_stream_t_internal *dictCtx;
+    const unsigned char* dictionary;
+    const LZ4_stream_t_internal* dictCtx;
     unsigned int dictSize;
 };
 
 typedef struct {
-    const unsigned char *externalDict;
-    const unsigned char *prefixEnd;
+    const unsigned char* externalDict;
+    const unsigned char* prefixEnd;
     size_t extDictSize;
     size_t prefixSize;
 } LZ4_streamDecode_t_internal;
@@ -684,7 +684,7 @@ typedef struct {
  */
 #define LZ4_STREAMSIZE_U64                                                     \
     ((1 << (LZ4_MEMORY_USAGE - 3)) + 4 +                                       \
-     ((sizeof(void *) == 16) ? 4 : 0) /*AS-400*/)
+     ((sizeof(void*) == 16) ? 4 : 0) /*AS-400*/)
 #define LZ4_STREAMSIZE (LZ4_STREAMSIZE_U64 * sizeof(unsigned long long))
 union LZ4_stream_u {
     unsigned long long table[LZ4_STREAMSIZE_U64];
@@ -705,7 +705,7 @@ union LZ4_stream_u {
  * LZ4_stream_t structure guarantees correct alignment and size. Note3: Before
  * v1.9.0, use LZ4_resetStream() instead
  */
-LZ4LIB_API LZ4_stream_t *LZ4_initStream(void *buffer, size_t size);
+LZ4LIB_API LZ4_stream_t* LZ4_initStream(void* buffer, size_t size);
 
 /*! LZ4_streamDecode_t :
  *  information structure to track an LZ4 stream during decompression.
@@ -715,7 +715,7 @@ LZ4LIB_API LZ4_stream_t *LZ4_initStream(void *buffer, size_t size);
  *         and may change in a future version !
  */
 #define LZ4_STREAMDECODESIZE_U64                                               \
-    (4 + ((sizeof(void *) == 16) ? 2 : 0) /*AS-400*/)
+    (4 + ((sizeof(void*) == 16) ? 2 : 0) /*AS-400*/)
 #define LZ4_STREAMDECODESIZE                                                   \
     (LZ4_STREAMDECODESIZE_U64 * sizeof(unsigned long long))
 union LZ4_streamDecode_u {
@@ -759,32 +759,32 @@ union LZ4_streamDecode_u {
 
 /* Obsolete compression functions */
 LZ4_DEPRECATED("use LZ4_compress_default() instead")
-LZ4LIB_API int LZ4_compress(const char *src, char *dest, int srcSize);
+LZ4LIB_API int LZ4_compress(const char* src, char* dest, int srcSize);
 LZ4_DEPRECATED("use LZ4_compress_default() instead")
 LZ4LIB_API int LZ4_compress_limitedOutput(
-    const char *source, char *dest, int inputSize, int maxOutputSize);
+    const char* source, char* dest, int inputSize, int maxOutputSize);
 LZ4_DEPRECATED("use LZ4_compress_fast_extState() instead")
 LZ4LIB_API int
-LZ4_compress_withState(void *state, const char *src, char *dst, int srcSize);
+LZ4_compress_withState(void* state, const char* src, char* dst, int srcSize);
 LZ4_DEPRECATED("use LZ4_compress_fast_extState() instead")
 LZ4LIB_API
 int LZ4_compress_limitedOutput_withState(
-    void *state, const char *src, char *dst, int srcSize, int dstSize);
+    void* state, const char* src, char* dst, int srcSize, int dstSize);
 LZ4_DEPRECATED("use LZ4_compress_fast_continue() instead")
 LZ4LIB_API int LZ4_compress_continue(
-    LZ4_stream_t *LZ4_streamPtr, const char *source, char *dest, int inputSize);
+    LZ4_stream_t* LZ4_streamPtr, const char* source, char* dest, int inputSize);
 LZ4_DEPRECATED("use LZ4_compress_fast_continue() instead")
 LZ4LIB_API
 int LZ4_compress_limitedOutput_continue(
-    LZ4_stream_t *LZ4_streamPtr, const char *src, char *dst, int srcSize,
+    LZ4_stream_t* LZ4_streamPtr, const char* src, char* dst, int srcSize,
     int dstCapacity);
 
 /* Obsolete decompression functions */
 LZ4_DEPRECATED("use LZ4_decompress_fast() instead")
-LZ4LIB_API int LZ4_uncompress(const char *source, char *dest, int outputSize);
+LZ4LIB_API int LZ4_uncompress(const char* source, char* dest, int outputSize);
 LZ4_DEPRECATED("use LZ4_decompress_safe() instead")
 LZ4LIB_API int LZ4_uncompress_unknownOutputSize(
-    const char *source, char *dest, int isize, int maxOutputSize);
+    const char* source, char* dest, int isize, int maxOutputSize);
 
 /* Obsolete streaming functions; degraded functionality; do not use!
  *
@@ -796,23 +796,23 @@ LZ4LIB_API int LZ4_uncompress_unknownOutputSize(
  * independently.
  */
 LZ4_DEPRECATED("Use LZ4_createStream() instead")
-LZ4LIB_API void *LZ4_create(const char *inputBuffer);
+LZ4LIB_API void* LZ4_create(const char* inputBuffer);
 LZ4_DEPRECATED("Use LZ4_createStream() instead")
 LZ4LIB_API int LZ4_sizeofStreamState(void);
 LZ4_DEPRECATED("Use LZ4_resetStream() instead")
-LZ4LIB_API int LZ4_resetStreamState(void *state, const char *inputBuffer);
+LZ4LIB_API int LZ4_resetStreamState(void* state, const char* inputBuffer);
 LZ4_DEPRECATED("Use LZ4_saveDict() instead")
-LZ4LIB_API char *LZ4_slideInputBuffer(void *state);
+LZ4LIB_API char* LZ4_slideInputBuffer(void* state);
 
 /* Obsolete streaming decoding functions */
 LZ4_DEPRECATED("use LZ4_decompress_safe_usingDict() instead")
 LZ4LIB_API
 int LZ4_decompress_safe_withPrefix64k(
-    const char *source, char *dest, int compressedSize, int maxOutputSize);
+    const char* source, char* dest, int compressedSize, int maxOutputSize);
 LZ4_DEPRECATED("use LZ4_decompress_fast_usingDict() instead")
 LZ4LIB_API
 int LZ4_decompress_fast_withPrefix64k(
-    const char *source, char *dest, int originalSize);
+    const char* source, char* dest, int originalSize);
 
 /*! LZ4_decompress_fast() : **unsafe!**
  *  These functions used to be faster than LZ4_decompress_safe(),
@@ -851,16 +851,16 @@ int LZ4_decompress_fast_withPrefix64k(
 LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using "
                "LZ4_decompress_safe() instead")
 LZ4LIB_API int
-LZ4_decompress_fast(const char *source, char *dest, int originalSize);
+LZ4_decompress_fast(const char* source, char* dest, int originalSize);
 LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using "
                "LZ4_decompress_safe_continue() instead")
 LZ4LIB_API int LZ4_decompress_fast_continue(
-    LZ4_streamDecode_t *LZ4_streamDecode, const char *source, char *dest,
+    LZ4_streamDecode_t* LZ4_streamDecode, const char* source, char* dest,
     int originalSize);
 LZ4_DEPRECATED("This function is deprecated and unsafe. Consider using "
                "LZ4_decompress_safe_usingDict() instead")
 LZ4LIB_API int LZ4_decompress_fast_usingDict(
-    const char *source, char *dest, int originalSize, const char *dictStart,
+    const char* source, char* dest, int originalSize, const char* dictStart,
     int dictSize);
 
 /*! LZ4_resetStream() :
@@ -869,7 +869,7 @@ LZ4LIB_API int LZ4_decompress_fast_usingDict(
  *  Consider switching to LZ4_initStream(),
  *  invoking LZ4_resetStream() will trigger deprecation warnings in the future.
  */
-LZ4LIB_API void LZ4_resetStream(LZ4_stream_t *LZ4_stream);
+LZ4LIB_API void LZ4_resetStream(LZ4_stream_t* LZ4_stream);
 
 #endif /* LZ4_H_98237428734687 */
 

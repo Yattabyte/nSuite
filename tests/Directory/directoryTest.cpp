@@ -8,12 +8,14 @@ using yatta::Directory;
 // Forward Declarations
 void Directory_ConstructionTest();
 void Directory_MethodTest();
-void Directory_ManipulationTest();
+void Directory_CompressionTest();
+void Directory_DeltaTest();
 
 int main() {
     Directory_ConstructionTest();
     Directory_MethodTest();
-    Directory_ManipulationTest();
+    Directory_CompressionTest();
+    Directory_DeltaTest();
     exit(0);
 }
 
@@ -30,7 +32,9 @@ void Directory_ConstructionTest() {
     const auto package = dirA.out_package("old");
     assert(package.has_value());
     Directory dirB(*package);
-    assert(dirA.hasFiles());
+    assert(
+        dirB.hasFiles() && dirB.fileSize() == 147777ULL &&
+        dirB.fileCount() == 4ULL);
 
     // Ensure move constructor works
     Directory moveDirectory(
@@ -52,13 +56,14 @@ void Directory_MethodTest() {
 
     // Verify that we can input folders
     directory.in_folder(Directory::GetRunningDirectory() + "/old");
+    directory.in_folder(Directory::GetRunningDirectory() + "/new");
     assert(directory.hasFiles());
 
-    // Ensure we have 4 files all together
-    assert(directory.fileCount() == 4ULL);
+    // Ensure we have 8 files all together
+    assert(directory.fileCount() == 8ULL);
 
     // Ensure the total size is as expected
-    assert(directory.fileSize() == 147777ULL);
+    assert(directory.fileSize() == 189747ULL);
 
     // Ensure we can hash an actual directory
     assert(directory.hash() != yatta::ZeroHash);
@@ -71,21 +76,9 @@ void Directory_MethodTest() {
     assert(directory.hash() == yatta::ZeroHash);
 }
 
-void Directory_ManipulationTest() {
-    // Verify empty directories
-    Directory directory;
-    assert(directory.empty());
-
-    // Ensure we have 8 files all together
-    directory.in_folder(Directory::GetRunningDirectory() + "/old");
-    directory.in_folder(Directory::GetRunningDirectory() + "/new");
-    assert(directory.fileCount() == 8ULL);
-
-    // Ensure the total size is as expected
-    assert(directory.fileSize() == 189747ULL);
-
+void Directory_CompressionTest() {
     // Reset the directory to just the 'old' folder, hash it
-    directory = Directory(Directory::GetRunningDirectory() + "/old");
+    Directory directory = Directory(Directory::GetRunningDirectory() + "/old");
     const auto oldHash = directory.hash();
     (void)oldHash; // avoid GCC warning on old hash not being used
     assert(oldHash != yatta::ZeroHash);
@@ -93,7 +86,9 @@ void Directory_ManipulationTest() {
     // Overwrite the /old folder, make sure hashes match
     directory.out_folder(Directory::GetRunningDirectory() + "/old");
     directory = Directory(Directory::GetRunningDirectory() + "/old");
-    assert(directory.hash() == oldHash);
+    assert(
+        directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL &&
+        directory.hash() == oldHash);
 
     // Ensure we can dump a directory as a package
     const auto package = directory.out_package("package");
@@ -102,26 +97,9 @@ void Directory_ManipulationTest() {
     // Ensure we can import a package and that it matches the old one
     directory.clear();
     directory.in_package(*package);
-    assert(directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL);
-
-    // Ensure new hash matches
-    assert(directory.hash() == oldHash);
-
-    // Try to diff the old and new directories
-    Directory newDirectory(Directory::GetRunningDirectory() + "/new");
-    const auto deltaBuffer = directory.out_delta(newDirectory);
-    assert(deltaBuffer.has_value() && deltaBuffer->hasData());
-
-    // Try to patch the old directory into the new directory
-    assert(directory.in_delta(*deltaBuffer));
-
-    // Ensure the hashes match
-    assert(directory.hash() == newDirectory.hash());
-
-    // Overwrite the /new folder, make sure the hashes match
-    directory.out_folder(Directory::GetRunningDirectory() + "/new");
-    directory = Directory(Directory::GetRunningDirectory() + "/new");
-    assert(directory.hash() == newDirectory.hash());
+    assert(
+        directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL &&
+        directory.hash() == oldHash);
 
     // Ensure we can't export an empty directory
     directory.clear();
@@ -135,4 +113,30 @@ void Directory_ManipulationTest() {
 
     // Ensure we can't import an empty package
     assert(!directory.in_package(yatta::Buffer()));
+}
+
+void Directory_DeltaTest() {
+    // Ensure the 2 directories are different
+    Directory oldDirectory(Directory::GetRunningDirectory() + "/old");
+    Directory newDirectory(Directory::GetRunningDirectory() + "/new");
+    const auto oldHash = oldDirectory.hash();
+    const auto newHash = newDirectory.hash();
+    assert(oldHash != newHash);
+
+    // Try to diff the old and new directories
+    const auto deltaBuffer = oldDirectory.out_delta(newDirectory);
+    assert(deltaBuffer.has_value() && deltaBuffer->hasData());
+
+    // Try to patch the old directory into the new directory
+    assert(oldDirectory.in_delta(*deltaBuffer));
+
+    // Ensure the hashes match
+    assert(oldDirectory.hash() == newHash);
+
+    // Overwrite the /new folder, make sure they match entirely
+    oldDirectory.out_folder(Directory::GetRunningDirectory() + "/new");
+    oldDirectory = Directory(Directory::GetRunningDirectory() + "/new");
+    assert(
+        oldDirectory.fileSize() == 41970ULL &&
+        oldDirectory.fileCount() == 4ULL && oldDirectory.hash() == newHash);
 }

@@ -118,3 +118,7 @@ install:
 before_script:
   - cmake --version
   - cmake ${CMAKE_OPTIONS_GLOBAL} ${CMAKE_OPTIONS} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} . || exit 1
+
+
+notifications:
+  email: false

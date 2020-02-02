@@ -13,6 +13,19 @@ void Buffer_IOTest();
 void Buffer_CompressionTest();
 void Buffer_DiffTest();
 
+// The structure we'll compress, decompress, diff, and patch
+struct TestStructureA {
+    int a = 0;
+    float b = 0.F;
+    char c[256] = { '\0' };
+};
+struct TestStructureB {
+    char a[128] = { '\0' };
+    int b = 0;
+    char c[128] = { '\0' };
+    float d = 0.F;
+};
+
 int main() {
     Buffer_ConstructionTest();
     Buffer_AssignmentTest();
@@ -58,13 +71,13 @@ void Buffer_AssignmentTest() {
 }
 
 void Buffer_MethodTest() {
-    Buffer buffer;
     // Ensure the buffer is empty
-    assert(buffer.empty() && !buffer.hasData());
+    Buffer buffer;
+    assert(buffer.empty());
 
     // Ensure we can resize the buffer with data
     buffer.resize(1234ULL);
-    assert(buffer.hasData() && !buffer.empty());
+    assert(buffer.hasData());
 
     // Ensure the size is 1234
     assert(buffer.size() == 1234ULL);
@@ -130,24 +143,17 @@ void Buffer_CompressionTest() {
     const auto badResult1 = buffer.compress();
     const auto badResult2 = badResult1->decompress();
     assert(!badResult1 && !badResult2);
-
-    // The structure we'll compress and decompress
-    struct TestStructure {
-        int a = 0;
-        float b = 0.F;
-        char c[256] = { '\0' };
-    };
     // Create a buffer and load it with test data
-    buffer.resize(sizeof(TestStructure));
-    constexpr TestStructure testData{ 1234, 567.890F,
-                                      "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
-                                      "WEQWEQWEQQWEQWEQWEEEEEE623785623"
-                                      "46528374444444433333333333333646"
-                                      "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
-                                      "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
-                                      "UNOUNOUNOU4EQWEQWEEEEEE623785623"
-                                      "46528374444444433333333333333646"
-                                      "37896463QWQWEQWEQWWEQWEQWEEEEE\0" };
+    buffer.resize(sizeof(TestStructureA));
+    constexpr TestStructureA testData{ 1234, 567.890F,
+                                       "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
+                                       "WEQWEQWEQQWEQWEQWEEEEEE623785623"
+                                       "46528374444444433333333333333646"
+                                       "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
+                                       "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
+                                       "UNOUNOUNOU4EQWEQWEEEEEE623785623"
+                                       "46528374444444433333333333333646"
+                                       "37896463QWQWEQWEQWWEQWEQWEEEEE\0" };
     buffer.in_type(testData);
 
     // Attempt to compress the buffer
@@ -159,7 +165,7 @@ void Buffer_CompressionTest() {
     assert(decompressedBuffer.has_value() && !decompressedBuffer->empty());
 
     // Dump buffer data back into test structure
-    TestStructure decompressedData;
+    TestStructureA decompressedData;
     decompressedBuffer->out_type(decompressedData);
 
     // Ensure data matches
@@ -176,26 +182,23 @@ void Buffer_DiffTest() {
     const auto badResult2 = badResult1->patch(bufferB);
     assert(!badResult1 && !badResult2);
 
-    struct Foo {
-        int a = 0;
-        float b = 0.0F;
-        char c[160] = { '\0' };
-    } dataA{ 1234, 567.890F,
-             "This is an example of a long string within "
-             "the structure named Foo."
-             "9999999999999999999999999999999999999999999999"
-             "999999999999999999999999999999999999999999999\0" };
-    struct Bar {
-        float b = 0.0F;
-        int c = 0;
-        char a[160] = { '\0' };
-    } dataB{ 890.567F, 4321,
-             "This is an example of a long string within "
-             "the structure named Bar."
-             "8888888888888888888888888888888888888888888888"
-             "888888888888888888888888888888888888888888888\0" };
-    bufferA.resize(sizeof(Foo));
-    bufferB.resize(sizeof(Bar));
+    constexpr TestStructureA dataA{
+        1234, 567.890F,
+        "This is an example of a long string within "
+        "the structure named TestStructureA dataA."
+        "9999999999999999999999999999999999999999999999"
+        "999999999999999999999999999999999999999999999\0"
+    };
+    constexpr TestStructureB dataB{
+        "This is an example of a long string within "
+        "the structure named TestStructureB dataB.",
+        4321,
+        "8888888888888888888888888888888888888888888888"
+        "888888888888888888888888888888888888888888888\0",
+        3.14159265359F
+    };
+    bufferA.resize(sizeof(TestStructureA));
+    bufferB.resize(sizeof(TestStructureB));
     bufferA.in_type(dataA);
     bufferB.in_type(dataB);
 
@@ -207,9 +210,12 @@ void Buffer_DiffTest() {
     const auto patchedBuffer = bufferA.patch(*diffBuffer);
     assert(patchedBuffer.has_value() && !patchedBuffer->empty());
 
-    Bar dataC;
+    // Dump test structure back, confirm it matches
+    // Recall bufferA had dataA pushed in, patched with diff buffer
+    TestStructureB dataC;
     patchedBuffer->out_type(dataC);
     assert(
         std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b &&
-        dataB.c == dataC.c && patchedBuffer->hash() == bufferB.hash());
+        std::strcmp(dataB.c, dataC.c) == 0 && dataB.d == dataC.d &&
+        patchedBuffer->hash() == bufferB.hash());
 }
