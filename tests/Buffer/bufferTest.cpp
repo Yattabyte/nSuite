@@ -13,8 +13,7 @@ void Buffer_IOTest();
 void Buffer_CompressionTest();
 void Buffer_DiffTest();
 
-int main()
-{
+int main() {
     Buffer_ConstructionTest();
     Buffer_AssignmentTest();
     Buffer_MethodTest();
@@ -24,8 +23,7 @@ int main()
     exit(0);
 }
 
-void Buffer_ConstructionTest()
-{
+void Buffer_ConstructionTest() {
     // Ensure we can make empty buffers
     Buffer buffer;
     assert(buffer.empty() && !buffer.hasData());
@@ -44,8 +42,7 @@ void Buffer_ConstructionTest()
     assert(copyBuffer[0] == largeBuffer[0]);
 }
 
-void Buffer_AssignmentTest()
-{
+void Buffer_AssignmentTest() {
     // Ensure buffers are equal
     Buffer bufferA;
     Buffer bufferB(123456789ULL);
@@ -60,8 +57,7 @@ void Buffer_AssignmentTest()
     assert(bufferA[0] == static_cast<std::byte>(64U));
 }
 
-void Buffer_MethodTest()
-{
+void Buffer_MethodTest() {
     Buffer buffer;
     // Ensure the buffer is empty
     assert(buffer.empty() && !buffer.hasData());
@@ -90,14 +86,13 @@ void Buffer_MethodTest()
     assert(buffer.empty() && !buffer.hasData());
 }
 
-void Buffer_IOTest()
-{
+void Buffer_IOTest() {
     // Ensure we can push data
     Buffer buffer;
     constexpr size_t data1(123ULL);
     constexpr char data2('Z');
     constexpr bool data3(true);
-    constexpr int data4[10] = { 0,1,2,3,4,5,6,7,8,9 };
+    constexpr int data4[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     const std::string data5 = "hello world";
     constexpr char data6[5] = { 'a', 'b', 'c', 'd', '\0' };
     buffer.push_type(data1);
@@ -122,16 +117,14 @@ void Buffer_IOTest()
     buffer.pop_type(data1_out);
 
     // Ensure the data matches
-    assert(data1 == data1_out &&
-        data2 == data2_out &&
-        data3 == data3_out &&
-        std::equal(std::cbegin(data4), std::cend(data4), std::cbegin(data4_out)) &&
-        data5 == data5_out &&
-        std::string(data6) == std::string(data6_out));
+    assert(
+        data1 == data1_out && data2 == data2_out && data3 == data3_out &&
+        std::equal(
+            std::cbegin(data4), std::cend(data4), std::cbegin(data4_out)) &&
+        data5 == data5_out && std::string(data6) == std::string(data6_out));
 }
 
-void Buffer_CompressionTest()
-{
+void Buffer_CompressionTest() {
     // Ensure we cannot compress or decompress an empty or incorrect buffer
     Buffer buffer;
     const auto badResult1 = buffer.compress();
@@ -146,18 +139,15 @@ void Buffer_CompressionTest()
     };
     // Create a buffer and load it with test data
     buffer.resize(sizeof(TestStructure));
-    constexpr TestStructure testData{
-        1234,
-        567.890F,
-        "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
-        "WEQWEQWEQQWEQWEQWEEEEEE623785623"
-        "46528374444444433333333333333646"
-        "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
-        "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
-        "UNOUNOUNOU4EQWEQWEEEEEE623785623"
-        "46528374444444433333333333333646"
-        "37896463QWQWEQWEQWWEQWEQWEEEEE\0"
-    };
+    constexpr TestStructure testData{ 1234, 567.890F,
+                                      "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
+                                      "WEQWEQWEQQWEQWEQWEEEEEE623785623"
+                                      "46528374444444433333333333333646"
+                                      "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
+                                      "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
+                                      "UNOUNOUNOU4EQWEQWEEEEEE623785623"
+                                      "46528374444444433333333333333646"
+                                      "37896463QWQWEQWEQWWEQWEQWEEEEE\0" };
     buffer.in_type(testData);
 
     // Attempt to compress the buffer
@@ -174,14 +164,11 @@ void Buffer_CompressionTest()
 
     // Ensure data matches
     assert(
-        testData.a == decompressedData.a &&
-        testData.b == decompressedData.b &&
-        std::strcmp(testData.c, decompressedData.c) == 0
-    );
+        testData.a == decompressedData.a && testData.b == decompressedData.b &&
+        std::strcmp(testData.c, decompressedData.c) == 0);
 }
 
-void Buffer_DiffTest()
-{
+void Buffer_DiffTest() {
     // Ensure we cannot diff or patch an empty or incorrect buffer
     Buffer bufferA;
     Buffer bufferB;
@@ -193,24 +180,20 @@ void Buffer_DiffTest()
         int a = 0;
         float b = 0.0F;
         char c[160] = { '\0' };
-    } dataA{
-        1234, 567.890F,
-        "This is an example of a long string within "
-        "the structure named Foo."
-        "9999999999999999999999999999999999999999999999"
-        "999999999999999999999999999999999999999999999\0"
-    };
+    } dataA{ 1234, 567.890F,
+             "This is an example of a long string within "
+             "the structure named Foo."
+             "9999999999999999999999999999999999999999999999"
+             "999999999999999999999999999999999999999999999\0" };
     struct Bar {
         float b = 0.0F;
         int c = 0;
         char a[160] = { '\0' };
-    } dataB{
-        890.567F, 4321,
-        "This is an example of a long string within "
-        "the structure named Bar."
-        "8888888888888888888888888888888888888888888888"
-        "888888888888888888888888888888888888888888888\0"
-    };
+    } dataB{ 890.567F, 4321,
+             "This is an example of a long string within "
+             "the structure named Bar."
+             "8888888888888888888888888888888888888888888888"
+             "888888888888888888888888888888888888888888888\0" };
     bufferA.resize(sizeof(Foo));
     bufferB.resize(sizeof(Bar));
     bufferA.in_type(dataA);
@@ -227,9 +210,6 @@ void Buffer_DiffTest()
     Bar dataC;
     patchedBuffer->out_type(dataC);
     assert(
-        std::strcmp(dataB.a, dataC.a) == 0 &&
-        dataB.b == dataC.b &&
-        dataB.c == dataC.c &&
-        patchedBuffer->hash() == bufferB.hash()
-    );
+        std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b &&
+        dataB.c == dataC.c && patchedBuffer->hash() == bufferB.hash());
 }

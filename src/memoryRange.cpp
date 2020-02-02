@@ -1,41 +1,30 @@
 #include "memoryRange.hpp"
 
-
 // Convenience Definition
 using yatta::MemoryRange;
 
-
 // Public Constructor
 
-MemoryRange::MemoryRange(const size_t& size, std::byte* dataPtr) noexcept :
-    m_range(size), m_dataPtr(dataPtr)
-{
-}
-
+MemoryRange::MemoryRange(const size_t &size, std::byte *dataPtr) noexcept
+    : m_range(size), m_dataPtr(dataPtr) {}
 
 // Public Inquiry Methods
 
-bool MemoryRange::empty() const noexcept
-{
+bool MemoryRange::empty() const noexcept {
     return m_dataPtr == nullptr || m_range == 0ULL;
 }
 
-bool MemoryRange::hasData() const noexcept
-{
+bool MemoryRange::hasData() const noexcept {
     return m_dataPtr != nullptr && m_range > 0ULL;
 }
 
-size_t MemoryRange::size() const noexcept
-{
-    return m_range;
-}
+size_t MemoryRange::size() const noexcept { return m_range; }
 
-size_t MemoryRange::hash() const noexcept
-{
+size_t MemoryRange::hash() const noexcept {
     size_t value(ZeroHash);
 
     // Ensure data is valid
-    if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
+    if (const auto *const pointer = reinterpret_cast<size_t *>(m_dataPtr)) {
         // Use data 8-bytes at a time, until end of data or less than 8 bytes
         // remains
         size_t index(0ULL);
@@ -43,49 +32,42 @@ size_t MemoryRange::hash() const noexcept
         for (; index < max; ++index)
             value = ((value << 5ULL) + value) + pointer[index]; // use 8 bytes
 
-          // If any bytes remain, switch technique to work byte-wise instead of
-          // 8-byte-wise
-        if (const auto* const remainderPtr = reinterpret_cast<char*>(m_dataPtr)) {
+        // If any bytes remain, switch technique to work byte-wise instead of
+        // 8-byte-wise
+        if (const auto *const remainderPtr =
+                reinterpret_cast<char *>(m_dataPtr)) {
             index *= 8ULL;
             for (; index < m_range; ++index)
                 value = ((value << 5ULL) + value) +
-                remainderPtr[index]; // use remaining bytes
+                        remainderPtr[index]; // use remaining bytes
         }
     }
-
 
     return value;
 }
 
-
 // Public Manipulation Methods
 
-std::byte& MemoryRange::operator[](const size_t& byteIndex)
-{
+std::byte &MemoryRange::operator[](const size_t &byteIndex) {
     if (byteIndex >= m_range)
         throw std::runtime_error("Memory Range index out of bounds");
     return m_dataPtr[byteIndex];
 }
 
-const std::byte& MemoryRange::operator[](const size_t& byteIndex) const
-{
+const std::byte &MemoryRange::operator[](const size_t &byteIndex) const {
     if (byteIndex >= m_range)
         throw std::runtime_error("Memory Range index out of bounds");
     return m_dataPtr[byteIndex];
 }
 
-char* MemoryRange::charArray() const noexcept
-{
-    return reinterpret_cast<char*>(&m_dataPtr[0]);
+char *MemoryRange::charArray() const noexcept {
+    return reinterpret_cast<char *>(&m_dataPtr[0]);
 }
 
-std::byte* MemoryRange::bytes() const noexcept
-{
-    return m_dataPtr;
-}
+std::byte *MemoryRange::bytes() const noexcept { return m_dataPtr; }
 
-MemoryRange MemoryRange::subrange(const size_t& offset, const size_t& length) const
-{
+MemoryRange
+MemoryRange::subrange(const size_t &offset, const size_t &length) const {
     // Ensure pointers are valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
@@ -98,31 +80,20 @@ MemoryRange MemoryRange::subrange(const size_t& offset, const size_t& length) co
     return MemoryRange{ length, &m_dataPtr[offset] };
 }
 
-std::byte* MemoryRange::begin() noexcept
-{
-    return &m_dataPtr[0];
-}
+std::byte *MemoryRange::begin() noexcept { return &m_dataPtr[0]; }
 
-const std::byte* MemoryRange::cbegin() const noexcept
-{
-    return &m_dataPtr[0];
-}
+const std::byte *MemoryRange::cbegin() const noexcept { return &m_dataPtr[0]; }
 
-std::byte* MemoryRange::end() noexcept
-{
+std::byte *MemoryRange::end() noexcept { return &m_dataPtr[m_range]; }
+
+const std::byte *MemoryRange::cend() const noexcept {
     return &m_dataPtr[m_range];
 }
-
-const std::byte* MemoryRange::cend() const noexcept
-{
-    return &m_dataPtr[m_range];
-}
-
 
 // Public IO Methods
 
-void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const size_t byteIndex)
-{
+void MemoryRange::in_raw(
+    const void *const dataPtr, const size_t &size, const size_t byteIndex) {
     // Ensure pointers are valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");
@@ -137,8 +108,8 @@ void MemoryRange::in_raw(const void* const dataPtr, const size_t& size, const si
     std::memcpy(&this->operator[](byteIndex), dataPtr, size);
 }
 
-void MemoryRange::out_raw(void* const dataPtr, const size_t& size, const size_t byteIndex) const
-{
+void MemoryRange::out_raw(
+    void *const dataPtr, const size_t &size, const size_t byteIndex) const {
     // Ensure pointers are valid
     if (m_dataPtr == nullptr)
         throw std::runtime_error("Invalid Memory Range (null pointer)");

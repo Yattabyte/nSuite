@@ -10,16 +10,14 @@ void Directory_ConstructionTest();
 void Directory_MethodTest();
 void Directory_ManipulationTest();
 
-int main()
-{
+int main() {
     Directory_ConstructionTest();
     Directory_MethodTest();
     Directory_ManipulationTest();
     exit(0);
 }
 
-void Directory_ConstructionTest()
-{
+void Directory_ConstructionTest() {
     // Ensure we can make an empty directory
     Directory directory;
     assert(directory.empty());
@@ -35,7 +33,8 @@ void Directory_ConstructionTest()
     assert(dirA.hasFiles());
 
     // Ensure move constructor works
-    Directory moveDirectory(Directory(Directory::GetRunningDirectory() + "/old"));
+    Directory moveDirectory(
+        Directory(Directory::GetRunningDirectory() + "/old"));
     assert(moveDirectory.fileCount() == dirA.fileCount());
 
     // Ensure copy constructor works
@@ -43,8 +42,7 @@ void Directory_ConstructionTest()
     assert(copyDir.fileSize() == moveDirectory.fileSize());
 }
 
-void Directory_MethodTest()
-{
+void Directory_MethodTest() {
     // Ensure we can retrieve the running directory
     assert(!Directory::GetRunningDirectory().empty());
 
@@ -73,8 +71,7 @@ void Directory_MethodTest()
     assert(directory.hash() == yatta::ZeroHash);
 }
 
-void Directory_ManipulationTest()
-{
+void Directory_ManipulationTest() {
     // Verify empty directories
     Directory directory;
     assert(directory.empty());
