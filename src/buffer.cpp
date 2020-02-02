@@ -27,8 +27,8 @@ struct DifferentialHeader {
 struct Differential_Instruction {
     // (de)Constructors
     virtual ~Differential_Instruction() = default;
-    explicit Differential_Instruction(const char& t) noexcept
-        : m_type(t) {}
+    explicit Differential_Instruction(const char& type) noexcept
+        : m_type(type) {}
     Differential_Instruction(const Differential_Instruction& other) = delete;
     Differential_Instruction(Differential_Instruction&& other) = delete;
     Differential_Instruction& operator=(const Differential_Instruction& other) = delete;
@@ -50,7 +50,7 @@ struct Differential_Instruction {
     const char m_type = 0;
     size_t m_index = 0ULL;
 };
-/** Specifies a region in the 'old' file to read from, and where to put it in the 'new' file. */
+/** Diff instruction to copy an existing segment. */
 struct Copy_Instruction final : public Differential_Instruction {
     // Constructor
     Copy_Instruction() noexcept : Differential_Instruction('C') {}
@@ -86,7 +86,7 @@ struct Copy_Instruction final : public Differential_Instruction {
     // Public Attributes
     size_t m_beginRead = 0ULL, m_endRead = 0ULL;
 };
-/** Contains a block of data to insert into the 'new' file, at a given point. */
+/** Diff instruction for inserting an entirely new data segment. */
 struct Insert_Instruction final : public Differential_Instruction {
     // Constructor
     Insert_Instruction() noexcept : Differential_Instruction('I') {}
@@ -131,7 +131,7 @@ struct Insert_Instruction final : public Differential_Instruction {
     // Attributes
     std::vector<std::byte> m_newData;
 };
-/** Contains a single value a to insert into the 'new' file, at a given point, repeating multiple times. */
+/** Diff instruction for a repeating value. */
 struct Repeat_Instruction final : public Differential_Instruction {
     // Constructor
     Repeat_Instruction() noexcept : Differential_Instruction('R') {}
@@ -142,7 +142,11 @@ struct Repeat_Instruction final : public Differential_Instruction {
         return static_cast<size_t>(sizeof(char) + (sizeof(size_t) * 2ULL) + sizeof(char));
     }
     void execute(Buffer& bufferNew, const MemoryRange& /*unused*/) const final {
-        std::fill(&bufferNew[m_index], &bufferNew[std::min(m_index + m_amount, bufferNew.size())], m_value);
+        std::fill(
+            &bufferNew[m_index],
+            &bufferNew[std::min(m_index + m_amount, bufferNew.size())],
+            m_value
+        );
     }
     void write(Buffer& outputBuffer) const final {
         // Write Attributes
@@ -471,9 +475,9 @@ auto find_matching_regions(const MemoryRange& rangeA, const MemoryRange& rangeB)
             // Iterate through {subRangeA and rangeB} 8 bytes at a time
             // Take note of matches >= 32 bytes in a row
             for (size_t ind = 0ULL; ind < length; ind += 8ULL) {
-                const auto& a = *reinterpret_cast<const size_t*>(&subRangeA[ind]);
-                const auto& b = *reinterpret_cast<const size_t*>(&rangeB[ind]);
-                if (a == b)
+                const auto& byteA = *reinterpret_cast<const size_t*>(&subRangeA[ind]);
+                const auto& byteB = *reinterpret_cast<const size_t*>(&rangeB[ind]);
+                if (byteA == byteB)
                     ++matchCount;
                 else {
                     if (matchCount >= 4ULL) {
@@ -509,7 +513,10 @@ auto split_and_match_ranges(const MemoryRange& rangeA, const MemoryRange& rangeB
     std::vector<std::pair<WindowInfo, std::vector<MatchInfo>>> matchingRegions;
 
     while (indexA < sizeA && indexB < sizeB) {
-        const auto windowSize = std::min(static_cast<size_t>(4096ULL), std::min(sizeA - indexA, sizeB - indexB));
+        const auto windowSize = std::min(
+            static_cast<size_t>(4096ULL),
+            std::min(sizeA - indexA, sizeB - indexB)
+        );
 
         threader.addJob(
             [&, windowSize, indexA, indexB]()
@@ -629,38 +636,46 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
 
     // Replace insertions with some repeat instructions
     const size_t startInstCount = instructions.size();
-    for (size_t i = 0; i < startInstCount; ++i) {
-        if (auto inst = dynamic_cast<Insert_Instruction*>(instructions[i].get())) {
+    for (size_t instIndex = 0; instIndex < startInstCount; ++instIndex) {
+        if (auto inst = dynamic_cast<Insert_Instruction*>(instructions[instIndex].get())) {
             threader.addJob([inst, &instructions, &instructionMutex]() {
                 // We only care about repeats larger than 36 bytes.
-                if (inst->m_newData.size() > 36ull) {
-                    // Upper limit (mx and my) reduced by 36, since we only care about matches that exceed 36 bytes
-                    auto max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
-                    for (size_t x = 0ull; x < max; ++x) {
-                        const auto& value_at_x = inst->m_newData[x];
-                        if (inst->m_newData[x + 36ull] != value_at_x)
-                            continue; // quit early if the value 36 units away isn't the same as this index
+                if (inst->m_newData.size() > 36ULL) {
+                    auto max = std::min<size_t>(
+                        inst->m_newData.size(),
+                        inst->m_newData.size() - 37ULL
+                        );
+                    for (size_t startIndex = 0ULL; startIndex < max; ++startIndex) {
+                        const auto& value_at_x = inst->m_newData[startIndex];
 
-                        size_t y = x + 1;
-                        while (y < max) {
-                            if (value_at_x == inst->m_newData[y])
-                                y++;
+                        // Quit early if the value 36 units doesn't match
+                        if (inst->m_newData[startIndex + 36ULL] != value_at_x)
+                            continue;
+
+                        size_t endIndex = startIndex + 1;
+                        while (endIndex < max) {
+                            if (value_at_x == inst->m_newData[endIndex])
+                                endIndex++;
                             else
                                 break;
                         }
 
-                        const auto length = y - x;
-                        if (length > 36ull) {
+                        const auto length = endIndex - startIndex;
+                        if (length > 36ULL) {
                             // Worthwhile to insert a new instruction
                             // Keep data up until region where repeats occur
                             auto instBefore = std::make_unique<Insert_Instruction>();
                             instBefore->m_index = inst->m_index;
-                            instBefore->m_newData.resize(x);
-                            std::copy(inst->m_newData.data(), inst->m_newData.data() + x, instBefore->m_newData.data());
+                            instBefore->m_newData.resize(startIndex);
+                            std::copy(
+                                inst->m_newData.data(),
+                                inst->m_newData.data() + startIndex,
+                                instBefore->m_newData.data()
+                            );
 
                             // Generate new Repeat Instruction
                             auto instRepeat = std::make_unique<Repeat_Instruction>();
-                            instRepeat->m_index = inst->m_index + x;
+                            instRepeat->m_index = inst->m_index + startIndex;
                             instRepeat->m_value = value_at_x;
                             instRepeat->m_amount = length;
 
@@ -670,17 +685,26 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
                             instructions.emplace_back(std::move(instRepeat));
 
                             // Modify original insert-instruction to contain remainder of the data
-                            inst->m_index = inst->m_index + x + length;
-                            std::memmove(&inst->m_newData[0], &inst->m_newData[y], inst->m_newData.size() - y);
-                            inst->m_newData.resize(inst->m_newData.size() - y);
+                            inst->m_index = inst->m_index + startIndex + length;
+                            std::memmove(
+                                &inst->m_newData[0],
+                                &inst->m_newData[endIndex],
+                                inst->m_newData.size() - endIndex
+                            );
+                            inst->m_newData.resize(inst->m_newData.size() - endIndex);
                             writeGuard.unlock();
                             writeGuard.release();
 
-                            x = ULLONG_MAX; // require overflow, because we want next iteration for x == 0
-                            max = std::min<size_t>(inst->m_newData.size(), inst->m_newData.size() - 37ull);
+                            // require overflow, because we want
+                            // next iteration for startIndex == 0
+                            startIndex = ULLONG_MAX;
+                            max = std::min<size_t>(
+                                inst->m_newData.size(),
+                                inst->m_newData.size() - 37ULL
+                                );
                             break;
                         }
-                        x = y - 1;
+                        startIndex = endIndex - 1;
                         break;
                     }
                 }
@@ -698,7 +722,7 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
         instructions.cbegin(),
         instructions.cend(),
         0ULL,
-        [](const size_t& currentSum, const std::unique_ptr<Differential_Instruction>& instruction) noexcept {
+        [](const auto& currentSum, const auto& instruction) noexcept {
             return currentSum + instruction->size();
         }
     );
@@ -713,8 +737,8 @@ std::optional<Buffer> Buffer::diff(const MemoryRange& sourceMemory, const Memory
     instructions.shrink_to_fit();
 
     // Try to compress the patch buffer
-    if (auto compressionResult = patchBuffer.compress())
-        std::swap(patchBuffer, *compressionResult);
+    if (auto result = patchBuffer.compress())
+        std::swap(patchBuffer, *result);
     else
         return {}; // Failure
 
@@ -745,7 +769,8 @@ std::optional<Buffer> Buffer::patch(const Buffer& sourceBuffer, const Buffer& di
 
 std::optional<Buffer> Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory)
 {
-    // Ensure diff buffer at least *exists* (ignore source buffer, when empty we treat instruction as a brand new file)
+    // Ensure buffer at least *exists*
+    // Ignore empty source buffer, empty may mean brand new file
     if (diffMemory.empty())
         return {}; // Failure
 
@@ -761,8 +786,8 @@ std::optional<Buffer> Buffer::patch(const MemoryRange& sourceMemory, const Memor
     constexpr size_t diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
     Buffer patchBuffer;
-    if (auto decompressionResult = decompress(diffMemory.subrange(diffHeaderSize, dataSize)))
-        std::swap(patchBuffer, *decompressionResult);
+    if (auto result = decompress(diffMemory.subrange(diffHeaderSize, dataSize)))
+        std::swap(patchBuffer, *result);
     else
         return {}; // Failure
     const auto patchBufferSize = patchBuffer.size();

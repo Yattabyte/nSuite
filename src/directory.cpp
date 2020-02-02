@@ -103,11 +103,11 @@ bool Directory::in_folder(const filepath& path, const std::vector<std::string>& 
         return false; // Failure
 
     constexpr auto get_file_paths = [](const filepath& directory, const std::vector<std::string>& exc) {
-        constexpr auto check_exclusion = [](const filepath& p, const std::vector<std::string>& e) {
-            const auto extension = p.extension();
-            for (const auto& excl : e) {
+        constexpr auto check_exclusion = [](const filepath& filePath, const std::vector<std::string>& fileExclusion) {
+            const auto extension = filePath.extension();
+            for (const auto& excl : fileExclusion) {
                 // Compare Paths && Extensions
-                if (p == excl || extension == excl) {
+                if (filePath == excl || extension == excl) {
                     // Don't use path
                     return false;
                 }
@@ -176,8 +176,8 @@ bool Directory::in_package(const Buffer& packageBuffer)
 
     // Try to decompress the archive buffer
     Buffer filebuffer;
-    if (auto decompressionResult = Buffer::decompress(packageBuffer.subrange(byteIndex, packageBuffer.size() - byteIndex)))
-        std::swap(filebuffer, *decompressionResult);
+    if (auto result = Buffer::decompress(packageBuffer.subrange(byteIndex, packageBuffer.size() - byteIndex)))
+        std::swap(filebuffer, *result);
     else
         return false; // Failure
     byteIndex = 0ULL; // reset byte index
@@ -233,8 +233,8 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 
     // Try to decompress the instruction buffer
     Buffer instructionBuffer;
-    if (auto decompressionResult = Buffer::decompress(deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex)))
-        std::swap(instructionBuffer, *decompressionResult);
+    if (auto result = Buffer::decompress(deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex)))
+        std::swap(instructionBuffer, *result);
     else
         return false; // Failure
     byteIndex = 0ULL; // reset byte index
@@ -250,11 +250,11 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
     std::vector<FileInstruction> removedFiles;
     size_t files(0ULL);
     while (files < deltaHeaderFileCount) {
-        FileInstruction FI;
+        FileInstruction instruction;
 
         // Read file path
-        instructionBuffer.out_type(FI.path, byteIndex);
-        byteIndex += sizeof(size_t) + (sizeof(char) * FI.path.length()) + sizeof(size_t);
+        instructionBuffer.out_type(instruction.path, byteIndex);
+        byteIndex += sizeof(size_t) + (sizeof(char) * instruction.path.length()) + sizeof(size_t);
 
         // Read operation flag
         char flag(0);
@@ -262,11 +262,11 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
         byteIndex += sizeof(char);
 
         // Read old hash
-        instructionBuffer.out_type(FI.diff_oldHash, byteIndex);
+        instructionBuffer.out_type(instruction.diff_oldHash, byteIndex);
         byteIndex += sizeof(size_t);
 
         // Read new hash
-        instructionBuffer.out_type(FI.diff_newHash, byteIndex);
+        instructionBuffer.out_type(instruction.diff_newHash, byteIndex);
         byteIndex += sizeof(size_t);
 
         // Read buffer size
@@ -276,18 +276,18 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 
         // Copy buffer
         if (instructionSize > 0) {
-            FI.instructionBuffer.resize(instructionSize);
-            instructionBuffer.out_raw(FI.instructionBuffer.bytes(), instructionSize, byteIndex);
+            instruction.instructionBuffer.resize(instructionSize);
+            instructionBuffer.out_raw(instruction.instructionBuffer.bytes(), instructionSize, byteIndex);
             byteIndex += instructionSize;
         }
 
         // Sort instructions
         if (flag == 'U')
-            diffFiles.emplace_back(std::move(FI));
+            diffFiles.emplace_back(std::move(instruction));
         else if (flag == 'N')
-            addedFiles.emplace_back(std::move(FI));
+            addedFiles.emplace_back(std::move(instruction));
         else if (flag == 'D')
-            removedFiles.emplace_back(std::move(FI));
+            removedFiles.emplace_back(std::move(instruction));
         files++;
     }
     instructionBuffer.clear();
@@ -299,7 +299,7 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
             m_files.begin(),
             m_files.end(),
             [&](const VirtualFile& file) noexcept {
-                return (file.m_relativePath == inst.path);
+                return file.m_relativePath == inst.path;
             }
         );
         if (storedFile == m_files.end())
@@ -311,8 +311,8 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
 
         // Attempt Patching Process
         Buffer newBuffer;
-        if (auto patchResult = storedFile->m_data.patch(inst.instructionBuffer))
-            std::swap(newBuffer, *patchResult);
+        if (auto result = storedFile->m_data.patch(inst.instructionBuffer))
+            std::swap(newBuffer, *result);
         else
             continue; // Soft Error
 
@@ -329,8 +329,8 @@ bool Directory::in_delta(const Buffer& deltaBuffer)
     for (FileInstruction& inst : addedFiles) {
         // Convert the instruction into a virtual file
         Buffer newBuffer;
-        if (auto patchResult = Buffer().patch(inst.instructionBuffer))
-            std::swap(newBuffer, *patchResult);
+        if (auto result = Buffer().patch(inst.instructionBuffer))
+            std::swap(newBuffer, *result);
         else
             continue; // Soft Error
 
@@ -435,15 +435,19 @@ std::optional<Buffer> Directory::out_package(const std::string& folderName) cons
     }
 
     // Try to compress the archive buffer
-    if (auto compressionResult = filebuffer.compress())
-        std::swap(filebuffer, *compressionResult);
+    if (auto result = filebuffer.compress())
+        std::swap(filebuffer, *result);
     else
         return {}; // Failure
 
     // Prepend header information
     constexpr char packHeaderTitle[16ULL] = "yatta pack\0";
     const auto& packHeaderName = folderName;
-    const size_t headerSize = sizeof(packHeaderTitle) + sizeof(size_t) + (sizeof(char) * folderName.size()) + sizeof(size_t);
+    const size_t headerSize =
+        sizeof(packHeaderTitle) +
+        sizeof(size_t) +
+        (sizeof(char) * folderName.size()) +
+        sizeof(size_t);
     Buffer bufferWithHeader;
     bufferWithHeader.reserve(filebuffer.size() + headerSize);
 
@@ -476,7 +480,7 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         auto srcNew_Files = newDirectory.m_files;
         for (const auto& nFile : srcNew_Files) {
             bool found = false;
-            size_t oIndex(0ull);
+            size_t oIndex(0ULL);
             for (const auto& oFile : srcOld_Files) {
                 if (nFile.m_relativePath == oFile.m_relativePath) {
                     // Common file found
@@ -508,7 +512,11 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
     {
         const auto bufferSize = buffer.size();
         const auto pathLength = path.length();
-        const size_t instructionSize = (sizeof(size_t) * 4ULL) + (sizeof(char) * pathLength) + sizeof(char) + bufferSize;
+        const size_t instructionSize =
+            (sizeof(size_t) * 4ULL) +
+            (sizeof(char) * pathLength) +
+            sizeof(char) +
+            bufferSize;
         instructionBuffer.reserve(instructionBuffer.size() + instructionSize);
 
         // Write Attributes
@@ -541,11 +549,18 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         // Check if a common file has changed
         if (oldHash != newHash) {
             Buffer diffBuffer;
-            if (auto diffResult = oldBuffer.diff(newBuffer))
-                std::swap(diffBuffer, *diffResult);
+            if (auto result = oldBuffer.diff(newBuffer))
+                std::swap(diffBuffer, *result);
             else
                 continue; // Soft Error
-            writeInstructions(oldFile.m_relativePath, oldHash, newHash, diffBuffer, 'U', instructionBuffer);
+            writeInstructions(
+                oldFile.m_relativePath,
+                oldHash,
+                newHash,
+                diffBuffer,
+                'U',
+                instructionBuffer
+            );
             fileCount++;
         }
     }
@@ -556,8 +571,8 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
         const auto& newBuffer = nFile.m_data;
         const auto newHash = newBuffer.hash();
         Buffer diffBuffer;
-        if (auto diffResult = Buffer().diff(newBuffer))
-            std::swap(diffBuffer, *diffResult);
+        if (auto result = Buffer().diff(newBuffer))
+            std::swap(diffBuffer, *result);
         else
             continue; // Soft Error
         writeInstructions(nFile.m_relativePath, 0ULL, newHash, diffBuffer, 'N', instructionBuffer);
@@ -575,8 +590,8 @@ std::optional<Buffer> Directory::out_delta(const Directory& targetDirectory) con
     removedFiles.clear();
 
     // Try to compress the instruction buffer
-    if (auto compressionResult = instructionBuffer.compress())
-        std::swap(instructionBuffer, *compressionResult);
+    if (auto result = instructionBuffer.compress())
+        std::swap(instructionBuffer, *result);
     else
         return {}; // Failure
 

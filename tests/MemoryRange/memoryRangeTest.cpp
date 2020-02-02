@@ -43,7 +43,10 @@ void MemoryRange_ConstructionTest()
     assert(copyMemRange[0] == moveMemRange[0]);
 
     // Ensure pointers match
-    assert(copyMemRange.bytes() == moveMemRange.bytes() && copyMemRange.bytes() == largeBuffer.get());
+    assert(
+        copyMemRange.bytes() == moveMemRange.bytes() &&
+        copyMemRange.bytes() == largeBuffer.get()
+    );
 }
 
 void MemoryRange_AssignmentTest()
@@ -88,7 +91,10 @@ void MemoryRange_MethodTest()
     assert(memRange.bytes() != nullptr);
 
     // Ensure both char array and byte array are the same underlying pointer
-    assert(static_cast<const void*>(memRange.charArray()) == static_cast<const void*>(memRange.bytes()));
+    assert(
+        static_cast<const void*>(memRange.charArray()) ==
+        static_cast<const void*>(memRange.bytes())
+    );
 
     // Ensure we can create a valid sub-range
     auto subRange = memRange.subrange(0, 617ULL);

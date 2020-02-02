@@ -51,8 +51,8 @@ namespace yatta {
         std::atomic_bool m_alive = true;
         std::vector<std::thread> m_threads;
         std::deque<std::function<void()>> m_jobs;
-        std::atomic_size_t m_jobsStarted = 0ull, m_jobsFinished = 0ull;
-        size_t m_maxThreads = 0ull;
+        std::atomic_size_t m_jobsStarted = 0ULL, m_jobsFinished = 0ULL;
+        size_t m_maxThreads = 0ULL;
     };
 };
 

@@ -149,10 +149,14 @@ void Buffer_CompressionTest()
     constexpr TestStructure testData{
         1234,
         567.890F,
-        "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQWEQWEQWEQQWEQWEQWEEEEEE623785623"
-        "4652837444444443333333333333364637896463QWQWEQWEQWWEQWEQWEEEEEEE"
-        "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNOUNOUNOUNOU4EQWEQWEEEEEE623785623"
-        "4652837444444443333333333333364637896463QWQWEQWEQWWEQWEQWEEEEE\0"
+        "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
+        "WEQWEQWEQQWEQWEQWEEEEEE623785623"
+        "46528374444444433333333333333646"
+        "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
+        "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
+        "UNOUNOUNOU4EQWEQWEEEEEE623785623"
+        "46528374444444433333333333333646"
+        "37896463QWQWEQWEQWWEQWEQWEEEEE\0"
     };
     buffer.in_type(testData);
 
@@ -169,7 +173,11 @@ void Buffer_CompressionTest()
     decompressedBuffer->out_type(decompressedData);
 
     // Ensure data matches
-    assert(testData.a == decompressedData.a && testData.b == decompressedData.b && std::strcmp(testData.c, decompressedData.c) == 0);
+    assert(
+        testData.a == decompressedData.a &&
+        testData.b == decompressedData.b &&
+        std::strcmp(testData.c, decompressedData.c) == 0
+    );
 }
 
 void Buffer_DiffTest()
@@ -185,14 +193,24 @@ void Buffer_DiffTest()
         int a = 0;
         float b = 0.0F;
         char c[160] = { '\0' };
-    } dataA{ 1234, 567.890F, "This is an example of a long string within the structure named Foo."
-        "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999\0" };
+    } dataA{
+        1234, 567.890F,
+        "This is an example of a long string within "
+        "the structure named Foo."
+        "9999999999999999999999999999999999999999999999"
+        "999999999999999999999999999999999999999999999\0"
+    };
     struct Bar {
         float b = 0.0F;
         int c = 0;
         char a[160] = { '\0' };
-    } dataB{ 890.567F, 4321, "This is an example of a long string within the structure named Bar."
-        "8888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888\0", };
+    } dataB{
+        890.567F, 4321,
+        "This is an example of a long string within "
+        "the structure named Bar."
+        "8888888888888888888888888888888888888888888888"
+        "888888888888888888888888888888888888888888888\0"
+    };
     bufferA.resize(sizeof(Foo));
     bufferB.resize(sizeof(Bar));
     bufferA.in_type(dataA);
@@ -208,5 +226,10 @@ void Buffer_DiffTest()
 
     Bar dataC;
     patchedBuffer->out_type(dataC);
-    assert(std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b && dataB.c == dataC.c && patchedBuffer->hash() == bufferB.hash());
+    assert(
+        std::strcmp(dataB.a, dataC.a) == 0 &&
+        dataB.b == dataC.b &&
+        dataB.c == dataC.c &&
+        patchedBuffer->hash() == bufferB.hash()
+    );
 }
