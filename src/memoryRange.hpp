@@ -145,7 +145,7 @@ class MemoryRange {
             const auto dataObjPtr =
                 reinterpret_cast<const std::byte*>(&dataObj);
             std::copy(
-                dataObjPtr, dataObjPtr + sizeof(T), &m_dataPtr[byteIndex]);
+                dataObjPtr, &dataObjPtr[sizeof(T)], &m_dataPtr[byteIndex]);
         }
     }
     /** Copies raw data out of this memory range.
