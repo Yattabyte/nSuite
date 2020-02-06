@@ -470,12 +470,12 @@ struct WindowInfo {
 auto split_and_match_ranges(
     const MemoryRange& rangeA, const MemoryRange& rangeB, size_t& indexA,
     size_t& indexB) {
-    Threader threader;
     const auto sizeA = rangeA.size();
     const auto sizeB = rangeB.size();
     std::mutex matchMutex;
     std::vector<std::pair<WindowInfo, std::vector<MatchInfo>>> matchingRegions;
 
+    Threader threader;
     while (indexA < sizeA && indexB < sizeB) {
         const auto windowSize = std::min(
             static_cast<size_t>(4096ULL),
@@ -507,48 +507,76 @@ auto split_and_match_ranges(
     return matchingRegions;
 }
 
-std::optional<Buffer>
-Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory) {
-    // Ensure that at least ONE of the two source buffers exists
-    if (sourceMemory.empty() && targetMemory.empty())
-        return {}; // Failure
-
-    // Convert matching regions into diff instructions
+auto generate_instructions(
+    const MemoryRange& rangeA, const MemoryRange& rangeB) {
     size_t indexA(0ULL);
     size_t indexB(0ULL);
     const auto matchingRegions =
-        split_and_match_ranges(sourceMemory, targetMemory, indexA, indexB);
+        split_and_match_ranges(rangeA, rangeB, indexA, indexB);
+    Threader threader;
     std::mutex instructionMutex;
     std::vector<std::unique_ptr<Differential_Instruction>> instructions;
-    Threader threader;
-    for (const auto& matchRegion : matchingRegions) {
-        threader.addJob([&, matchRegion]() {
-            // Lambda might not capture structured bindings
-            const auto& [windowInfo, matches] = matchRegion;
-            // INSERT entire window when no matches are found
-            if (matches.empty()) {
-                auto inst = std::make_unique<Insert_Instruction>();
-                inst->m_index = windowInfo.indexB;
-                inst->m_newData.resize(windowInfo.windowSize);
-                const auto subRange = targetMemory.subrange(
-                    windowInfo.indexB, windowInfo.windowSize);
-                std::copy(
-                    subRange.cbegin(), subRange.cend(),
-                    inst->m_newData.begin());
-                std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                instructions.emplace_back(std::move(inst));
-            } else {
-                size_t lastMatchEnd(windowInfo.indexB);
-                for (auto& matchInfo : matches) {
-                    // INSERT data from end of the last match until the
-                    // beginning of current match
-                    const auto newDataLength = matchInfo.start2 - lastMatchEnd;
+    std::for_each(
+        matchingRegions.cbegin(), matchingRegions.cend(),
+        [&](const auto& matchRegion) {
+            threader.addJob([&, matchRegion]() {
+                // Lambda might not capture structured bindings
+                const auto& [windowInfo, matches] = matchRegion;
+                // INSERT entire window when no matches are found
+                if (matches.empty()) {
+                    auto inst = std::make_unique<Insert_Instruction>();
+                    inst->m_index = windowInfo.indexB;
+                    inst->m_newData.resize(windowInfo.windowSize);
+                    const auto subRange = rangeB.subrange(
+                        windowInfo.indexB, windowInfo.windowSize);
+                    std::copy(
+                        subRange.cbegin(), subRange.cend(),
+                        inst->m_newData.begin());
+                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
+                    instructions.emplace_back(std::move(inst));
+                } else {
+                    size_t lastMatchEnd(windowInfo.indexB);
+                    for (auto& matchInfo : matches) {
+                        // INSERT data from end of the last match until the
+                        // beginning of current match
+                        const auto newDataLength =
+                            matchInfo.start2 - lastMatchEnd;
+                        if (newDataLength > 0ULL) {
+                            auto inst = std::make_unique<Insert_Instruction>();
+                            inst->m_index = lastMatchEnd;
+                            inst->m_newData.resize(newDataLength);
+                            const auto subRange =
+                                rangeB.subrange(lastMatchEnd, newDataLength);
+                            std::copy(
+                                subRange.cbegin(), subRange.cend(),
+                                inst->m_newData.begin());
+                            std::unique_lock<std::mutex> writeGuard(
+                                instructionMutex);
+                            instructions.emplace_back(std::move(inst));
+                        }
+
+                        // COPY data in matching region
+                        auto inst = std::make_unique<Copy_Instruction>();
+                        inst->m_index = matchInfo.start2;
+                        inst->m_beginRead = matchInfo.start1;
+                        inst->m_endRead = matchInfo.start1 + matchInfo.length;
+                        lastMatchEnd = matchInfo.start2 + matchInfo.length;
+                        std::unique_lock<std::mutex> writeGuard(
+                            instructionMutex);
+                        instructions.emplace_back(std::move(inst));
+                    }
+
+                    // INSERT data from end of the last match until the end of
+                    // the current window
+                    const auto newDataLength =
+                        (windowInfo.indexB + windowInfo.windowSize) -
+                        lastMatchEnd;
                     if (newDataLength > 0ULL) {
                         auto inst = std::make_unique<Insert_Instruction>();
                         inst->m_index = lastMatchEnd;
                         inst->m_newData.resize(newDataLength);
                         const auto subRange =
-                            targetMemory.subrange(lastMatchEnd, newDataLength);
+                            rangeB.subrange(lastMatchEnd, newDataLength);
                         std::copy(
                             subRange.cbegin(), subRange.cend(),
                             inst->m_newData.begin());
@@ -556,44 +584,17 @@ Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory) {
                             instructionMutex);
                         instructions.emplace_back(std::move(inst));
                     }
-
-                    // COPY data in matching region
-                    auto inst = std::make_unique<Copy_Instruction>();
-                    inst->m_index = matchInfo.start2;
-                    inst->m_beginRead = matchInfo.start1;
-                    inst->m_endRead = matchInfo.start1 + matchInfo.length;
-                    lastMatchEnd = matchInfo.start2 + matchInfo.length;
-                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                    instructions.emplace_back(std::move(inst));
                 }
-
-                // INSERT data from end of the last match until the end of the
-                // current window
-                const auto newDataLength =
-                    (windowInfo.indexB + windowInfo.windowSize) - lastMatchEnd;
-                if (newDataLength > 0ULL) {
-                    auto inst = std::make_unique<Insert_Instruction>();
-                    inst->m_index = lastMatchEnd;
-                    inst->m_newData.resize(newDataLength);
-                    const auto subRange =
-                        targetMemory.subrange(lastMatchEnd, newDataLength);
-                    std::copy(
-                        subRange.cbegin(), subRange.cend(),
-                        inst->m_newData.begin());
-                    std::unique_lock<std::mutex> writeGuard(instructionMutex);
-                    instructions.emplace_back(std::move(inst));
-                }
-            }
+            });
         });
-    }
 
     // INSERT data from end of the last window until the end of the buffer range
-    const auto sizeB = targetMemory.size();
+    const auto sizeB = rangeB.size();
     if (indexB < sizeB) {
         auto inst = std::make_unique<Insert_Instruction>();
         inst->m_index = indexB;
         inst->m_newData.resize(sizeB - indexB);
-        const auto subRange = targetMemory.subrange(indexB, sizeB - indexB);
+        const auto subRange = rangeB.subrange(indexB, sizeB - indexB);
         std::copy(subRange.cbegin(), subRange.cend(), inst->m_newData.begin());
         std::unique_lock<std::mutex> writeGuard(instructionMutex);
         instructions.emplace_back(std::move(inst));
@@ -603,89 +604,94 @@ Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory) {
     while (!threader.isFinished())
         continue;
 
-    // Replace insertions with some repeat instructions
+    return instructions;
+}
+
+void insertions_to_repeats(
+    std::vector<std::unique_ptr<Differential_Instruction>>& instructions) {
     const size_t startInstCount = instructions.size();
     for (size_t instIndex = 0; instIndex < startInstCount; ++instIndex) {
         if (auto inst = dynamic_cast<Insert_Instruction*>(
                 instructions[instIndex].get())) {
-            threader.addJob([inst, &instructions, &instructionMutex]() {
-                // We only care about repeats larger than 36 bytes.
-                if (inst->m_newData.size() > 36ULL) {
-                    auto max = std::min<size_t>(
-                        inst->m_newData.size(), inst->m_newData.size() - 37ULL);
-                    for (size_t startIndex = 0ULL; startIndex < max;
-                         ++startIndex) {
-                        const auto& value_at_x = inst->m_newData[startIndex];
+            // We only care about repeats larger than 36 bytes.
+            if (inst->m_newData.size() > 36ULL) {
+                auto max = std::min<size_t>(
+                    inst->m_newData.size(), inst->m_newData.size() - 37ULL);
+                for (size_t startIndex = 0ULL; startIndex < max; ++startIndex) {
+                    const auto& value_at_x = inst->m_newData[startIndex];
 
-                        // Quit early if the value 36 units doesn't match
-                        if (inst->m_newData[startIndex + 36ULL] != value_at_x)
-                            continue;
+                    // Quit early if the value 36 units doesn't match
+                    if (inst->m_newData[startIndex + 36ULL] != value_at_x)
+                        continue;
 
-                        size_t endIndex = startIndex + 1;
-                        while (endIndex < max) {
-                            if (value_at_x == inst->m_newData[endIndex])
-                                endIndex++;
-                            else
-                                break;
-                        }
-
-                        const auto length = endIndex - startIndex;
-                        if (length > 36ULL) {
-                            // Worthwhile to insert a new instruction
-                            // Keep data up until region where repeats occur
-                            auto instBefore =
-                                std::make_unique<Insert_Instruction>();
-                            instBefore->m_index = inst->m_index;
-                            instBefore->m_newData.resize(startIndex);
-                            std::copy(
-                                inst->m_newData.data(),
-                                inst->m_newData.data() + startIndex,
-                                instBefore->m_newData.data());
-
-                            // Generate new Repeat Instruction
-                            auto instRepeat =
-                                std::make_unique<Repeat_Instruction>();
-                            instRepeat->m_index = inst->m_index + startIndex;
-                            instRepeat->m_value = value_at_x;
-                            instRepeat->m_amount = length;
-
-                            // Modifying instructions vector
-                            std::unique_lock<std::mutex> writeGuard(
-                                instructionMutex);
-                            instructions.emplace_back(std::move(instBefore));
-                            instructions.emplace_back(std::move(instRepeat));
-
-                            // Modify original insert-instruction to contain
-                            // remainder of the data
-                            inst->m_index = inst->m_index + startIndex + length;
-                            std::memmove(
-                                &inst->m_newData[0], &inst->m_newData[endIndex],
-                                inst->m_newData.size() - endIndex);
-                            inst->m_newData.resize(
-                                inst->m_newData.size() - endIndex);
-                            writeGuard.unlock();
-                            writeGuard.release();
-
-                            // require overflow, because we want
-                            // next iteration for startIndex == 0
-                            startIndex = ULLONG_MAX;
-                            max = std::min<size_t>(
-                                inst->m_newData.size(),
-                                inst->m_newData.size() - 37ULL);
+                    size_t endIndex = startIndex + 1;
+                    while (endIndex < max) {
+                        if (value_at_x == inst->m_newData[endIndex])
+                            endIndex++;
+                        else
                             break;
-                        }
-                        startIndex = endIndex - 1;
+                    }
+
+                    const auto length = endIndex - startIndex;
+                    if (length > 36ULL) {
+                        // Worthwhile to insert a new instruction
+                        // Keep data up until region where repeats occur
+                        auto instBefore =
+                            std::make_unique<Insert_Instruction>();
+                        instBefore->m_index = inst->m_index;
+                        instBefore->m_newData.resize(startIndex);
+                        std::copy(
+                            inst->m_newData.data(),
+                            inst->m_newData.data() + startIndex,
+                            instBefore->m_newData.data());
+
+                        // Generate new Repeat Instruction
+                        auto instRepeat =
+                            std::make_unique<Repeat_Instruction>();
+                        instRepeat->m_index = inst->m_index + startIndex;
+                        instRepeat->m_value = value_at_x;
+                        instRepeat->m_amount = length;
+
+                        // Modifying instructions vector
+                        instructions.emplace_back(std::move(instBefore));
+                        instructions.emplace_back(std::move(instRepeat));
+
+                        // Modify original insert-instruction to contain
+                        // remainder of the data
+                        inst->m_index = inst->m_index + startIndex + length;
+                        std::memmove(
+                            &inst->m_newData[0], &inst->m_newData[endIndex],
+                            inst->m_newData.size() - endIndex);
+                        inst->m_newData.resize(
+                            inst->m_newData.size() - endIndex);
+
+                        // require overflow, because we want
+                        // next iteration for startIndex == 0
+                        startIndex = ULLONG_MAX;
+                        max = std::min<size_t>(
+                            inst->m_newData.size(),
+                            inst->m_newData.size() - 37ULL);
                         break;
                     }
+                    startIndex = endIndex - 1;
+                    break;
                 }
-            });
+            }
         }
     }
+}
 
-    // Wait for jobs to finish
-    while (!threader.isFinished())
-        continue;
-    threader.shutdown();
+std::optional<Buffer>
+Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory) {
+    // Ensure that at least ONE of the two source buffers exists
+    if (sourceMemory.empty() && targetMemory.empty())
+        return {}; // Failure
+
+    // Convert matching regions into diff instructions
+    auto instructions = generate_instructions(sourceMemory, targetMemory);
+
+    // Replace insertions with some repeat instructions
+    insertions_to_repeats(instructions);
 
     // Create a buffer to contain all the diff instructions
     const auto size_patch = std::accumulate(
@@ -711,7 +717,7 @@ Buffer::diff(const MemoryRange& sourceMemory, const MemoryRange& targetMemory) {
 
     // Prepend header information
     constexpr size_t headerSize = sizeof(DifferentialHeader);
-    DifferentialHeader diffHeader{ "yatta diff", sizeB };
+    DifferentialHeader diffHeader{ "yatta diff", targetMemory.size() };
     Buffer bufferWithHeader;
     bufferWithHeader.reserve(patchBuffer.size() + headerSize);
 

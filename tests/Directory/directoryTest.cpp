@@ -91,14 +91,11 @@ void Directory_CompressionTest() {
 
     // Ensure we can dump a directory as a package
     const auto package = directory.out_package("package");
-    assert(package.has_value() && package->hasData());
+    assert(package.has_value());
 
     // Ensure we can import a package and that it matches the old one
-    directory.clear();
-    directory.in_package(*package);
-    assert(
-        directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL &&
-        directory.hash() == oldHash);
+    directory = Directory(*package);
+    assert(directory.hash() == oldHash);
 
     // Ensure we can't export an empty directory
     directory.clear();
@@ -124,7 +121,7 @@ void Directory_DeltaTest() {
 
     // Try to diff the old and new directories
     const auto deltaBuffer = oldDirectory.out_delta(newDirectory);
-    assert(deltaBuffer.has_value() && deltaBuffer->hasData());
+    assert(deltaBuffer.has_value());
 
     // Try to patch the old directory into the new directory
     assert(oldDirectory.in_delta(*deltaBuffer));

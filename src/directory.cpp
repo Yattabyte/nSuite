@@ -261,75 +261,69 @@ bool Directory::in_delta(const Buffer& deltaBuffer) {
     instructionBuffer.clear();
 
     // Patch all files first
-    for (FileInstruction& inst : diffFiles) {
-        // Try to find the target file
-        auto storedFile = std::find_if(
-            m_files.begin(), m_files.end(),
-            [&](const VirtualFile& file) noexcept {
-                return file.m_relativePath == inst.path;
-            });
-        if (storedFile == m_files.end())
-            continue; // Soft Error
-
-        // Ensure hashes match
-        if (storedFile->m_data.hash() != inst.diff_oldHash)
-            continue; // Soft Error
-
-        // Attempt Patching Process
-        Buffer newBuffer;
-        if (auto result = storedFile->m_data.patch(inst.instructionBuffer))
-            std::swap(newBuffer, *result);
-        else
-            continue; // Soft Error
-
-        // Confirm new hashes match
-        if (newBuffer.hash() != inst.diff_newHash)
-            continue; // Soft Error
-
-        // Update virtualized folder
-        std::swap(storedFile->m_data, newBuffer);
-    }
+    std::for_each(
+        diffFiles.cbegin(), diffFiles.cend(), [&](const FileInstruction& inst) {
+            // Try to find the target file
+            const auto file = std::find_if(
+                m_files.begin(), m_files.end(),
+                [&](const VirtualFile& file) noexcept {
+                    // Ensure file path and hash matches
+                    return file.m_relativePath == inst.path &&
+                           file.m_data.hash() == inst.diff_oldHash;
+                });
+            if (file != m_files.end()) {
+                // Attempt Patching Process
+                if (auto result = file->m_data.patch(inst.instructionBuffer)) {
+                    // Confirm new hashes match
+                    if (result->hash() == inst.diff_newHash) {
+                        // Update virtualized folder
+                        std::swap(file->m_data, *result);
+                    }
+                }
+            }
+        });
     diffFiles.clear();
 
     // Add new files
-    for (FileInstruction& inst : addedFiles) {
-        // Convert the instruction into a virtual file
-        Buffer newBuffer;
-        if (auto result = Buffer().patch(inst.instructionBuffer))
-            std::swap(newBuffer, *result);
-        else
-            continue; // Soft Error
+    std::for_each(
+        addedFiles.cbegin(), addedFiles.cend(),
+        [&](const FileInstruction& inst) {
+            // Convert the instruction into a virtual file
+            if (auto result = Buffer().patch(inst.instructionBuffer)) {
+                // Confirm new hashes match
+                if (result->hash() == inst.diff_newHash) {
+                    // Erase any instances of this file
+                    m_files.erase(
+                        std::remove_if(
+                            m_files.begin(), m_files.end(),
+                            [&](const VirtualFile& file) noexcept {
+                                return file.m_relativePath == inst.path;
+                            }),
+                        m_files.end());
 
-        // Confirm new hashes match
-        if (newBuffer.hash() != inst.diff_newHash)
-            continue; // Soft Error
-
-        // Erase any instances of this file
-        m_files.erase(
-            std::remove_if(
-                m_files.begin(), m_files.end(),
-                [&](const VirtualFile& file) noexcept {
-                    return file.m_relativePath == inst.path;
-                }),
-            m_files.end());
-
-        // Emplace the file
-        m_files.emplace_back(VirtualFile{ inst.path, std::move(newBuffer) });
-    }
+                    // Emplace the file
+                    m_files.emplace_back(
+                        VirtualFile{ inst.path, std::move(*result) });
+                }
+            }
+        });
     addedFiles.clear();
 
     // Delete all files
-    for (FileInstruction& inst : removedFiles) {
-        // Erase any instances of this file if the file name and hash matches
-        m_files.erase(
-            std::remove_if(
-                m_files.begin(), m_files.end(),
-                [&](const VirtualFile& file) noexcept {
-                    return file.m_relativePath == inst.path &&
-                           file.m_data.hash() == inst.diff_oldHash;
-                }),
-            m_files.end());
-    }
+    std::for_each(
+        removedFiles.cbegin(), removedFiles.cend(),
+        [&](const FileInstruction& inst) {
+            // Erase any instances of this file if the file name and hash
+            // matches
+            m_files.erase(
+                std::remove_if(
+                    m_files.begin(), m_files.end(),
+                    [&](const VirtualFile& file) noexcept {
+                        return file.m_relativePath == inst.path &&
+                               file.m_data.hash() == inst.diff_oldHash;
+                    }),
+                m_files.end());
+        });
     removedFiles.clear();
 
     // Success

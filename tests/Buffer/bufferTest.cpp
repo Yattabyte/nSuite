@@ -18,12 +18,19 @@ struct TestStructureA {
     int a = 0;
     float b = 0.F;
     char c[256] = { '\0' };
+    bool operator==(const TestStructureA& other) const noexcept {
+        return a == other.a && b == other.b && std::strcmp(c, other.c) == 0;
+    }
 };
 struct TestStructureB {
     char a[128] = { '\0' };
     int b = 0;
     char c[128] = { '\0' };
     float d = 0.F;
+    bool operator==(const TestStructureB& other) const noexcept {
+        return std::strcmp(a, other.a) == 0 && b == other.b &&
+               std::strcmp(c, other.c) == 0 && d == other.d;
+    }
 };
 
 int main() {
@@ -64,7 +71,7 @@ void Buffer_AssignmentTest() {
     assert(bufferA[0] == bufferB[0]);
 
     // Ensure bufferC is fully moved over to bufferA
-    Buffer bufferC(456);
+    Buffer bufferC(456ULL);
     bufferC[0] = static_cast<std::byte>(64U);
     bufferA = std::move(bufferC);
     assert(bufferA[0] == static_cast<std::byte>(64U));
@@ -145,15 +152,13 @@ void Buffer_CompressionTest() {
     assert(!badResult1 && !badResult2);
     // Create a buffer and load it with test data
     buffer.resize(sizeof(TestStructureA));
-    constexpr TestStructureA testData{ 1234, 567.890F,
-                                       "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQ"
-                                       "WEQWEQWEQQWEQWEQWEEEEEE623785623"
-                                       "46528374444444433333333333333646"
-                                       "37896463QWQWEQWEQWWEQWEQWEEEEEEE"
-                                       "QWEQWEQWEEQWEQWEQWEQWNOUNOUNOUNO"
-                                       "UNOUNOUNOU4EQWEQWEEEEEE623785623"
-                                       "46528374444444433333333333333646"
-                                       "37896463QWQWEQWEQWWEQWEQWEEEEE\0" };
+    constexpr TestStructureA testData{
+        1234, 567.890F,
+        "QWEQWEQWEEQWEQWEQWEQWEEEEEEEQWEQWEQWEQWEQQWEQWEQWEEEEEE623785623465283"
+        "7444444443333333333333364637896463QWQWEQWEQWWEQWEQWEEEEEEEQWEQWEQWEEQW"
+        "EQWEQWEQWNOUNOUNOUNOUNOUNOUNOU4EQWEQWEEEEEE623785623465283744444444333"
+        "3333333333364637896463QWQWEQWEQWWEQWEQWEEEEE\0"
+    };
     buffer.in_type(testData);
 
     // Attempt to compress the buffer
@@ -170,8 +175,8 @@ void Buffer_CompressionTest() {
 
     // Ensure data matches
     assert(
-        testData.a == decompressedData.a && testData.b == decompressedData.b &&
-        std::strcmp(testData.c, decompressedData.c) == 0);
+        testData == decompressedData &&
+        decompressedBuffer->hash() == buffer.hash());
 }
 
 void Buffer_DiffTest() {
@@ -204,18 +209,15 @@ void Buffer_DiffTest() {
 
     // Ensure we've generated an instruction set
     const auto diffBuffer = bufferA.diff(bufferB);
-    assert(diffBuffer.has_value() && !diffBuffer->empty());
+    assert(diffBuffer.has_value());
 
     // Check that we've actually converted from A to B
     const auto patchedBuffer = bufferA.patch(*diffBuffer);
-    assert(patchedBuffer.has_value() && !patchedBuffer->empty());
+    assert(patchedBuffer.has_value());
 
     // Dump test structure back, confirm it matches
     // Recall bufferA had dataA pushed in, patched with diff buffer
     TestStructureB dataC;
     patchedBuffer->out_type(dataC);
-    assert(
-        std::strcmp(dataB.a, dataC.a) == 0 && dataB.b == dataC.b &&
-        std::strcmp(dataB.c, dataC.c) == 0 && dataB.d == dataC.d &&
-        patchedBuffer->hash() == bufferB.hash());
+    assert(dataB == dataC && patchedBuffer->hash() == bufferB.hash());
 }

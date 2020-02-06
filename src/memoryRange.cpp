@@ -21,27 +21,22 @@ bool MemoryRange::hasData() const noexcept {
 size_t MemoryRange::size() const noexcept { return m_range; }
 
 size_t MemoryRange::hash() const noexcept {
+    if (m_dataPtr == nullptr)
+        return ZeroHash;
+
+    // Hash using 8 bytes at a time
     size_t value(ZeroHash);
+    size_t index(0ULL);
+    const size_t max(m_range / 8ULL);
+    const size_t* const ptr8Byte = reinterpret_cast<size_t*>(m_dataPtr);
+    while (index < max)
+        value = ((value << 5ULL) + value) + ptr8Byte[index++];
 
-    // Ensure data is valid
-    if (const auto* const pointer = reinterpret_cast<size_t*>(m_dataPtr)) {
-        // Use data 8-bytes at a time, until end of data or less than 8 bytes
-        // remains
-        size_t index(0ULL);
-        const size_t max(m_range / 8ULL);
-        for (; index < max; ++index)
-            value = ((value << 5ULL) + value) + pointer[index]; // use 8 bytes
-
-        // If any bytes remain, switch technique to work byte-wise instead of
-        // 8-byte-wise
-        if (const auto* const remainderPtr =
-                reinterpret_cast<char*>(m_dataPtr)) {
-            index *= 8ULL;
-            for (; index < m_range; ++index)
-                value = ((value << 5ULL) + value) +
-                        remainderPtr[index]; // use remaining bytes
-        }
-    }
+    // Hash any remaining bytes
+    const char* const remainderPtr = reinterpret_cast<char*>(m_dataPtr);
+    index *= 8ULL;
+    while (index < m_range)
+        value = ((value << 5ULL) + value) + remainderPtr[index++];
 
     return value;
 }
