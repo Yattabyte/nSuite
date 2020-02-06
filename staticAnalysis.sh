@@ -24,7 +24,9 @@ Starting Memory Sanitizer (valgrind)
 **************************************************"
 valgrind --version
 cmake -DSTATIC_ANALYSIS=ON -UCMAKE_CXX_CLANG_TIDY .
-cmake --build . -- -j $(nproc)
+cmake --clean-first .
+ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalBuild .
+ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalTest .
 ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalMemCheck .
 echo "Dumping Logs"
 echo $(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)
@@ -37,7 +39,7 @@ echo "
 Starting Address Sanitizer
 **************************************************"
 cmake -DSTATIC_ANALYSIS=OFF -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=undefined" .
-cmake --build . -- -j $(nproc)
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
 # Undefined Behaviour Sanitizer
@@ -46,7 +48,7 @@ echo "
 Starting Undefined-Behaviour Sanitizer
 **************************************************"
 cmake -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=undefined" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=undefined" .
-cmake --build . -- -j $(nproc)
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
 # Thread Sanitizer
@@ -55,5 +57,5 @@ echo "
 Starting Thread Sanitizer
 **************************************************"
 cmake -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=thread" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=thread" .
-cmake --build . -- -j $(nproc)
+cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
