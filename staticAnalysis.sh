@@ -5,7 +5,7 @@ echo "
 **************************************************
 Starting Address Sanitizer
 **************************************************"
-cmake -DSTATIC_ANALYSIS=OFF -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls" -UCMAKE_CXX_CLANG_TIDY .
+cmake -DSTATIC_ANALYSIS=OFF -DCMAKE_CXX_FLAGS=CMAKE_CXX_FLAGS + "-fsanitize=address" -DCMAKE_LINKER_FLAGS=CMAKE_LINKER_FLAGS + "-fsanitize=undefined" -UCMAKE_CXX_CLANG_TIDY .
 cmake --build . -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
@@ -14,7 +14,7 @@ echo "
 **************************************************
 Starting Undefined-Behaviour Sanitizer
 **************************************************"
-cmake -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls" .
+cmake -DCMAKE_CXX_FLAGS=CMAKE_CXX_FLAGS + "-fsanitize=undefined" -DCMAKE_LINKER_FLAGS=CMAKE_LINKER_FLAGS + "-fsanitize=undefined" .
 cmake --build . -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
@@ -23,6 +23,6 @@ echo "
 **************************************************
 Starting Thread Sanitizer
 **************************************************"
-cmake -DCMAKE_CXX_FLAGS="-g -O0 -fsanitize=thread -fno-omit-frame-pointer -fno-optimize-sibling-calls" .
+cmake -DCMAKE_CXX_FLAGS=CMAKE_CXX_FLAGS + "-fsanitize=thread" -DCMAKE_LINKER_FLAGS=CMAKE_LINKER_FLAGS + "-fsanitize=thread" .
 cmake --build . -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
