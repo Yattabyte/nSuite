@@ -105,12 +105,12 @@ void MemoryRange_MethodTest() {
     assert(!subRange.empty() && subRange.hasData());
 
     // Ensure we can iterate over the subrange
-    const auto byteCount =
+    [[maybe_unused]] const auto byteCount =
         static_cast<size_t>(subRange.end() - subRange.begin());
     assert(byteCount == 617ULL);
 
     // Ensure we can iterate over the subrange with arbitrary types
-    const auto iterationCount = static_cast<size_t>(
+    [[maybe_unused]] const auto iterationCount = static_cast<size_t>(
         subRange.cend_t<size_t>() - subRange.cbegin_t<size_t>());
     assert(iterationCount == static_cast<int>(617ULL / sizeof(size_t)));
 }
