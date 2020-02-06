@@ -6,7 +6,7 @@ echo "
 Starting CPPCheck
 **************************************************"
 cppcheck --version
-cppcheck src tests -isrc/lz4 --enable=all --quiet
+cppcheck src tests -isrc/lz4 -I src/ -I tests/ --enable=all --quiet --suppress=missingIncludeSystem
 
 # Run Clang-Tidy using cmake
 echo "
