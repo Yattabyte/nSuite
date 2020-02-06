@@ -264,20 +264,20 @@ bool Directory::in_delta(const Buffer& deltaBuffer) {
     std::for_each(
         diffFiles.cbegin(), diffFiles.cend(), [&](const FileInstruction& inst) {
             // Try to find the target file
-            const auto file = std::find_if(
+            const auto dFile = std::find_if(
                 m_files.begin(), m_files.end(),
                 [&](const VirtualFile& file) noexcept {
                     // Ensure file path and hash matches
                     return file.m_relativePath == inst.path &&
                            file.m_data.hash() == inst.diff_oldHash;
                 });
-            if (file != m_files.end()) {
+            if (dFile != m_files.end()) {
                 // Attempt Patching Process
-                if (auto result = file->m_data.patch(inst.instructionBuffer)) {
+                if (auto result = dFile->m_data.patch(inst.instructionBuffer)) {
                     // Confirm new hashes match
                     if (result->hash() == inst.diff_newHash) {
                         // Update virtualized folder
-                        std::swap(file->m_data, *result);
+                        std::swap(dFile->m_data, *result);
                     }
                 }
             }
