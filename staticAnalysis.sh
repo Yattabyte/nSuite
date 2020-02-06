@@ -59,3 +59,10 @@ Starting Thread Sanitizer
 cmake -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=thread" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=thread" .
 cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
+
+# OCLint quality reporting
+echo "
+**************************************************
+Starting OCLint
+**************************************************"
+oclint-json-compilation-database -i src -i tests  -e src/lz4
