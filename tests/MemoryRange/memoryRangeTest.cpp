@@ -195,7 +195,7 @@ void MemoryRange_SubrangeExceptionTest() {
 
     // Catch out of range exception
     try {
-        std::byte smallBuffer = static_cast<std::byte>(0U);
+        auto smallBuffer(static_cast<std::byte>(0U));
         const MemoryRange smallRange(1, &smallBuffer);
         // Throw Here
         smallRange.subrange(0, 2).empty();

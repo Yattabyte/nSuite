@@ -250,7 +250,7 @@ void Buffer::resize(const size_t& size) {
         std::copy(m_data.get(), m_data.get() + m_range, newData.get());
 
         // Swap data containers
-        std::swap(m_data, newData);
+        m_data.swap(newData);
         m_dataPtr = m_data.get();
     }
 
@@ -267,7 +267,7 @@ void Buffer::reserve(const size_t& capacity) {
             std::copy(m_data.get(), m_data.get() + m_range, newData.get());
 
         // Swap data containers
-        std::swap(m_data, newData);
+        m_data.swap(newData);
         m_dataPtr = m_data.get();
     }
 }
@@ -285,7 +285,7 @@ void Buffer::shrink() {
 
     // Swap data containers
     m_capacity = m_range;
-    std::swap(m_data, newData);
+    m_data.swap(newData);
     m_dataPtr = m_data.get();
 }
 
