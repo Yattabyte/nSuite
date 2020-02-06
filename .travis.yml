@@ -101,16 +101,6 @@ install:
       make install
       export PATH=${DEPS_DIR}/lcov/bin:${PATH}
     fi
-    if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
-      # Download OCLint
-      eval "$(curl -sL https://raw.githubusercontent.com/ryuichis/oclint-cpp-travis-ci-examples/master/oclint-ci-install.sh)"
-      # Download latest valgrind
-      wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
-      # Download latest cppcheck
-      wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90
-      sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install
-      cd ..
-    fi
 
   - cd ${TRAVIS_BUILD_DIR}
 
