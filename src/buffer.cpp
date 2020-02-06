@@ -609,74 +609,79 @@ auto generate_instructions(
 
 void insertions_to_repeats(
     std::vector<std::unique_ptr<Differential_Instruction>>& instructions) {
+    Threader threader;
+    std::mutex instructionMutex;
     const size_t startInstCount = instructions.size();
     for (size_t instIndex = 0; instIndex < startInstCount; ++instIndex) {
         if (auto inst = dynamic_cast<Insert_Instruction*>(
                 instructions[instIndex].get())) {
-            // We only care about repeats larger than 36 bytes.
-            if (inst->m_newData.size() > 36ULL) {
-                auto max = std::min<size_t>(
-                    inst->m_newData.size(), inst->m_newData.size() - 37ULL);
-                for (size_t startIndex = 0ULL; startIndex < max; ++startIndex) {
-                    const auto& value_at_x = inst->m_newData[startIndex];
+            threader.addJob([inst, &instructions, &instructionMutex]() {
+                // We only care about repeats larger than 36 bytes.
+                if (inst->m_newData.size() > 36ULL) {
+                    auto max = std::min<size_t>(
+                        inst->m_newData.size(), inst->m_newData.size() - 37ULL);
+                    for (size_t startIndex = 0ULL; startIndex < max;
+                         ++startIndex) {
+                        const auto& value_at_x = inst->m_newData[startIndex];
 
-                    // Quit early if the value 36 units doesn't match
-                    if (inst->m_newData[startIndex + 36ULL] != value_at_x)
-                        continue;
+                        // Quit early if the value 36 units doesn't match
+                        if (inst->m_newData[startIndex + 36ULL] != value_at_x)
+                            continue;
 
-                    size_t endIndex = startIndex + 1;
-                    while (endIndex < max) {
-                        if (value_at_x == inst->m_newData[endIndex])
-                            endIndex++;
-                        else
-                            break;
-                    }
+                        size_t endIndex = startIndex + 1;
+                        while (endIndex < max) {
+                            if (value_at_x == inst->m_newData[endIndex])
+                                endIndex++;
+                            else
+                                break;
+                        }
 
-                    const auto length = endIndex - startIndex;
-                    if (length > 36ULL) {
-                        // Worthwhile to insert a new instruction
-                        // Keep data up until region where repeats occur
-                        auto instBefore =
-                            std::make_unique<Insert_Instruction>();
-                        instBefore->m_index = inst->m_index;
-                        instBefore->m_newData.resize(startIndex);
-                        std::copy(
-                            inst->m_newData.data(),
-                            inst->m_newData.data() + startIndex,
-                            instBefore->m_newData.data());
+                        const auto length = endIndex - startIndex;
+                        if (length > 36ULL) {
+                            // Worthwhile to insert a new instruction
+                            // Keep data up until region where repeats occur
+                            auto instBefore =
+                                std::make_unique<Insert_Instruction>();
+                            instBefore->m_index = inst->m_index;
+                            instBefore->m_newData.resize(startIndex);
+                            std::copy(
+                                inst->m_newData.data(),
+                                inst->m_newData.data() + startIndex,
+                                instBefore->m_newData.data());
 
-                        // Generate new Repeat Instruction
-                        auto instRepeat =
-                            std::make_unique<Repeat_Instruction>();
-                        instRepeat->m_index = inst->m_index + startIndex;
-                        instRepeat->m_value = value_at_x;
-                        instRepeat->m_amount = length;
+                            // Generate new Repeat Instruction
+                            auto instRepeat =
+                                std::make_unique<Repeat_Instruction>();
+                            instRepeat->m_index = inst->m_index + startIndex;
+                            instRepeat->m_value = value_at_x;
+                            instRepeat->m_amount = length;
 
-                        // Modifying instructions vector
-                        instructions.emplace_back(std::move(instBefore));
-                        instructions.emplace_back(std::move(instRepeat));
+                            // Modifying instructions vector
+                            instructions.emplace_back(std::move(instBefore));
+                            instructions.emplace_back(std::move(instRepeat));
 
-                        // Modify original insert-instruction to contain
-                        // remainder of the data
-                        inst->m_index = inst->m_index + startIndex + length;
-                        std::memmove(
-                            &inst->m_newData[0], &inst->m_newData[endIndex],
-                            inst->m_newData.size() - endIndex);
-                        inst->m_newData.resize(
-                            inst->m_newData.size() - endIndex);
+                            // Modify original insert-instruction to contain
+                            // remainder of the data
+                            inst->m_index = inst->m_index + startIndex + length;
+                            std::memmove(
+                                &inst->m_newData[0], &inst->m_newData[endIndex],
+                                inst->m_newData.size() - endIndex);
+                            inst->m_newData.resize(
+                                inst->m_newData.size() - endIndex);
 
-                        // require overflow, because we want
-                        // next iteration for startIndex == 0
-                        startIndex = ULLONG_MAX;
-                        max = std::min<size_t>(
-                            inst->m_newData.size(),
-                            inst->m_newData.size() - 37ULL);
+                            // require overflow, because we want
+                            // next iteration for startIndex == 0
+                            startIndex = ULLONG_MAX;
+                            max = std::min<size_t>(
+                                inst->m_newData.size(),
+                                inst->m_newData.size() - 37ULL);
+                            continue;
+                        }
+                        startIndex = endIndex - 1;
                         break;
                     }
-                    startIndex = endIndex - 1;
-                    break;
                 }
-            }
+            });
         }
     }
 }

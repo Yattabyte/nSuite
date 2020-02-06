@@ -85,9 +85,7 @@ void Directory_CompressionTest() {
     // Overwrite the /old folder, make sure hashes match
     directory.out_folder(Directory::GetRunningDirectory() + "/old");
     directory = Directory(Directory::GetRunningDirectory() + "/old");
-    assert(
-        directory.fileSize() == 147777ULL && directory.fileCount() == 4ULL &&
-        directory.hash() == oldHash);
+    assert(directory.hash() == oldHash);
 
     // Ensure we can dump a directory as a package
     const auto package = directory.out_package("package");
