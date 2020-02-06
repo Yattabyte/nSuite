@@ -284,13 +284,13 @@ void Buffer::shrink() {
     std::copy(m_data.get(), m_data.get() + m_range, newData.get());
 
     // Swap data containers
-    m_capacity = m_range;
     m_data.swap(newData);
     m_dataPtr = m_data.get();
+    m_capacity = m_range;
 }
 
 void Buffer::clear() noexcept {
-    m_data.release();
+    m_data.reset();
     m_range = 0ULL;
     m_capacity = 0ULL;
     m_data = nullptr;
