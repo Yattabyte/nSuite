@@ -38,7 +38,7 @@ echo "
 **************************************************
 Starting Address Sanitizer
 **************************************************"
-cmake -DSTATIC_ANALYSIS=OFF -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=undefined" .
+cmake -DSTATIC_ANALYSIS=OFF -DCMAKE_CXX_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address" .
 cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
@@ -47,7 +47,7 @@ echo "
 **************************************************
 Starting Undefined-Behaviour Sanitizer
 **************************************************"
-cmake -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=undefined" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=undefined" .
+cmake -DCMAKE_CXX_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=undefined" -DCMAKE_EXE_LINKER_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=undefined" .
 cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
@@ -56,7 +56,7 @@ echo "
 **************************************************
 Starting Thread Sanitizer
 **************************************************"
-cmake -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} + " -fsanitize=thread" -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS} + " -fsanitize=thread" .
+cmake -DCMAKE_CXX_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=thread" -DCMAKE_EXE_LINKER_FLAGS="-g -O0 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=thread" .
 cmake --build . --clean-first -- -j $(nproc)
 ctest --output-on-failure -j $(nproc) -C Debug .
 
@@ -65,4 +65,6 @@ echo "
 **************************************************
 Starting OCLint
 **************************************************"
+cmake -DCMAKE_CXX_FLAGS="-g -O0" -DCMAKE_EXE_LINKER_FLAGS="-g -O0" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .
+cmake --build . --clean-first -- -j $(nproc)
 oclint-json-compilation-database -i src -i tests  -e src/lz4
