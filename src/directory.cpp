@@ -177,6 +177,158 @@ bool Directory::in_package(const Buffer& packageBuffer) {
     return true; // Success
 }
 
+/** Contains diff instructions for a specific file. */
+struct FileInstruction {
+    std::string path = "", fullPath = "";
+    Buffer instructionBuffer;
+    size_t diff_oldHash = 0ULL, diff_newHash = 0ULL;
+};
+
+/** Parse in instructions from a memory range, updating instruction vectors. */
+bool in_instructions(
+    const yatta::MemoryRange& instructionRange, const size_t& expectedFileCount,
+    std::vector<FileInstruction>& diffInstructions,
+    std::vector<FileInstruction>& addInstructions,
+    std::vector<FileInstruction>& removeInstructions) {
+    // Try to decompress the instruction buffer
+    const auto instructionBuffer = Buffer::decompress(instructionRange);
+    if (!instructionBuffer.has_value())
+        return false;
+
+    // Start reading diff file
+    size_t files(0ULL);
+    size_t byteIndex(0ULL);
+    while (files < expectedFileCount) {
+        FileInstruction instruction;
+
+        // Read file path
+        instructionBuffer->out_type(instruction.path, byteIndex);
+        byteIndex += sizeof(size_t) +
+                     (sizeof(char) * instruction.path.length()) +
+                     sizeof(size_t);
+
+        // Read operation flag
+        char flag(0);
+        instructionBuffer->out_type(flag, byteIndex);
+        byteIndex += sizeof(char);
+
+        // Read old hash
+        instructionBuffer->out_type(instruction.diff_oldHash, byteIndex);
+        byteIndex += sizeof(size_t);
+
+        // Read new hash
+        instructionBuffer->out_type(instruction.diff_newHash, byteIndex);
+        byteIndex += sizeof(size_t);
+
+        // Read buffer size
+        size_t instructionSize(0ULL);
+        instructionBuffer->out_type(instructionSize, byteIndex);
+        byteIndex += sizeof(size_t);
+
+        // Copy buffer
+        if (instructionSize > 0) {
+            instruction.instructionBuffer.resize(instructionSize);
+            instructionBuffer->out_raw(
+                instruction.instructionBuffer.bytes(), instructionSize,
+                byteIndex);
+            byteIndex += instructionSize;
+        }
+
+        // Sort instructions
+        if (flag == 'U')
+            diffInstructions.emplace_back(std::move(instruction));
+        else if (flag == 'N')
+            addInstructions.emplace_back(std::move(instruction));
+        else if (flag == 'D')
+            removeInstructions.emplace_back(std::move(instruction));
+        files++;
+    }
+    return true;
+}
+
+/** Attempt to patch a file using an instruction. */
+constexpr auto patch_file = [](Directory::VirtualFile& file,
+                               const FileInstruction& instruction) {
+    if (auto result = file.m_data.patch(instruction.instructionBuffer)) {
+        // Confirm new hashes match
+        if (result->hash() == instruction.diff_newHash) {
+            // Update virtualized folder
+            std::swap(file.m_data, *result);
+        }
+    }
+};
+
+/** Attempt to create a new file using an instruction. */
+constexpr auto add_file = [](const FileInstruction& instruction)
+    -> std::optional<Directory::VirtualFile> {
+    // Convert the instruction into a virtual file
+    if (auto result = Buffer().patch(instruction.instructionBuffer))
+        // Confirm new hashes match
+        if (result->hash() == instruction.diff_newHash)
+
+            // Emplace the file
+            return Directory::VirtualFile{ instruction.path,
+                                           std::move(*result) };
+    return {};
+};
+
+/** Attempts to remove a file using an instruction. */
+constexpr auto find_file = [](const std::string& path, const size_t& hash,
+                              auto& files) noexcept {
+    return std::find_if(
+        files.begin(), files.end(), [&path, &hash](const auto& file) noexcept {
+            // Ensure file path and hash matches
+            return file.m_relativePath == path && file.m_data.hash() == hash;
+        });
+};
+
+void apply_instructions(
+    std::vector<FileInstruction>& diffFiles,
+    std::vector<FileInstruction>& addedFiles,
+    std::vector<FileInstruction>& removedFiles,
+    std::vector<Directory::VirtualFile>& files) {
+    // Patch all files first
+    std::for_each(
+        diffFiles.cbegin(), diffFiles.cend(), [&](const FileInstruction& inst) {
+            // Try to find the target file
+            if (auto dFile = find_file(inst.path, inst.diff_oldHash, files);
+                dFile != files.end())
+                patch_file(*dFile, inst);
+        });
+    diffFiles.clear();
+
+    // Add new files
+    std::for_each(
+        addedFiles.cbegin(), addedFiles.cend(),
+        [&](const FileInstruction& inst) {
+            // Erase any instances of this file
+            const auto prevFile =
+                find_file(inst.path, inst.diff_oldHash, files);
+            if (prevFile != files.end())
+                files.erase(prevFile);
+            // Attempt to make a new file
+            if (auto newFile = add_file(inst))
+                files.emplace_back(std::move(*newFile));
+        });
+    addedFiles.clear();
+
+    // Delete all files
+    std::for_each(
+        removedFiles.cbegin(), removedFiles.cend(),
+        [&](const FileInstruction& inst) {
+            // Erase any instances of this file
+            files.erase(
+                std::remove_if(
+                    files.begin(), files.end(),
+                    [&](const Directory::VirtualFile& file) noexcept {
+                        return file.m_relativePath == inst.path &&
+                               file.m_data.hash() == inst.diff_oldHash;
+                    }),
+                files.end());
+        });
+    removedFiles.clear();
+}
+
 bool Directory::in_delta(const Buffer& deltaBuffer) {
     // Ensure buffer at least *exists*
     if (deltaBuffer.empty())
@@ -194,139 +346,17 @@ bool Directory::in_delta(const Buffer& deltaBuffer) {
     if (std::strcmp(deltaHeaderTitle, "yatta delta") != 0)
         return false; // Failure
 
-    // Try to decompress the instruction buffer
-    Buffer instructionBuffer;
-    if (auto result = Buffer::decompress(
-            deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex)))
-        std::swap(instructionBuffer, *result);
-    else
-        return false; // Failure
-    byteIndex = 0ULL; // reset byte index
-
-    // Start reading diff file
-    struct FileInstruction {
-        std::string path = "", fullPath = "";
-        Buffer instructionBuffer;
-        size_t diff_oldHash = 0ULL, diff_newHash = 0ULL;
-    };
+    // Parse and acquire instructions
     std::vector<FileInstruction> diffFiles;
     std::vector<FileInstruction> addedFiles;
     std::vector<FileInstruction> removedFiles;
-    size_t files(0ULL);
-    while (files < deltaHeaderFileCount) {
-        FileInstruction instruction;
+    if (!in_instructions(
+            deltaBuffer.subrange(byteIndex, deltaBuffer.size() - byteIndex),
+            deltaHeaderFileCount, diffFiles, addedFiles, removedFiles))
+        return false;
 
-        // Read file path
-        instructionBuffer.out_type(instruction.path, byteIndex);
-        byteIndex += sizeof(size_t) +
-                     (sizeof(char) * instruction.path.length()) +
-                     sizeof(size_t);
-
-        // Read operation flag
-        char flag(0);
-        instructionBuffer.out_type(flag, byteIndex);
-        byteIndex += sizeof(char);
-
-        // Read old hash
-        instructionBuffer.out_type(instruction.diff_oldHash, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Read new hash
-        instructionBuffer.out_type(instruction.diff_newHash, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Read buffer size
-        size_t instructionSize(0ULL);
-        instructionBuffer.out_type(instructionSize, byteIndex);
-        byteIndex += sizeof(size_t);
-
-        // Copy buffer
-        if (instructionSize > 0) {
-            instruction.instructionBuffer.resize(instructionSize);
-            instructionBuffer.out_raw(
-                instruction.instructionBuffer.bytes(), instructionSize,
-                byteIndex);
-            byteIndex += instructionSize;
-        }
-
-        // Sort instructions
-        if (flag == 'U')
-            diffFiles.emplace_back(std::move(instruction));
-        else if (flag == 'N')
-            addedFiles.emplace_back(std::move(instruction));
-        else if (flag == 'D')
-            removedFiles.emplace_back(std::move(instruction));
-        files++;
-    }
-    instructionBuffer.clear();
-
-    // Patch all files first
-    std::for_each(
-        diffFiles.cbegin(), diffFiles.cend(), [&](const FileInstruction& inst) {
-            // Try to find the target file
-            const auto dFile = std::find_if(
-                m_files.begin(), m_files.end(),
-                [&](const VirtualFile& file) noexcept {
-                    // Ensure file path and hash matches
-                    return file.m_relativePath == inst.path &&
-                           file.m_data.hash() == inst.diff_oldHash;
-                });
-            if (dFile != m_files.end()) {
-                // Attempt Patching Process
-                if (auto result = dFile->m_data.patch(inst.instructionBuffer)) {
-                    // Confirm new hashes match
-                    if (result->hash() == inst.diff_newHash) {
-                        // Update virtualized folder
-                        std::swap(dFile->m_data, *result);
-                    }
-                }
-            }
-        });
-    diffFiles.clear();
-
-    // Add new files
-    std::for_each(
-        addedFiles.cbegin(), addedFiles.cend(),
-        [&](const FileInstruction& inst) {
-            // Convert the instruction into a virtual file
-            if (auto result = Buffer().patch(inst.instructionBuffer)) {
-                // Confirm new hashes match
-                if (result->hash() == inst.diff_newHash) {
-                    // Erase any instances of this file
-                    m_files.erase(
-                        std::remove_if(
-                            m_files.begin(), m_files.end(),
-                            [&](const VirtualFile& file) noexcept {
-                                return file.m_relativePath == inst.path;
-                            }),
-                        m_files.end());
-
-                    // Emplace the file
-                    m_files.emplace_back(
-                        VirtualFile{ inst.path, std::move(*result) });
-                }
-            }
-        });
-    addedFiles.clear();
-
-    // Delete all files
-    std::for_each(
-        removedFiles.cbegin(), removedFiles.cend(),
-        [&](const FileInstruction& inst) {
-            // Erase any instances of this file if the file name and hash
-            // matches
-            m_files.erase(
-                std::remove_if(
-                    m_files.begin(), m_files.end(),
-                    [&](const VirtualFile& file) noexcept {
-                        return file.m_relativePath == inst.path &&
-                               file.m_data.hash() == inst.diff_oldHash;
-                    }),
-                m_files.end());
-        });
-    removedFiles.clear();
-
-    // Success
+    // Consume and apply instructions
+    apply_instructions(diffFiles, addedFiles, removedFiles, m_files);
     return true;
 }
 

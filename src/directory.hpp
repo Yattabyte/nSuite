@@ -12,6 +12,13 @@ namespace yatta {
 Has functions for compressing, decompressing, diffing, and patching. */
 class Directory {
     public:
+    // Public Structures
+    /** File data and path container. */
+    struct VirtualFile {
+        std::string m_relativePath = "";
+        Buffer m_data;
+    };
+
     // Public (de)Constructors
     /** Destroy this directory. */
     ~Directory() = default;
@@ -105,11 +112,6 @@ class Directory {
 
     protected:
     // Protected Attributes
-    /** File data and path container. */
-    struct VirtualFile {
-        std::string m_relativePath = "";
-        Buffer m_data;
-    };
     std::vector<VirtualFile> m_files;
 };
 } // namespace yatta

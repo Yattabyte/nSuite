@@ -92,19 +92,14 @@ void MemoryRange_MethodTest() {
     // Ensure we can hash the memory range
     assert(memRange.hash() != yatta::ZeroHash);
 
-    // Ensure we can return array representations
-    [[maybe_unused]] const auto charArray = memRange.charArray();
-    [[maybe_unused]] const auto bytes = memRange.bytes();
-    assert(charArray != nullptr && bytes != nullptr);
+    // Ensure we can return non-null array representations
+    [[maybe_unused]] const auto charArray =
+        static_cast<void*>(memRange.charArray());
+    [[maybe_unused]] const auto bytes = static_cast<void*>(memRange.bytes());
+    assert(charArray != nullptr && bytes == charArray);
 
-    // Ensure both char array and byte array are the same underlying pointer
-    assert(static_cast<void*>(charArray) == static_cast<void*>(bytes));
-
-    // Ensure we can create a valid sub-range
+    // Ensure we can create a valid iterate-able sub-range
     auto subRange = memRange.subrange(0, 617ULL);
-    assert(subRange.hasData());
-
-    // Ensure we can iterate over the subrange
     [[maybe_unused]] const auto byteCount =
         static_cast<size_t>(subRange.end() - subRange.begin());
     assert(byteCount == 617ULL);

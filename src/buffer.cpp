@@ -657,8 +657,12 @@ void insertions_to_repeats(
                             instRepeat->m_amount = length;
 
                             // Modifying instructions vector
+                            std::unique_lock<std::mutex> writeGuard(
+                                instructionMutex);
                             instructions.emplace_back(std::move(instBefore));
                             instructions.emplace_back(std::move(instRepeat));
+                            writeGuard.unlock();
+                            writeGuard.release();
 
                             // Modify original insert-instruction to contain
                             // remainder of the data
@@ -671,7 +675,7 @@ void insertions_to_repeats(
 
                             // require overflow, because we want
                             // next iteration for startIndex == 0
-                            startIndex = ULLONG_MAX;
+                            startIndex = std::numeric_limits<size_t>::max();
                             max = std::min<size_t>(
                                 inst->m_newData.size(),
                                 inst->m_newData.size() - 37ULL);

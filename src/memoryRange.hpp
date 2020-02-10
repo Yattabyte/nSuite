@@ -14,7 +14,7 @@ constexpr size_t ZeroHash = 1234567890ULL;
 Provides means of indexing and manipulating the data it represents. */
 class MemoryRange {
     public:
-    // Public Constructor
+    // Public (de)Constructors
     /** Destroy this memory range. */
     virtual ~MemoryRange() {}
     /** Construct a memory range from the specified pointer and size.
@@ -22,6 +22,22 @@ class MemoryRange {
     @param  dataPtr         pointer to some data source. */
     explicit MemoryRange(
         const size_t& size = 0ULL, std::byte* dataPtr = nullptr) noexcept;
+    /** Construct a memory range, copying from another.
+    @param  other           the range to copy from. */
+    MemoryRange(const MemoryRange& other) = default;
+    /** Construct a memory range, moving from another.
+    @param  other           the range to move from. */
+    MemoryRange(MemoryRange&& other) noexcept = default;
+
+    // Public Assignment Operators
+    /** Copy-assignment operator.
+    @param  other           the range to copy from.
+    @return                 reference to this. */
+    MemoryRange& operator=(const MemoryRange& other) = default;
+    /** Move-assignment operator.
+    @param  other           the range to move from.
+    @return                 reference to this. */
+    MemoryRange& operator=(MemoryRange&& other) noexcept = default;
 
     // Public Inquiry Methods
     /** Check if this memory range is empty.
