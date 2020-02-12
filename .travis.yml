@@ -27,7 +27,6 @@ jobs:
       env: COMPILER_CXX=clang++-9 COMPILER_C=clang-9 STATIC_ANALYSIS=true
       script:
         - export ASAN_SYMBOLIZER_PATH=$(which llvm-symbolizer) ASAN_OPTIONS=symbolize=1
-        - bash ./staticAnalysis.sh
 
 
 install:
@@ -50,19 +49,13 @@ install:
     fi
     if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
       # Download OCLint
-      wget https://github.com/oclint/oclint/archive/v0.15.tar.gz && tar xf v0.15.tar.gz && cd oclint-0.15 && cd oclint-core && cmake . && cmake --build . --clean-first -- -j $(nproc) && cd .. & cd ..
+      wget https://github.com/oclint/oclint/archive/v0.15.tar.gz && tar xf v0.15.tar.gz && cd oclint-0.15 && cd oclint-core
+	  cmake .
+	  cmake --build . --clean-first -- -j $(nproc)
       oclint -version
       export OCLINT_HOME="$HOME/v0.15"
       export PATH="$OCLINT_HOME/bin:$PATH"
-      oclint -version
-      # Download latest valgrind
-      wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
-      valgrind --version
-      # Download latest cppcheck
-      wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90
-      sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install
-      cd ..
-      cppcheck --version
+      oclint -version      
     fi
 
   - cd ${TRAVIS_BUILD_DIR}
