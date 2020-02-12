@@ -37,7 +37,6 @@ install:
   # Install Dependencies
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
-
   - |
     if [ ${CODE_COVERAGE} = true ]; then
       # Download LCOV
@@ -50,8 +49,8 @@ install:
     if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
       # Download OCLint
       wget https://github.com/oclint/oclint/archive/v0.15.tar.gz && tar xf v0.15.tar.gz && cd oclint-0.15 && cd oclint-core
-	  cmake .
-	  cmake --build . --clean-first -- -j $(nproc)
+      cmake .
+      cmake --build . --clean-first -- -j $(nproc)
       oclint -version
       export OCLINT_HOME="$HOME/v0.15"
       export PATH="$OCLINT_HOME/bin:$PATH"
