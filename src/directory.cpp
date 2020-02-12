@@ -95,23 +95,21 @@ void in_files(
 /** Attempt to patch a file using an instruction. */
 void patch_file(
     Directory::VirtualFile& file, const FileInstruction& instruction) {
-    if (auto result = file.m_data.patch(instruction.instructionBuffer))
-        // Confirm new hashes match
-        if (result->hash() == instruction.diff_newHash)
-            // Update virtualized folder
-            std::swap(file.m_data, *result);
+    // Attempt patching and confirm new hashes match
+    if (auto result = file.m_data.patch(instruction.instructionBuffer);
+        result.has_value() && result->hash() == instruction.diff_newHash)
+        // Update virtualized folder
+        std::swap(file.m_data, *result);
 }
 
 /** Attempt to create a new file using an instruction. */
 std::optional<Directory::VirtualFile>
 add_file(const FileInstruction& instruction) {
-    // Convert the instruction into a virtual file
-    if (auto result = Buffer().patch(instruction.instructionBuffer))
-        // Confirm new hashes match
-        if (result->hash() == instruction.diff_newHash)
-            // Emplace the file
-            return Directory::VirtualFile{ instruction.path,
-                                           std::move(*result) };
+    // Attempt to make a new file by patching an empty buffer
+    if (auto result = Buffer().patch(instruction.instructionBuffer);
+        result.has_value() && result->hash() == instruction.diff_newHash)
+        // Emplace the file
+        return Directory::VirtualFile{ instruction.path, std::move(*result) };
     return {};
 }
 
@@ -121,13 +119,15 @@ void in_instructions(
     std::vector<FileInstruction>& diffInstructions,
     std::vector<FileInstruction>& addInstructions,
     std::vector<FileInstruction>& removeInstructions) {
-    // Start reading diff file
-    size_t files(0ULL);
-    size_t byteIndex(0ULL);
+    // Accumulate attributes here
     const size_t instBufSize = instructionBuffer.size();
     FileInstruction instruction;
     char flag(0);
+    size_t files(0ULL);
+    size_t byteIndex(0ULL);
     size_t instructionSize(0ULL);
+
+    // Start reading diff file
     while (files < expectedFileCount && byteIndex < instBufSize) {
         // Read Attributes
         instructionBuffer.out_type(instruction.path, byteIndex);
@@ -143,6 +143,8 @@ void in_instructions(
         instructionBuffer.out_type(instructionSize, byteIndex);
         byteIndex += sizeof(size_t);
         instruction.instructionBuffer.resize(instructionSize);
+
+        // Copy buffer
         if (instructionSize != 0ULL)
             instructionBuffer.out_raw(
                 instruction.instructionBuffer.bytes(), instructionSize,
@@ -193,15 +195,14 @@ gen_instructions(const FileList& srcFiles, const FileList& dstFiles) {
     size_t instCount(0ULL);
     for (const auto& [oldFile, newFile] : commonFiles) {
         // Check if a common file has changed
+        const auto diffBuffer = oldFile.m_data.diff(newFile.m_data);
         const auto oldHash = oldFile.m_data.hash();
         const auto newHash = newFile.m_data.hash();
-        if (oldHash != newHash) {
-            if (const auto diffBuffer = oldFile.m_data.diff(newFile.m_data)) {
-                out_instruction(
-                    oldFile.m_relativePath, oldHash, newHash, *diffBuffer, 'U',
-                    instructionBuffer);
-                instCount++;
-            }
+        if (diffBuffer.has_value() && oldHash != newHash) {
+            out_instruction(
+                oldFile.m_relativePath, oldHash, newHash, *diffBuffer, 'U',
+                instructionBuffer);
+            instCount++;
         }
     }
     commonFiles.clear();

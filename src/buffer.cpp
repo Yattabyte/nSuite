@@ -628,12 +628,11 @@ void insertions_to_repeats(
                         if (inst->m_newData[startIndex + 36ULL] != value_at_x)
                             continue;
 
-                        size_t endIndex = startIndex + 1;
+                        size_t endIndex(startIndex + 1);
                         while (endIndex < max) {
-                            if (value_at_x == inst->m_newData[endIndex])
-                                endIndex++;
-                            else
+                            if (value_at_x != inst->m_newData[endIndex])
                                 break;
+                            endIndex++;
                         }
 
                         const auto length = endIndex - startIndex;
@@ -750,8 +749,7 @@ Buffer::patch(const Buffer& sourceBuffer, const Buffer& diffBuffer) {
 
 std::optional<Buffer>
 Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory) {
-    // Ensure buffer at least *exists*
-    // Ignore empty source buffer, empty may mean brand new file
+    // Ensure diff buffer at least *exists*, empty source = new file
     if (diffMemory.empty())
         return {}; // Failure
 
@@ -766,12 +764,11 @@ Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory) {
     // Try to decompress the diff buffer
     constexpr size_t diffHeaderSize = sizeof(DifferentialHeader);
     const auto dataSize = diffMemory.size() - diffHeaderSize;
-    Buffer patchBuffer;
-    if (auto result = decompress(diffMemory.subrange(diffHeaderSize, dataSize)))
-        std::swap(patchBuffer, *result);
-    else
+    auto patchBuffer =
+        decompress(diffMemory.subrange(diffHeaderSize, dataSize));
+    if (!patchBuffer.has_value())
         return {}; // Failure
-    const auto patchBufferSize = patchBuffer.size();
+    const auto patchBufferSize = patchBuffer->size();
 
     // Convert buffer into instructions
     Buffer bufferNew(header.m_targetSize);
@@ -779,18 +776,17 @@ Buffer::patch(const MemoryRange& sourceMemory, const MemoryRange& diffMemory) {
     while (byteIndex < patchBufferSize) {
         // Deduce the instruction type
         char type(0);
-        patchBuffer.out_type(type, byteIndex);
+        patchBuffer->out_type(type, byteIndex);
         byteIndex += sizeof(char);
 
+        // Make and execute the instruction from the diff buffer memory
         const auto executeInstruction = [&](auto instruction) {
             // Read the instruction
-            instruction.read(patchBuffer, byteIndex);
+            instruction.read(*patchBuffer, byteIndex);
 
             // Execute the instruction
             instruction.execute(bufferNew, sourceMemory);
         };
-
-        // Make and execute the instruction from the diff buffer memory
         if (type == 'R')
             executeInstruction(Repeat_Instruction());
         else if (type == 'I')
