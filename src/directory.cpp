@@ -95,14 +95,12 @@ void in_files(
 /** Attempt to patch a file using an instruction. */
 void patch_file(
     Directory::VirtualFile& file, const FileInstruction& instruction) {
-    if (auto result = file.m_data.patch(instruction.instructionBuffer)) {
+    if (auto result = file.m_data.patch(instruction.instructionBuffer))
         // Confirm new hashes match
-        if (result->hash() == instruction.diff_newHash) {
+        if (result->hash() == instruction.diff_newHash)
             // Update virtualized folder
             std::swap(file.m_data, *result);
-        }
-    }
-};
+}
 
 /** Attempt to create a new file using an instruction. */
 std::optional<Directory::VirtualFile>
