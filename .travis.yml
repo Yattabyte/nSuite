@@ -50,7 +50,7 @@ install:
     fi
     if [[ "${STATIC_ANALYSIS}" = "true" ]]; then
       # Download OCLint
-      wget https://github.com/oclint/oclint/archive/v0.15.tar.gz && tar xf v0.15.tar.gz && cd oclint-0.15 && cd oclint-scripts && ./configure && make && sudo make install && cd ..
+      wget https://github.com/oclint/oclint/archive/v0.15.tar.gz && tar xf v0.15.tar.gz && cd oclint-0.15 && cd oclint-scripts && ./makeWithSystemLLVM && cd .. && cd ..
       oclint -version
       export OCLINT_HOME="$HOME/v0.15"
       export PATH="$OCLINT_HOME/bin:$PATH"
