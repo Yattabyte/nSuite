@@ -31,8 +31,9 @@ constexpr auto find_file = [](const std::string& path, const size_t& hash,
         });
 };
 
-std::tuple<FilePairList, FileList, FileList>
-get_file_lists(const FileList& srcOld_Files, const FileList& srcNew_Files) {
+/** Retrieve lists of a common, added, and deleted files. */
+auto get_file_lists(
+    const FileList& srcOld_Files, const FileList& srcNew_Files) {
     FilePairList commonFiles;
     FileList addFiles;
     FileList delFiles = srcOld_Files;
@@ -59,6 +60,7 @@ get_file_lists(const FileList& srcOld_Files, const FileList& srcNew_Files) {
     return std::make_tuple(commonFiles, addFiles, delFiles);
 }
 
+/** Virtualize a package buffer of files into a vector. */
 void in_files(
     const Buffer& filebuffer, std::vector<Directory::VirtualFile>& files) {
     // Find the file count
@@ -120,10 +122,9 @@ void in_instructions(
     std::vector<FileInstruction>& addInstructions,
     std::vector<FileInstruction>& removeInstructions) {
     // Start reading diff file
-    size_t files(0ULL);
-    size_t byteIndex(0ULL);
     const auto instBufSize = instructionBuffer.size();
-    while (files < expectedFileCount && byteIndex < instBufSize) {
+    for (size_t files = 0ULL, byteIndex = 0ULL;
+         files < expectedFileCount && byteIndex < instBufSize; ++files) {
         // Accumulate attributes here
         FileInstruction instruction;
         char flag(0);
@@ -161,7 +162,6 @@ void in_instructions(
             addInstructions.emplace_back(std::move(instruction));
         else if (flag == 'D')
             removeInstructions.emplace_back(std::move(instruction));
-        files++;
     }
 }
 
@@ -187,8 +187,8 @@ void out_instruction(
             buffer.bytes(), sizeof(std::byte) * bufferSize);
 }
 
-std::pair<Buffer, size_t>
-gen_instructions(const FileList& srcFiles, const FileList& dstFiles) {
+/** Generate diff instructions from a set of src and dst files. */
+auto gen_instructions(const FileList& srcFiles, const FileList& dstFiles) {
     // Retrieve all common, added, and removed files
     auto [commonFiles, addedFiles, removedFiles] =
         get_file_lists(srcFiles, dstFiles);
@@ -231,7 +231,7 @@ gen_instructions(const FileList& srcFiles, const FileList& dstFiles) {
     removedFiles.clear();
 
     // Success
-    return { instructionBuffer, instCount };
+    return std::make_pair(instructionBuffer, instCount);
 }
 
 /** Modify files based on the input instruction set. */
