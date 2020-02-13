@@ -14,7 +14,7 @@ Starting Clang-Tidy
 **************************************************"
 cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy .
 cmake --build . --clean-first -- -j $(nproc)
-ctest --output-on-failure -j $(nproc) -C Debug .
+ctest --output-on-failure --quiet -j $(nproc) -C Debug .
 
 # Run Valgrind
 echo "

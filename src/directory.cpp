@@ -31,8 +31,8 @@ constexpr auto find_file = [](const std::string& path, const size_t& hash,
         });
 };
 
-static constexpr auto get_file_lists = [](const FileList& srcOld_Files,
-                                          const FileList& srcNew_Files) {
+std::tuple<FilePairList, FileList, FileList>
+get_file_lists(const FileList& srcOld_Files, const FileList& srcNew_Files) {
     FilePairList commonFiles;
     FileList addFiles;
     FileList delFiles = srcOld_Files;
@@ -57,7 +57,7 @@ static constexpr auto get_file_lists = [](const FileList& srcOld_Files,
     }
 
     return std::make_tuple(commonFiles, addFiles, delFiles);
-};
+}
 
 void in_files(
     const Buffer& filebuffer, std::vector<Directory::VirtualFile>& files) {
@@ -119,16 +119,16 @@ void in_instructions(
     std::vector<FileInstruction>& diffInstructions,
     std::vector<FileInstruction>& addInstructions,
     std::vector<FileInstruction>& removeInstructions) {
-    // Accumulate attributes here
-    const size_t instBufSize = instructionBuffer.size();
-    FileInstruction instruction;
-    char flag(0);
+    // Start reading diff file
     size_t files(0ULL);
     size_t byteIndex(0ULL);
-    size_t instructionSize(0ULL);
-
-    // Start reading diff file
+    const auto instBufSize = instructionBuffer.size();
     while (files < expectedFileCount && byteIndex < instBufSize) {
+        // Accumulate attributes here
+        FileInstruction instruction;
+        char flag(0);
+        size_t instructionSize(0ULL);
+
         // Read Attributes
         instructionBuffer.out_type(instruction.path, byteIndex);
         byteIndex += sizeof(size_t) +
@@ -142,16 +142,19 @@ void in_instructions(
         byteIndex += sizeof(size_t);
         instructionBuffer.out_type(instructionSize, byteIndex);
         byteIndex += sizeof(size_t);
-        instruction.instructionBuffer.resize(instructionSize);
 
-        // Copy buffer
-        if (instructionSize != 0ULL)
+        // Check if instruction buffer's size is non-zero
+        if (instructionSize != 0ULL) {
+            // Resize OUR buffer to fit
+            instruction.instructionBuffer.resize(instructionSize);
+            // Copy the buffer's data
             instructionBuffer.out_raw(
                 instruction.instructionBuffer.bytes(), instructionSize,
                 byteIndex);
-        byteIndex += instructionSize;
+            byteIndex += instructionSize;
+        }
 
-        // Sort instructions
+        // Place the instruction in the correct container
         if (flag == 'U')
             diffInstructions.emplace_back(std::move(instruction));
         else if (flag == 'N')

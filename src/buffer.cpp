@@ -24,17 +24,15 @@ struct DifferentialHeader {
 };
 /** Super-class for buffer diff instructions. */
 struct Differential_Instruction {
-    // (de)Constructors
+    // Public Default Members
     virtual ~Differential_Instruction() = default;
-    explicit Differential_Instruction(const char& type) noexcept
-        : m_type(type) {}
-    Differential_Instruction(const Differential_Instruction& other) = delete;
-    Differential_Instruction(Differential_Instruction&& other) = delete;
+    Differential_Instruction() = default;
+    Differential_Instruction(const Differential_Instruction& other) = default;
+    Differential_Instruction(Differential_Instruction&& other) = default;
     Differential_Instruction&
-    operator=(const Differential_Instruction& other) = delete;
+    operator=(const Differential_Instruction& other) = default;
     Differential_Instruction&
-    operator=(Differential_Instruction&& other) = delete;
-
+    operator=(Differential_Instruction&& other) = default;
     // Interface Declaration
     /** Retrieve the byte-size of this instruction. */
     [[nodiscard]] virtual size_t size() const noexcept = 0;
@@ -47,14 +45,10 @@ struct Differential_Instruction {
     virtual void read(const Buffer& inputBuffer, size_t& byteIndex) = 0;
 
     // Attributes
-    const char m_type = 0;
     size_t m_index = 0ULL;
 };
 /** Diff instruction to copy an existing segment. */
 struct Copy_Instruction final : public Differential_Instruction {
-    // Constructor
-    Copy_Instruction() noexcept : Differential_Instruction('C') {}
-
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
         return static_cast<size_t>(sizeof(char) + (sizeof(size_t) * 3ULL));
@@ -67,7 +61,7 @@ struct Copy_Instruction final : public Differential_Instruction {
     }
     void write(Buffer& outputBuffer) const final {
         // Write Attributes
-        outputBuffer.push_type(m_type);
+        outputBuffer.push_type('C');
         outputBuffer.push_type(m_index);
         outputBuffer.push_type(m_beginRead);
         outputBuffer.push_type(m_endRead);
@@ -88,9 +82,6 @@ struct Copy_Instruction final : public Differential_Instruction {
 };
 /** Diff instruction for inserting an entirely new data segment. */
 struct Insert_Instruction final : public Differential_Instruction {
-    // Constructor
-    Insert_Instruction() noexcept : Differential_Instruction('I') {}
-
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
         return static_cast<size_t>(
@@ -102,7 +93,7 @@ struct Insert_Instruction final : public Differential_Instruction {
     }
     void write(Buffer& outputBuffer) const final {
         // Write Attributes
-        outputBuffer.push_type(m_type);
+        outputBuffer.push_type('I');
         outputBuffer.push_type(m_index);
         const auto length = m_newData.size();
         outputBuffer.push_type(length);
@@ -129,9 +120,6 @@ struct Insert_Instruction final : public Differential_Instruction {
 };
 /** Diff instruction for a repeating value. */
 struct Repeat_Instruction final : public Differential_Instruction {
-    // Constructor
-    Repeat_Instruction() noexcept : Differential_Instruction('R') {}
-
     // Interface Implementation
     [[nodiscard]] size_t size() const noexcept final {
         return static_cast<size_t>(
@@ -145,7 +133,7 @@ struct Repeat_Instruction final : public Differential_Instruction {
     }
     void write(Buffer& outputBuffer) const final {
         // Write Attributes
-        outputBuffer.push_type(m_type);
+        outputBuffer.push_type('R');
         // Write Index
         outputBuffer.push_type(m_index);
         // Write Amount
@@ -607,86 +595,135 @@ auto generate_instructions(
     return instructions;
 }
 
-void insertions_to_repeats(
+/** Retrieve insertion instructions larger than 36 bytes. */
+std::vector<Insert_Instruction*> get_large_insertions(
     std::vector<std::unique_ptr<Differential_Instruction>>& instructions) {
+    // Create a vector large enough for worst-case-scenario
+    std::vector<Insert_Instruction*> largeInsertions;
+    largeInsertions.reserve(instructions.size());
+
+    // Find all valid insertion instructions
+    for (const auto& instruction : instructions) {
+        // We only care about repeats larger than 36 bytes.
+        auto inst = dynamic_cast<Insert_Instruction*>(instruction.get());
+        if (inst == nullptr || inst->m_newData.size() <= 36ULL)
+            continue;
+
+        // Use this instruction
+        largeInsertions.emplace_back(inst);
+    }
+
+    return largeInsertions;
+}
+
+size_t
+find_last_in_series(const std::byte& value, const MemoryRange& range) noexcept {
+    // Compare 8-byte-wise
+    size_t index(0ULL);
+    const std::byte value_array[8] = { value, value, value, value,
+                                       value, value, value, value };
+    const auto& value_8 = *reinterpret_cast<const size_t*>(&value_array[0]);
+    const auto* const range_8 = reinterpret_cast<const size_t*>(range.bytes());
+    const size_t size(range.size());
+    const size_t max(size / 8ULL);
+    for (; index < max; ++index)
+        if (range_8[index] != value_8)
+            break;
+
+    // Compare 1-byte-wise
+    const auto range_1 = range.bytes();
+    index *= 8ULL;
+    for (; index < size; ++index)
+        if (range_1[index] != value)
+            break;
+
+    return index;
+}
+
+void split_insertion(
+    Insert_Instruction* const& inst, const size_t& startIndex,
+    const size_t& endIndex, const std::byte& value_at_x,
+    std::vector<std::unique_ptr<Differential_Instruction>>& instructions,
+    std::mutex& mutex) {
+    // Keep data up until region where repeats occur
+    Insert_Instruction instBefore;
+    instBefore.m_index = inst->m_index;
+    instBefore.m_newData.resize(startIndex);
+    std::copy(
+        inst->m_newData.data(), inst->m_newData.data() + startIndex,
+        instBefore.m_newData.data());
+
+    // Generate new Repeat Instruction
+    Repeat_Instruction instRepeat;
+    const auto length = endIndex - startIndex;
+    instRepeat.m_index = inst->m_index + startIndex;
+    instRepeat.m_value = value_at_x;
+    instRepeat.m_amount = length;
+
+    // Retain remainder of insertion data
+    const auto size = inst->m_newData.size();
+    inst->m_index = inst->m_index + startIndex + length;
+    std::memmove(
+        &inst->m_newData[0], &inst->m_newData[endIndex], size - endIndex);
+    inst->m_newData.resize(size - endIndex);
+
+    std::unique_lock<std::mutex> writeGuard(mutex);
+    instructions.emplace_back(
+        std::make_unique<Insert_Instruction>(std::move(instBefore)));
+    instructions.emplace_back(
+        std::make_unique<Repeat_Instruction>(std::move(instRepeat)));
+}
+
+/** Replace repeating segments in insertion instructions with repeats. */
+void insertions_to_repeats(
+    std::vector<std::unique_ptr<Differential_Instruction>>& baseInstructions) {
+    // Analyze segments larger than 36 bytes in a separate thread
     Threader threader;
     std::mutex instructionMutex;
-    const size_t startInstCount = instructions.size();
-    for (size_t instIndex = 0; instIndex < startInstCount; ++instIndex) {
-        if (auto inst = dynamic_cast<Insert_Instruction*>(
-                instructions[instIndex].get())) {
-            threader.addJob([inst, &instructions, &instructionMutex]() {
-                // We only care about repeats larger than 36 bytes.
-                if (inst->m_newData.size() > 36ULL) {
-                    auto max = std::min<size_t>(
-                        inst->m_newData.size(), inst->m_newData.size() - 37ULL);
-                    for (size_t startIndex = 0ULL; startIndex < max;
-                         ++startIndex) {
-                        const auto& value_at_x = inst->m_newData[startIndex];
+    std::vector<std::unique_ptr<Differential_Instruction>> newInstructions;
+    for (const auto& inst : get_large_insertions(baseInstructions)) {
+        threader.addJob([inst, &newInstructions, &instructionMutex]() {
+            size_t startIndex(0ULL);
+            size_t max(inst->m_newData.size());
+            while (startIndex + 36ULL < max) {
+                // Find how far this value is repeated for
+                const auto& value_at_x = inst->m_newData[startIndex];
+                const auto endIndex =
+                    startIndex +
+                    find_last_in_series(
+                        value_at_x,
+                        MemoryRange{ max - startIndex,
+                                     &inst->m_newData[startIndex] });
 
-                        // Quit early if the value 36 units doesn't match
-                        if (inst->m_newData[startIndex + 36ULL] != value_at_x)
-                            continue;
-
-                        size_t endIndex(startIndex + 1);
-                        while (endIndex < max) {
-                            if (value_at_x != inst->m_newData[endIndex])
-                                break;
-                            endIndex++;
-                        }
-
-                        const auto length = endIndex - startIndex;
-                        if (length > 36ULL) {
-                            // Worthwhile to insert a new instruction
-                            // Keep data up until region where repeats occur
-                            auto instBefore =
-                                std::make_unique<Insert_Instruction>();
-                            instBefore->m_index = inst->m_index;
-                            instBefore->m_newData.resize(startIndex);
-                            std::copy(
-                                inst->m_newData.data(),
-                                inst->m_newData.data() + startIndex,
-                                instBefore->m_newData.data());
-
-                            // Generate new Repeat Instruction
-                            auto instRepeat =
-                                std::make_unique<Repeat_Instruction>();
-                            instRepeat->m_index = inst->m_index + startIndex;
-                            instRepeat->m_value = value_at_x;
-                            instRepeat->m_amount = length;
-
-                            // Modifying instructions vector
-                            std::unique_lock<std::mutex> writeGuard(
-                                instructionMutex);
-                            instructions.emplace_back(std::move(instBefore));
-                            instructions.emplace_back(std::move(instRepeat));
-                            writeGuard.unlock();
-                            writeGuard.release();
-
-                            // Modify original insert-instruction to contain
-                            // remainder of the data
-                            inst->m_index = inst->m_index + startIndex + length;
-                            std::memmove(
-                                &inst->m_newData[0], &inst->m_newData[endIndex],
-                                inst->m_newData.size() - endIndex);
-                            inst->m_newData.resize(
-                                inst->m_newData.size() - endIndex);
-
-                            // require overflow, because we want
-                            // next iteration for startIndex == 0
-                            startIndex = std::numeric_limits<size_t>::max();
-                            max = std::min<size_t>(
-                                inst->m_newData.size(),
-                                inst->m_newData.size() - 37ULL);
-                            continue;
-                        }
-                        startIndex = endIndex - 1;
-                        break;
-                    }
+                // Quit early if repeats less than 36 bytes
+                if ((endIndex - startIndex) <= 36ULL) {
+                    startIndex = endIndex;
+                    continue;
                 }
-            });
-        }
+
+                // Split the insertion instruction into two, plus a repeat
+                split_insertion(
+                    inst, startIndex, endIndex, value_at_x, newInstructions,
+                    instructionMutex);
+
+                // Start at beginning of remaining segment
+                startIndex = 0ULL;
+                max = inst->m_newData.size();
+            }
+        });
     }
+
+    // Wait for jobs to finish
+    while (!threader.isFinished())
+        continue;
+    threader.shutdown();
+
+    // Join instruction sets together
+    baseInstructions.reserve(baseInstructions.size() + newInstructions.size());
+    baseInstructions.insert(
+        baseInstructions.end(),
+        std::make_move_iterator(newInstructions.begin()),
+        std::make_move_iterator(newInstructions.end()));
 }
 
 std::optional<Buffer>

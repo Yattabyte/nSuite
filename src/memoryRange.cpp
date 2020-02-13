@@ -28,12 +28,12 @@ size_t MemoryRange::hash() const noexcept {
     size_t value(ZeroHash);
     size_t index(0ULL);
     const size_t max(m_range / 8ULL);
-    const size_t* const ptr8Byte = reinterpret_cast<size_t*>(m_dataPtr);
+    const auto* const ptr8Byte = reinterpret_cast<const size_t*>(m_dataPtr);
     while (index < max)
         value = ((value << 5ULL) + value) + ptr8Byte[index++];
 
     // Hash any remaining bytes
-    const char* const remainderPtr = reinterpret_cast<char*>(m_dataPtr);
+    const char* const remainderPtr = reinterpret_cast<const char*>(m_dataPtr);
     index *= 8ULL;
     while (index < m_range)
         value = ((value << 5ULL) + value) + remainderPtr[index++];
