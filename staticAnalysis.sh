@@ -23,9 +23,9 @@ Starting Memory Sanitizer (valgrind)
 **************************************************"
 cmake -DSTATIC_ANALYSIS=ON -UCMAKE_CXX_CLANG_TIDY . || exit 1
 cmake --clean-first . || exit 1
-ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalBuild . || exit 1
-ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalTest . || exit 1
-ctest --output-on-failure -j $(nproc) -C Debug -D ExperimentalMemCheck . || exit 1
+ctest --output-on-failure --quiet -j $(nproc) -C Debug -D ExperimentalBuild . || exit 1
+ctest --output-on-failure --quiet -j $(nproc) -C Debug -D ExperimentalTest . || exit 1
+ctest --output-on-failure --quiet -j $(nproc) -C Debug -D ExperimentalMemCheck . || exit 1
 echo "Dumping Logs"
 echo $(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.1.log)
 echo $(<${TRAVIS_BUILD_DIR}/Testing/Temporary/MemoryChecker.2.log)

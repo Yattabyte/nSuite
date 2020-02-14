@@ -295,50 +295,40 @@ void emplace_copy(
 /** Generate a diff instruction set from 2 ranges. */
 auto generate_instructions(
     const MemoryRange& rangeA, const MemoryRange& rangeB) {
+    std::vector<std::unique_ptr<Differential_Instruction>> instructions;
+    std::mutex instructionMutex;
+    Threader threader;
     size_t indexA(0ULL);
     size_t indexB(0ULL);
-    const auto matchingRegions =
-        split_and_match_ranges(rangeA, rangeB, indexA, indexB);
-    Threader threader;
-    std::mutex instructionMutex;
-    std::vector<std::unique_ptr<Differential_Instruction>> instructions;
-    for (const auto& matchRegion : matchingRegions) {
+    for (const auto& matchRegion :
+         split_and_match_ranges(rangeA, rangeB, indexA, indexB)) {
         threader.addJob([&, matchRegion]() {
             const auto& [windowInfo, matches] = matchRegion;
-            // INSERT entire window when no matches are found
-            if (matches.empty())
-                emplace_insertion(
-                    windowInfo.indexB,
-                    rangeB.subrange(windowInfo.indexB, windowInfo.windowSize),
-                    instructionMutex, instructions);
-            else {
-                size_t lastMatchEnd(windowInfo.indexB);
-                for (auto& matchInfo : matches) {
-                    // INSERT data from end of the last match until now
-                    const auto newDataLength = matchInfo.start2 - lastMatchEnd;
-                    if (newDataLength > 0ULL)
-                        emplace_insertion(
-                            lastMatchEnd,
-                            rangeB.subrange(lastMatchEnd, newDataLength),
-                            instructionMutex, instructions);
-
-                    // COPY data in matching region
-                    emplace_copy(
-                        matchInfo.start2, matchInfo.start1,
-                        matchInfo.start1 + matchInfo.length, instructionMutex,
-                        instructions);
-                    lastMatchEnd = matchInfo.start2 + matchInfo.length;
-                }
-
-                // INSERT data from end of the last match until window end
-                const auto newDataLength =
-                    (windowInfo.indexB + windowInfo.windowSize) - lastMatchEnd;
+            size_t lastMatchEnd(windowInfo.indexB);
+            for (auto& matchInfo : matches) {
+                // INSERT data from end of the last match until now
+                const auto newDataLength = matchInfo.start2 - lastMatchEnd;
                 if (newDataLength > 0ULL)
                     emplace_insertion(
                         lastMatchEnd,
                         rangeB.subrange(lastMatchEnd, newDataLength),
                         instructionMutex, instructions);
+
+                // COPY data in matching region
+                emplace_copy(
+                    matchInfo.start2, matchInfo.start1,
+                    matchInfo.start1 + matchInfo.length, instructionMutex,
+                    instructions);
+                lastMatchEnd = matchInfo.start2 + matchInfo.length;
             }
+
+            // INSERT data from end of the last match until window end
+            const auto newDataLength =
+                (windowInfo.indexB + windowInfo.windowSize) - lastMatchEnd;
+            if (newDataLength > 0ULL)
+                emplace_insertion(
+                    lastMatchEnd, rangeB.subrange(lastMatchEnd, newDataLength),
+                    instructionMutex, instructions);
         });
     }
 
