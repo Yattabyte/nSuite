@@ -5,10 +5,9 @@ dependencies:
   override:
     - >
       if [ ! -d ~/cmake-3.16.4 ]; then
-        echo "No cache - building CMake"
         cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz
       fi
-	  
+ 
 jobs:
   build:
     docker:
