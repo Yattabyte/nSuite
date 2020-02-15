@@ -14,7 +14,8 @@ jobs:
             apt-get install -y ca-certificates
             apt-get install -y wget            
             apt-get install -y make
-            apt-get install -y libssl-dev            
+            apt-get install -y libssl-dev
+            apt-get install -y libpcre3 libpcre3-dev
       - restore_cache:
           keys: 
            - cmake-3.16.4
@@ -39,7 +40,7 @@ jobs:
           name: Installing CPPCheck
           command: |
             if [ ! -d ~/cppcheck-1.90 ]; then
-              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz &&  cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd ..
+              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd ..
             else
               cd ~/cppcheck-1.90 && sudo make install && cd .
               cppcheck --version
