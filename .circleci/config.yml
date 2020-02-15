@@ -31,6 +31,7 @@ jobs:
       - run:
           name: Running CMake
           command: |
+            cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..
             cmake --version
             cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
             cmake --build . --clean-first -- -j $(nproc) || exit 1
