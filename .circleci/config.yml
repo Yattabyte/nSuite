@@ -23,7 +23,7 @@ jobs:
           command: 'apt-get update && apt-get install -y gcc g++'
       - run:
           name: Installing CLANG
-          command: 'apt-get update && apt-get install -y clang && clang --version'
+          command: 'apt-get update && apt-get install -y gcc-8 g++-9 g++-9-multilib clang-9 clang-tidy-9 libc6-dbg libc6-dbg:i386 linux-libc-dev linux-libc-dev:i386 libc++-9-dev libc++abi-9-dev libstdc++-9-dev'
       - run:
           name: Installing CMake
           command: |          
@@ -40,7 +40,7 @@ jobs:
       - run:
           name: Building Project
           command: |
-            cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 . || exit 1
+            cmake ${CMAKE_OPTIONS_GLOBAL} ${CMAKE_OPTIONS} -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 . || exit 1
             cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
             cmake --build . --clean-first -- -j $(nproc) || exit 1
             ctest --output-on-failure --quiet -j $(nproc) -C Debug . || exit 1
