@@ -24,9 +24,9 @@ jobs:
           command: 'apt-get update && apt-get install -y gcc g++ gcc-8 g++-9 g++-9-multilib clang-9 clang-tidy-9 libc6-dbg linux-libc-dev libc++-9-dev libc++abi-9-dev libstdc++-9-dev'
       - run:
           name: Installing CMake
-          command: |          
+          command: |      
             if [ ! -d ~/cmake-3.16.4 ]; then
-              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && cd .
+              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && cd ..
             fi           
             cd ~/cmake-3.16.4 && sudo make install && cd .
             cmake --version
@@ -34,7 +34,7 @@ jobs:
           name: Installing CPPCheck
           command: |
             if [ ! -d ~/cppcheck-1.90 ]; then
-              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd .
+              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd ..
             fi
             cd ~/cppcheck-1.90 && sudo make install && cd .
             cppcheck --version
@@ -42,7 +42,7 @@ jobs:
           name: Installing Valgrind
           command: |
             if [ ! -d ~/valgrind-3.15.0 ]; then
-              wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make & cd .
+              wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make & cd ..
             fi
             cd ~/valgrind-3.15.0 && sudo make install && cd .
             valgrind --version
