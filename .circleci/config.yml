@@ -17,7 +17,7 @@ jobs:
           command: 'apt-get update && apt-get install -y clang && clang --version'
       - restore_cache:
           keys: 
-           - cmake
+           - cmake-3.16.4
       - run:
           name: Installing CMake
           command: |          
@@ -28,7 +28,7 @@ jobs:
               cmake --version
             fi
       - save_cache:
-          key: cmake
+          key: cmake-3.16.4
           paths:
             - ~/cmake-3.16.4
       - run:
