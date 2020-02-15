@@ -11,7 +11,6 @@ jobs:
           command: |
             apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
             sudo apt update && sudo apt upgrade -y
-            sudo update-ca-certificates
       - run:
           name: Installing GCC
           command: 'apt-get update && apt-get install -y gcc g++'
