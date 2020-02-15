@@ -19,8 +19,9 @@ jobs:
       - restore_cache:
           keys: 
            - cmake-3.16.4
-           - cppcheck
+           - cppcheck-1.90
            - valgrind-3.15.0
+           - oclint-0.13.1
       - run:
           name: Installing CLANG/GCC
           command: 'apt-get update && apt-get install -y gcc g++ gcc-8 g++-9 g++-9-multilib clang-9 clang-tidy-9 libc6-dbg linux-libc-dev libc++-9-dev libc++abi-9-dev libstdc++-9-dev'
@@ -28,11 +29,10 @@ jobs:
           name: Installing CMake
           command: |          
             if [ ! -d ~/cmake-3.16.4 ]; then
-              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..
-            else            
-              cd ~/cmake-3.16.4 && sudo make install && cd .
-              cmake --version
-            fi
+              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && cd .
+            fi           
+            cd ~/cmake-3.16.4 && sudo make install && cd .
+            cmake --version
       - save_cache:
           key: cmake-3.16.4
           paths:
@@ -41,28 +41,40 @@ jobs:
           name: Installing CPPCheck
           command: |
             if [ ! -d ~/cppcheck-1.90 ]; then
-              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd ..
-            else
-              cd ~/cppcheck-1.90 && sudo make install && cd .
-              cppcheck --version
+              wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90 && sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd .
             fi
+            cd ~/cppcheck-1.90 && sudo make install && cd .
+            cppcheck --version
       - save_cache:
-          key: cppcheck
+          key: cppcheck-1.90
           paths:
             - ~/cppcheck-1.90
       - run:
           name: Installing Valgrind
           command: |
             if [ ! -d ~/valgrind-3.15.0 ]; then
-              wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make && sudo make install && cd ..
-            else
-              cd ~/valgrind-3.15.0 && ./configure && make && sudo make install && cd .
-              valgrind --version
+              wget https://sourceware.org/pub/valgrind/valgrind-3.15.0.tar.bz2 && tar xjf valgrind-3.15.0.tar.bz2 && cd valgrind-3.15.0 && ./configure && make & cd .
             fi
+            cd ~/valgrind-3.15.0 && sudo make install && cd .
+            valgrind --version
       - save_cache:
           key: valgrind-3.15.0
           paths:
             - ~/valgrind-3.15.0
+            - run:
+      - name: Installing OCLint
+          command: |
+            if [ ! -d ~/oclint-0.13.1 ]; then
+              curl -OL https://github.com/oclint/oclint/releases/download/v0.13.1/oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz
+              mkdir -p ~/oclint-0.13.1
+              tar xf oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz -C ~/oclint-0.13.1 --strip-components=1
+              rm oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz
+            fi
+            oclint --version
+      - save_cache:
+          key: oclint-0.13.1
+          paths:
+            - ~/oclint-0.13.1
       - run:
           name: Building Project
           command: |
