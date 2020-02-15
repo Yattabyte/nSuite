@@ -11,7 +11,7 @@ jobs:
           command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
       - run:
           name: Installing CLANG/GCC
-          command: 'apt-get update && apt-get install -y g++-9 clang-9 libc++-9-dev libc++abi-9-dev libstdc++-9-dev
+          command: 'apt-get update && apt-get install -y g++-9 clang-9 libc++-9-dev libc++abi-9-dev libstdc++-9-dev'
       - restore_cache:
           keys: 
            - cmake
