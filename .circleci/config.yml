@@ -18,10 +18,7 @@ jobs:
             apt-get install -y libpcre3 libpcre3-dev
       - restore_cache:
           keys: 
-           - cmake-3.16.4
-           - cppcheck-1.90
-           - valgrind-3.15.0
-           - oclint-0.13.1
+           - my-cache
       - run:
           name: Installing CLANG/GCC
           command: 'apt-get update && apt-get install -y gcc g++ gcc-8 g++-9 g++-9-multilib clang-9 clang-tidy-9 libc6-dbg linux-libc-dev libc++-9-dev libc++abi-9-dev libstdc++-9-dev'
@@ -33,10 +30,6 @@ jobs:
             fi           
             cd ~/cmake-3.16.4 && sudo make install && cd .
             cmake --version
-      - save_cache:
-          key: cmake-3.16.4
-          paths:
-            - ~/cmake-3.16.4
       - run:
           name: Installing CPPCheck
           command: |
@@ -45,10 +38,6 @@ jobs:
             fi
             cd ~/cppcheck-1.90 && sudo make install && cd .
             cppcheck --version
-      - save_cache:
-          key: cppcheck-1.90
-          paths:
-            - ~/cppcheck-1.90
       - run:
           name: Installing Valgrind
           command: |
@@ -57,10 +46,6 @@ jobs:
             fi
             cd ~/valgrind-3.15.0 && sudo make install && cd .
             valgrind --version
-      - save_cache:
-          key: valgrind-3.15.0
-          paths:
-            - ~/valgrind-3.15.0
       - run:
           name: Installing OCLint
           command: |
@@ -72,8 +57,11 @@ jobs:
             fi
             oclint --version
       - save_cache:
-          key: oclint-0.13.1
+          key: my-cache
           paths:
+            - ~/cmake-3.16.4
+            - ~/cppcheck-1.90
+            - ~/valgrind-3.15.0
             - ~/oclint-0.13.1
       - run:
           name: Building Project
