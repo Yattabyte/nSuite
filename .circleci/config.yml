@@ -38,6 +38,4 @@ jobs:
           name: Building Project
           command: |
             cmake ${CMAKE_OPTIONS_GLOBAL} ${CMAKE_OPTIONS} -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 . || exit 1
-            cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy-9 . || exit 1
-            cmake --build . --clean-first -- -j $(nproc) || exit 1
-            ctest --output-on-failure --quiet -j $(nproc) -C Debug . || exit 1
+            bash ./staticAnalysis.sh
