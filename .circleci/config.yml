@@ -16,20 +16,21 @@ jobs:
           keys: 
            - cmake
       - run:
-          name: Acquiring CMake
+          name: Installing CMake
           command: |          
             if [ ! -d ~/cmake-3.16.4 ]; then
               cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cmake-3.16.4 && ./configure && make && sudo make install && cd ..
+            else            
+              cd ~/cmake-3.16.4 && sudo make install && cd .
+              cmake --version
             fi
       - save_cache:
           key: cmake
           paths:
             - ~/cmake-3.16.4
       - run:
-          name: Running CMake
+          name: Building Project
           command: |
-            cd ~/cmake-3.16.4 && sudo make install && cd .
-            cmake --version
             cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
             cmake --build . --clean-first -- -j $(nproc) || exit 1
             ctest --output-on-failure --quiet -j $(nproc) -C Debug . || exit 1
