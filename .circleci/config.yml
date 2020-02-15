@@ -61,8 +61,8 @@ jobs:
           key: valgrind-3.15.0
           paths:
             - ~/valgrind-3.15.0
-            - run:
-      - name: Installing OCLint
+      - run:
+          name: Installing OCLint
           command: |
             if [ ! -d ~/oclint-0.13.1 ]; then
               curl -OL https://github.com/oclint/oclint/releases/download/v0.13.1/oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz
