@@ -10,7 +10,10 @@ dependencies:
   override:
     - >
       if [ ! -d ~/cmake-3.16.4 ]; then
+      echo "No cache - building CMake"
         cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..
+      else
+        echo "Cached CMake found"
       fi
  
 jobs:
@@ -28,7 +31,6 @@ jobs:
       - run:
           name: Running CMake
           command: |
-            wget https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..
             cmake --version
             cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
             cmake --build . --clean-first -- -j $(nproc) || exit 1
