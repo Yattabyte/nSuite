@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: "xenial:stretch"
+      - image: buildpack-deps:xenial
     steps:
       - checkout
       - run:
