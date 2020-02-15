@@ -115,8 +115,7 @@ install:
       valgrind --version
       # Download latest cppcheck
       wget https://github.com/danmar/cppcheck/archive/1.90.tar.gz && tar xzvf 1.90.tar.gz && cd cppcheck-1.90
-      sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install
-      cd ..
+      sudo make MATCHCOMPILER=yes FILESDIR=/usr/share/cppcheck HAVE_RULES=yes install && cd ..
       cppcheck --version
     fi
 
