@@ -1,19 +1,30 @@
 version: 2.1
+dependencies:
+  cache_directories:
+    - ~/cmake-3.16.4	
+  override:
+    - >
+      if [ ! -d ~/cmake-3.16.4 ]; then
+        echo "No cache - building CMake"
+        cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz
+      fi
+	  
 jobs:
   build:
     docker:
-      - image: buildpack-deps:zesty
+      - image: buildpack-deps:xenial
     steps:
       - checkout
+      - run:
+          name: Installing SUDO
+          command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
       - run:
           name: Installing GCC
           command: 'apt-get update && apt-get install -y gcc g++'
       - run:
-          name: Install CMAKE
-          command: 'apt-get update && sudo apt-get install -y cmake'
-      - run:
           name: Running CMake
           command: |
+		    cmake --version
             cmake -DBUILD_TESTING=ON -DCODE_COVERAGE=OFF -DSTATIC_ANALYSIS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_CLANG_TIDY=clang-tidy . || exit 1
             cmake --build . --clean-first -- -j $(nproc) || exit 1
             ctest --output-on-failure --quiet -j $(nproc) -C Debug . || exit 1
