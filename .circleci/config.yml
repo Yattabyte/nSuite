@@ -26,7 +26,7 @@ jobs:
           name: Installing CMake
           command: |          
             if [ ! -d ~/cmake-3.16.4 ]; then
-              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cmake-3.16.4 && ./configure && make && sudo make install && cd ..
+              cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..
             else            
               cd ~/cmake-3.16.4 && sudo make install && cd .
               cmake --version
