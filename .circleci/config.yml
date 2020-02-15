@@ -1,4 +1,9 @@
 version: 2.1
+
+machine:
+  environment:
+    PATH: "/home/ubuntu/cmake-3.16.4/bin:$PATH"
+    
 dependencies:
   cache_directories:
     - ~/cmake-3.16.4	
