@@ -13,7 +13,8 @@ jobs:
             sudo apt update && sudo apt upgrade -y
             apt-get install -y ca-certificates
             apt-get install -y wget            
-            apt-get install -y make            
+            apt-get install -y make
+            apt-get install -y libssl-dev            
       - restore_cache:
           keys: 
            - cmake-3.16.4
