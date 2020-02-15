@@ -1,9 +1,9 @@
 # Library
 This library provides 4 general purpose classes:
-  - *Yatta::MemoryRange* for safe encapsulation of a contiguous memory range
-  - *Yatta::Buffer* for easy buffer creation and manipulation
-  - *Yatta::Directory* for easy directory virtualization and manipulation
-  - *Yatta::Threader* for easy multi-threading functionality
+- *Yatta::MemoryRange* for safe encapsulation of a contiguous memory range
+- *Yatta::Buffer* for easy buffer creation and manipulation
+- *Yatta::Directory* for easy directory virtualization and manipulation
+- *Yatta::Threader* for easy multi-threading functionality
   
 
 ## MemoryRange Overview
@@ -22,9 +22,9 @@ Lastly, *MemoryRange's* provide templates to write in/out objects or raw pointer
 ## Buffer Overview
 The ***Buffer*** class represents an expandable, contiguous, manipulatable range of memory.
 Deriving from the *MemoryRange* class, this class expands the notion of a memory range by allowing it to expand and shrink.
-Further, it also provides two sets of useful functions
-  - compressing/decompressing
-  - diffing/patching
+Further, it also provides two sets of useful functions:
+- compressing/decompressing
+- diffing/patching
 Lastly, *Buffer's* provide templates to push/pop objects or raw data into/out of them.
 
 ### Buffer Example
@@ -36,8 +36,8 @@ Lastly, *Buffer's* provide templates to push/pop objects or raw data into/out of
 ## Directory Overview
 The ***Directory*** class represents a virtual file-folder, encompasing the objects within.
 It provides a means of fetching files from disk, as well as:
-  - compressing/decompressing
-  - diffing/patching
+- compressing/decompressing
+- diffing/patching
 
 ### Directory Example
 ```c++
