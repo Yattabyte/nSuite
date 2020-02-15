@@ -1,8 +1,4 @@
 version: 2.1
-
-machine:
-  environment:
-    PATH: "/home/ubuntu/cmake-3.16.4/bin:$PATH"
     
 dependencies:
   cache_directories:
@@ -28,6 +24,15 @@ jobs:
       - run:
           name: Installing GCC
           command: 'apt-get update && apt-get install -y gcc g++'
+      - restore_cache:
+          key: cmake
+      - run:
+          name: Acquiring CMake
+          command: 'cd ~ && wget --quiet https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz && tar -xvf cmake-3.16.4.tar.gz && cd cmake-3.16.4 && ./configure && make && sudo make install && cd ..'
+      - save_cache:
+          key: cmake
+          paths:
+            - ~/cmake-3.16.4
       - run:
           name: Running CMake
           command: |
