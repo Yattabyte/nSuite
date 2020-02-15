@@ -9,8 +9,8 @@ jobs:
       - run:
           name: Installing SUDO
           command: |
-          apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
-          apt-get update -y ca-certificates
+            apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
+            apt-get update -y ca-certificates
       - run:
           name: Installing GCC
           command: 'apt-get update && apt-get install -y gcc g++'
