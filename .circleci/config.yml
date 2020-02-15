@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: buildpack-deps:xenial
+      - image: ubuntu:16.04
     steps:
       - checkout
       - run:
