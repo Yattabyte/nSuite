@@ -54,7 +54,8 @@ jobs:
               curl -OL https://github.com/oclint/oclint/releases/download/v0.13.1/oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz
               mkdir -p ~/oclint-0.13.1
               tar xf oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz -C ~/oclint-0.13.1 --strip-components=1
-              rm oclint-0.13.1-x86_64-linux-4.4.0-112-generic.tar.gz
+              export OCLINT_HOME="~/oclint-0.13.1"
+              export PATH="$OCLINT_HOME/bin:$PATH"
             fi
             oclint --version
       - save_cache:
